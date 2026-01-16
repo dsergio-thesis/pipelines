@@ -665,7 +665,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 band=eff_wl,
                 time=(time1, time2),
             )
-            all_results.append(result)
+            all_results.append(result.to_table())
         
         table = Table()
         for result in all_results:
