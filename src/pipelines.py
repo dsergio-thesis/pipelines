@@ -323,6 +323,68 @@ class StageCatalogSDSS_V2(DataPipelineStage):
         # first 5 rows
         # self.output = self.output[:5]
 
+
+# ============================================================
+# StageCatalogLSST
+# ============================================================
+class StageCatalogLSST(DataPipelineStage):
+    """
+    Data pipeline stage for cataloging data.
+    """
+
+    def __init__(self):
+        super().__init__(stage_name="catalog", requires_stage_dir=True)
+
+    def _validate_prev_stage(self):
+        return True
+    
+    def run(self):
+
+        client = AstroosQueryLSST(root_dir=self.stage_dir, 
+                                  credentials_file=self.pipeline.credentials_file,
+                                  max_records=self.pipeline.max_records)
+
+        dec_min = max(self.pipeline.metadata.get('query_coords').dec.deg - self.pipeline.metadata.get('query_radius').to(u.deg).value, -90)
+        dec_max = min(self.pipeline.metadata.get('query_coords').dec.deg + self.pipeline.metadata.get('query_radius').to(u.deg).value, 90)
+
+        delta_ra = self.query_radius.to(u.deg).value / np.cos(np.deg2rad(self.query_coords.dec.deg))
+        ra_min = (self.query_coords.ra.deg - delta_ra) % 360
+        ra_max = (self.query_coords.ra.deg + delta_ra) % 360
+
+        
+        query = f"SELECT TOP {self.pipeline.max_records} * " \
+            f"FROM dp1.Object WHERE coord_ra BETWEEN {ra_min} AND {ra_max} AND " \
+            f" coord_dec BETWEEN {dec_min} AND {dec_max}"
+        
+        query = \
+        """
+        SELECT TOP {max_records} objectId, coord_ra, coord_dec, g_cModelMag, g_cModelMagErr, refExtendedness
+        FROM dp1.Object
+        WHERE coord_ra BETWEEN 4.0641 AND 106.8238
+            AND coord_dec BETWEEN -72.7414 AND 8.0037
+            AND g_cModelMag < 24 
+            AND refExtendedness = 1
+        """
+        query = query.format(max_records=self.pipeline.max_records)
+
+        # sync
+        # table = client.query(query)
+
+        # async
+        table = client.query_async(query)
+
+        query_info = f"lsst_tap__limit{self.pipeline.max_records}__ra{ra_min:.4f}_{ra_max:.4f}__dec{dec_min:.4f}_{dec_max:.4f}"
+
+        # first check cache
+        if os.path.exists(f"{self.stage_dir}/{query_info}.csv"):
+            print(f"File {self.stage_dir}/{query_info}.csv already exists. ")
+            table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
+
+        else:
+            table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
+            print(f"Saved query result to {self.stage_dir}/{query_info}.csv")
+
+
 # ============================================================
 # StageFetchSDSS_V2_ManualCutout
 # ============================================================
@@ -537,74 +599,6 @@ class StageFetchSDSS_V2_AutoCutout(DataPipelineStage):
         torch.save(images_tensor, self.pipeline.X_train_filename)
         torch.save(labels_tensor, self.pipeline.y_train_filename)
         print(f"Saved file: {self.pipeline.X_train_filename} and {self.pipeline.y_train_filename}")
-
-
-# ============================================================
-# StageCatalogLSST
-# ============================================================
-class StageCatalogLSST(DataPipelineStage):
-    """
-    Data pipeline stage for cataloging data.
-    """
-
-    def __init__(self, pipeline_dir, 
-                 stage_dir,
-                 pipeline,
-                 credentials_file=None
-                 ):
-        super().__init__(stage_name=stage_dir, pipeline_dir=pipeline_dir, stage_dir=stage_dir, pipeline=pipeline)
-        self.query_coords = pipeline.metadata.get('query_coords')
-        self.query_radius = pipeline.metadata.get('query_radius')
-        pipeline.credentials_file = credentials_file
-
-    def _validate_prev_stage(self):
-        return True
-    
-    def run(self):
-
-        client = AstroosQueryLSST(root_dir=self.stage_dir, 
-                                  credentials_file=self.pipeline.credentials_file,
-                                  max_records=self.pipeline.max_records)
-
-        dec_min = max(self.query_coords.dec.deg - self.query_radius.to(u.deg).value, -90)
-        dec_max = min(self.query_coords.dec.deg + self.query_radius.to(u.deg).value, 90)
-
-        delta_ra = self.query_radius.to(u.deg).value / np.cos(np.deg2rad(self.query_coords.dec.deg))
-        ra_min = (self.query_coords.ra.deg - delta_ra) % 360
-        ra_max = (self.query_coords.ra.deg + delta_ra) % 360
-
-        
-        query = f"SELECT TOP {self.pipeline.max_records} * " \
-            f"FROM dp1.Object WHERE coord_ra BETWEEN {ra_min} AND {ra_max} AND " \
-            f" coord_dec BETWEEN {dec_min} AND {dec_max}"
-        
-        query = \
-        """
-        SELECT TOP {max_records} objectId, coord_ra, coord_dec, g_cModelMag, g_cModelMagErr, refExtendedness
-        FROM dp1.Object
-        WHERE coord_ra BETWEEN 4.0641 AND 106.8238
-            AND coord_dec BETWEEN -72.7414 AND 8.0037
-            AND g_cModelMag < 24 
-            AND refExtendedness = 1
-        """
-        query = query.format(max_records=self.pipeline.max_records)
-
-        # sync
-        # table = client.query(query)
-
-        # async
-        table = client.query_async(query)
-
-        query_info = f"lsst_tap__limit{self.pipeline.max_records}__ra{ra_min:.4f}_{ra_max:.4f}__dec{dec_min:.4f}_{dec_max:.4f}"
-
-        # first check cache
-        if os.path.exists(f"{self.stage_dir}/{query_info}.csv"):
-            print(f"File {self.stage_dir}/{query_info}.csv already exists. ")
-            table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
-
-        else:
-            table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
-            print(f"Saved query result to {self.stage_dir}/{query_info}.csv")
 
 
 # ============================================================
