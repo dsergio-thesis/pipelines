@@ -678,6 +678,9 @@ class StageFetchLSSTSoda(DataPipelineStage):
             else:
                 table = vstack([table, result.to_table()], join_type='outer', metadata_conflicts='silent')
 
+            print(f"Fetched {len(result)} images for objectId {row.objectId} at RA: {target_ra}, Dec: {target_dec}")
+            print(result.to_table())
+
         
         print(f"Downloaded {len(table)} LSST SODA cutout images.")
         print(table)
