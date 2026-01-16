@@ -340,18 +340,20 @@ class StageCatalogLSST(DataPipelineStage):
     
     def run(self):
 
+        query_coords = self.pipeline.metadata.get('query_coords')
+        query_radius = self.pipeline.metadata.get('query_radius')
+
         client = AstroosQueryLSST(root_dir=self.stage_dir, 
                                   credentials_file=self.pipeline.credentials_file,
                                   max_records=self.pipeline.max_records)
 
         dec_min = max(self.pipeline.metadata.get('query_coords').dec.deg - self.pipeline.metadata.get('query_radius').to(u.deg).value, -90)
-        dec_max = min(self.pipeline.metadata.get('query_coords').dec.deg + self.pipeline.metadata.get('query_radius').to(u.deg).value, 90)
+        dec_max = min(query_coords.dec.deg + query_radius.to(u.deg).value, 90)
 
-        delta_ra = self.query_radius.to(u.deg).value / np.cos(np.deg2rad(self.query_coords.dec.deg))
-        ra_min = (self.query_coords.ra.deg - delta_ra) % 360
-        ra_max = (self.query_coords.ra.deg + delta_ra) % 360
+        delta_ra = query_radius.to(u.deg).value / np.cos(np.deg2rad(query_coords.dec.deg))
+        ra_min = (query_coords.ra.deg - delta_ra) % 360
+        ra_max = (query_coords.ra.deg + delta_ra) % 360
 
-        
         query = f"SELECT TOP {self.pipeline.max_records} * " \
             f"FROM dp1.Object WHERE coord_ra BETWEEN {ra_min} AND {ra_max} AND " \
             f" coord_dec BETWEEN {dec_min} AND {dec_max}"
