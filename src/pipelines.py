@@ -375,6 +375,8 @@ class StageCatalogLSST(DataPipelineStage):
         # async
         # table = client.query_async(query)
 
+        # convert table to pandas dataframe
+        self.output = table.to_pandas()
 
 
         query_info = f"lsst_tap__limit{self.pipeline.max_records}__ra{ra_min:.4f}_{ra_max:.4f}__dec{dec_min:.4f}_{dec_max:.4f}"
@@ -604,6 +606,25 @@ class StageFetchSDSS_V2_AutoCutout(DataPipelineStage):
         torch.save(labels_tensor, self.pipeline.y_train_filename)
         print(f"Saved file: {self.pipeline.X_train_filename} and {self.pipeline.y_train_filename}")
 
+
+# ============================================================
+# StageFetchLSSTSoda
+# ============================================================
+class StageFetchLSSTSoda(DataPipelineStage):
+    """Data pipeline stage for fetching LSST data."""
+    def __init__(self, dataset):
+        super().__init__(stage_name="fetch", requires_stage_dir=True)
+        self.dataset = dataset
+
+    def _validate_prev_stage(self):
+        return True
+
+    def run(self):
+        # read the positions from the previous stage
+
+        df, _ = self.prev_stage.output
+
+        print(f"Fetching LSST SODA cutout images for {len(df)} objects...")
 
 # ============================================================
 # StageFilterCatalogSDSS
