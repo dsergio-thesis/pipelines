@@ -12,7 +12,7 @@ from astropy.coordinates import SkyCoord
 from io import BytesIO
 from collections import defaultdict
 
-from astropy.table import Table
+from astropy.table import Table, vstack
 from astropy import units as u
 import time
 
@@ -676,7 +676,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
             if table is None:
                 table = result
             else:
-                table = Table.vstack([table, result])
+                table = vstack([table, result])
 
         
         print(f"Downloaded {len(table)} LSST SODA cutout images.")
