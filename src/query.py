@@ -8,6 +8,12 @@ from astroquery.fermi import FermiLAT
 from astroquery.skyview import SkyView
 
 
+# LSST
+from pyvo.dal.adhoc import DatalinkResults
+from lsst.rsp import get_tap_service
+from lsst.rsp.utils import get_pyvo_auth
+
+
 # astropy
 from astropy.coordinates import SkyCoord
 from astropy import units
@@ -220,9 +226,10 @@ class AstroosQueryLSST(AstroosQuery):
 
         self.credentials_file=credentials_file
 
-        self.tap_service = PyvoTAPClient(base_url="https://data.lsst.cloud/api/tap", maxrecords=max_records)
+        # self.tap_service = PyvoTAPClient(base_url="https://data.lsst.cloud/api/tap", maxrecords=max_records)
                                         #  credentials_file=self.credentials_file,
-                                         
+
+        self.tap_service = get_tap_service("tap")                
 
         # result = self.tap_service.sync("select top 10 objectId from dp1.Object")
         # print("LSST TAP Query Result:")
@@ -249,7 +256,7 @@ class AstroosQueryLSST(AstroosQuery):
         """
         print(f"Querying LSST ADQL with query:\n{query}")
 
-        res = self.tap_service.sync(query)
+        res = self.tap_service.search(query)
         table = Table(res.to_table())
 
         if res is None:
