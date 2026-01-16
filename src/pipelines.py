@@ -391,8 +391,15 @@ class StageCatalogLSST(DataPipelineStage):
         # table = client.query_async(query)
 
         # convert table to pandas dataframe
-        self.output = table.to_pandas()
+        df = table.to_pandas()
 
+        # remove rows with NaN values of 'g_cModelMag'
+        df = df.dropna(subset=['g_cModelMag'])
+
+        # convert back to table
+        table = Table.from_pandas(df)
+
+        self.output = df
 
         query_info = f"lsst_tap__limit{self.pipeline.max_records}__ra{ra_min:.4f}_{ra_max:.4f}__dec{dec_min:.4f}_{dec_max:.4f}"
 
