@@ -80,7 +80,7 @@ query_obj = someother
 if len(sys.argv) > 1:
     max_records = int(sys.argv[1])
 else:
-    max_records = 30
+    max_records = 3
 
 coords = SkyCoord(query_obj, frame=ICRS, unit=(u.hourangle, u.deg))
 radius_hour = u.hourangle *     0
@@ -97,8 +97,8 @@ name = "p5"
 labels_file = "./sdss_morph_types_info.csv"
 
 dataset_cartesian = FITS_Image_Features_Dataset(
-    dir="data/demo2",
-    labels_init_file="sdss_morph_types_info.csv",
+    dir="./data/demo2",
+    labels_init_file="./sdss_morph_types_info.csv",
     N_bands=5, 
     N_features=4, 
     transform=transformCartesian,

@@ -9,7 +9,7 @@ from astropy.io import fits
 
 if (sys.modules.get('labels') is not None):
     del sys.modules['labels']
-from astroos.labels import Labels
+from labels import Labels
 
 from torch.utils.data import DataLoader
 

@@ -33,7 +33,7 @@ from abc import ABC, abstractmethod
 
 if (sys.modules.get('tap_clients') is not None): 
     del sys.modules['tap_clients']
-from astroos.tap_clients import PyvoTAPClient
+from tap_clients import PyvoTAPClient
 
 # ============================================================
 # AstroosQuery Abstract Base Class

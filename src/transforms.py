@@ -10,7 +10,7 @@ from skimage import color, measure, transform
 
 if (sys.modules.get('morphometryka') is not None): 
     del sys.modules['morphometryka']
-from astroos.morphometryka import simple_segmentation, \
+from morphometryka import simple_segmentation, \
     measure_morfometry, \
     centroid_flux
 
