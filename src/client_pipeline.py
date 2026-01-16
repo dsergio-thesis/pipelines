@@ -35,7 +35,7 @@ from pipelines import StageCatalogSDSS, \
     StageCatalogSDSS_V2, \
     StageFetchSDSS_V2_ManualCutout, StageFetchSDSS_V2_AutoCutout, \
     StageFetchSDSS, StageFetchSDSS_V3_ManualCutout, \
-    PipelineClassification
+    PipelineClassification, StageCatalogLSST
 from datasets import FITS_Image_Features_Dataset
 
 from utils import plot_random_samples_from_dataset
@@ -115,9 +115,13 @@ pipelines = [
     ),
 ]
 
+# pipelines[0].add_stages([
+#     StageCatalogSDSS_V2(),
+#     StageFetchSDSS_V3_ManualCutout(dataset_cartesian),
+# ])
+
 pipelines[0].add_stages([
-    StageCatalogSDSS_V2(),
-    StageFetchSDSS_V3_ManualCutout(dataset_cartesian),
+    StageCatalogLSST(),
 ])
 
 for p in pipelines:
