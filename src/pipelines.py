@@ -44,6 +44,11 @@ import requests
 from astropy.wcs import WCS
 
 
+from lsst.rsp.service import get_siav2_service
+from lsst.rsp.utils import get_pyvo_auth
+from astropy.time import Time
+
+
 # ============================================================
 # Pipeline
 # ============================================================
@@ -367,6 +372,16 @@ class StageCatalogLSST(DataPipelineStage):
             AND g_cModelMag < 24 
             AND refExtendedness = 1
         """
+
+        query = \
+        """
+        SELECT TOP {max_records} objectId, coord_ra, coord_dec, g_cModelMag, g_cModelMagErr, refExtendedness
+        FROM dp1.Object
+        WHERE coord_ra BETWEEN 4.0641 AND 106.8238
+            AND coord_dec BETWEEN -72.7414 AND 8.0037
+        """
+
+
         query = query.format(max_records=self.pipeline.max_records)
 
         # sync
@@ -620,11 +635,37 @@ class StageFetchLSSTSoda(DataPipelineStage):
         return True
 
     def run(self):
+        
         # read the positions from the previous stage
 
         df = self.prev_stage.output
 
         print(f"Fetching LSST SODA cutout images for {len(df)} objects...")
+
+        ra = df['coord_ra'].to_list()
+        dec = df['coord_dec'].to_list()
+
+        # list of tuples
+        positions = list(zip(ra, dec))
+
+        service = get_siav2_service("dp1")
+
+        eff_wl = 622.1e-09
+        time1 = Time(60623.256, format="mjd", scale="tai")
+        time2 = Time(60623.259, format="mjd", scale="tai")
+
+        for row in tqdm(df.itertuples(), total=len(df), desc="Downloading LSST SODA Cutout Images"):
+            target_ra = row.coord_ra
+            target_dec = row.coord_dec
+            circle = (target_ra, target_dec, 0.05)
+            result = service.search(
+                pos=circle,
+                calib_level=2,
+                band=eff_wl,
+                time=(time1, time2),
+            )
+            print(f"Result for RA: {target_ra}, Dec: {target_dec}: {result}")
+        
 
 # ============================================================
 # StageFilterCatalogSDSS
