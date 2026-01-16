@@ -676,7 +676,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
             if table is None:
                 table = result
             else:
-                table = vstack([table, result])
+                table = vstack([table, result.to_table()], join_type='outer', metadata_conflicts='silent')
 
         
         print(f"Downloaded {len(table)} LSST SODA cutout images.")
