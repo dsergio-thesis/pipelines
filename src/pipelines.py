@@ -662,7 +662,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
             result = service.search(
                 pos=circle,
                 calib_level=2,
-                dpsubtype='lsst.visit_image'
+                dpsubtype='lsst.visit_image',
                 band=eff_wl,
                 time=(time1, time2),
             )
