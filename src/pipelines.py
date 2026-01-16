@@ -557,6 +557,9 @@ class StageCatalogLSST(DataPipelineStage):
         self.query_radius = pipeline.metadata.get('query_radius')
         pipeline.credentials_file = credentials_file
 
+    def _validate_prev_stage(self):
+        return True
+    
     def run(self):
 
         client = AstroosQueryLSST(root_dir=self.stage_dir, 
