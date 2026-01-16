@@ -674,7 +674,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 time=(time1, time2),
             )
             if table is None:
-                table = result
+                table = result.to_table()
             else:
                 table = vstack([table, result.to_table()], join_type='outer', metadata_conflicts='silent')
 
