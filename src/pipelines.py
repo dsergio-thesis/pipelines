@@ -622,7 +622,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
     def run(self):
         # read the positions from the previous stage
 
-        df, _ = self.prev_stage.output
+        df = self.prev_stage.output
 
         print(f"Fetching LSST SODA cutout images for {len(df)} objects...")
 
