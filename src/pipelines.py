@@ -47,7 +47,7 @@ from astropy.wcs import WCS
 from lsst.rsp.service import get_siav2_service
 from lsst.rsp.utils import get_pyvo_auth
 from astropy.time import Time
-
+from pyvo.dal.adhoc import DatalinkResults, SodaQuery
 
 # ============================================================
 # Pipeline
@@ -673,6 +673,26 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 band=eff_wl,
                 time=(time1, time2),
             )
+            datalink_url = result[0].access_url
+            dl_result = DatalinkResults.from_result_url(datalink_url,
+                                                        session=get_pyvo_auth())
+            f"Datalink status: {dl_result.status}. Datalink service url: {datalink_url}"
+            sq = SodaQuery.from_resource(dl_result,
+                             dl_result.get_adhocservice_by_id("cutout-sync-exposure"),
+                             session=get_pyvo_auth())
+
+            spherePoint = geom.SpherePoint(target_ra*geom.degrees, target_dec*geom.degrees)
+            Radius = 0.01 * u.deg
+            sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
+                        spherePoint.getDec().asDegrees() * u.deg,
+                        Radius)
+            cutout_bytes = sq.execute_stream().read()
+            sq.raise_if_error()
+            
+            # cutout_bytes is a FITS file in bytes
+            hdul = fits.open(io.BytesIO(cutout_bytes))
+            print(hdul.info())
+
             if table is None:
                 table = result.to_table()
             else:
