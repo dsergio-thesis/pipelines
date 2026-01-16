@@ -1,0 +1,33 @@
+label_index,short_name,cnt,long_name,long_description,example
+0,S,17602,Spiral,Normal spiral galaxy,unknown
+1,E,5566,Elliptical,Elliptical galaxy,M87
+2,Sc,3284,Spiral (Sc),Late‐type spiral with loosely wound arms,M33
+3,Sb,2902,Spiral (Sb),Intermediate‐type spiral with moderately wound arms,M81
+4,S0,2422,Lenticular,Lenticular galaxy (disk without visible spiral arms),NGC 5866
+5,E0,2127,Elliptical E0,Nearly spherical elliptical galaxy,M87
+6,E+A,2053,Post‐starburst,Post‐starburst galaxy (strong A‐star absorption features),NGC 7252
+7,I,1296,Irregular,Irregular galaxy,Large Magellanic Cloud
+8,E1,1278,Elliptical E1,Slightly elongated elliptical galaxy,unknown
+9,Sa,1190,Spiral (Sa),Early‐type spiral with tightly wound arms,Andromeda (M31)
+10,dE,1141,Dwarf Elliptical,Dwarf elliptical galaxy,NGC 205
+11,E2,1079,Elliptical E2,Moderately elongated elliptical galaxy,unknown
+12,E3,1018,Elliptical E3,Elliptical galaxy with moderate elongation,unknown
+13,Sd,979,Spiral (Sd),Very late‐type spiral with very loosely wound arms,NGC 7793
+14,SBb,964,Barred Spiral (SBb),Barred intermediate‐type spiral galaxy,NGC 1300
+15,Sbc,800,Spiral (Sbc),Intermediate spiral between Sb and Sc,M51 (Whirlpool Galaxy)
+16,SB,776,Barred Spiral,Spiral galaxy with a central bar,Milky Way
+17,Sab,737,Spiral (Sab),Intermediate spiral between Sa and Sb,NGC 1365
+18,Scd,689,Spiral (Scd),Intermediate spiral between Sc and Sd,unknown
+19,E4,594,Elliptical E4,Elliptical galaxy with moderate elongation,unknown
+20,Sp,589,Spiral Peculiar,Peculiar spiral galaxy,unknown
+21,S/Irr,542,Spiral/Irregular,Between spiral and irregular morphologies,NGC 1427A
+22,dI,534,Dwarf Irregular,Dwarf irregular galaxy,IC 1613
+23,E/S0,416,Elliptical/Lenticular,Between elliptical (E) and lenticular (S0),NGC 1316
+24,S0+,390,Lenticular+,Between S0 and Sa types,NGC 441
+25,E5,368,Elliptical E5,Elliptical galaxy with significant elongation,unknown
+26,Ir,335,Irregular,Irregular galaxy,Small Magellanic Cloud
+27,E7,329,Elliptical E7,Very elongated elliptical galaxy,unknown
+28,S0/a,300,S0/a,Between lenticular (S0) and spiral (Sa),NGC 3115
+29,E6,257,Elliptical E6,Highly elongated elliptical galaxy,unknown
+30,Irr,221,Irregular,Irregular galaxy,Large Magellanic Cloud
+31,Unknown,0,Unknown,Unknown morphology,unknown
