@@ -666,6 +666,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 time=(time1, time2),
             )
             each_table = result.to_table()
+            print("Each table:", each_table)
             table.add_row(each_table)
 
         
