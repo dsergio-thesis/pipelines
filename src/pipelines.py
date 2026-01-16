@@ -654,7 +654,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
         time1 = Time(60623.256, format="mjd", scale="tai")
         time2 = Time(60623.259, format="mjd", scale="tai")
 
-        all_results = []
+        table = Table()
         for row in tqdm(df.itertuples(), total=len(df), desc="Downloading LSST SODA Cutout Images"):
             target_ra = row.coord_ra
             target_dec = row.coord_dec
@@ -665,11 +665,9 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 band=eff_wl,
                 time=(time1, time2),
             )
-            all_results.append(result.to_table())
-        
-        table = Table()
-        for result in all_results:
-            table.add_row(result)
+            each_table = result.to_table()
+            table.add_row(each_table)
+
         
         print(f"Downloaded {len(table)} LSST SODA cutout images.")
         print(table)
