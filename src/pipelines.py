@@ -48,6 +48,7 @@ from lsst.rsp.service import get_siav2_service
 from lsst.rsp.utils import get_pyvo_auth
 from astropy.time import Time
 from pyvo.dal.adhoc import DatalinkResults, SodaQuery
+import lsst.geom as geom
 
 # ============================================================
 # Pipeline
