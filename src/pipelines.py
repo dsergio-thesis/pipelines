@@ -658,7 +658,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
         for row in tqdm(df.itertuples(), total=len(df), desc="Downloading LSST SODA Cutout Images"):
             target_ra = row.coord_ra
             target_dec = row.coord_dec
-            circle = (target_ra, target_dec, 0.05)
+            circle = (target_ra, target_dec, 0.1)
             result = service.search(
                 pos=circle,
                 calib_level=2,
