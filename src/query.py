@@ -220,9 +220,9 @@ class AstroosQueryLSST(AstroosQuery):
 
         self.credentials_file=credentials_file
 
-        self.tap_service = PyvoTAPClient(base_url="https://data.lsst.cloud/api/tap", 
-                                         credentials_file=self.credentials_file,
-                                         maxrecords=max_records)
+        self.tap_service = PyvoTAPClient(base_url="https://data.lsst.cloud/api/tap", maxrecords=max_records)
+                                        #  credentials_file=self.credentials_file,
+                                         
 
         # result = self.tap_service.sync("select top 10 objectId from dp1.Object")
         # print("LSST TAP Query Result:")
