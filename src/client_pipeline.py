@@ -26,21 +26,21 @@ if (sys.modules.get('transforms') is not None):
 if (sys.modules.get('utils') is not None):
     del sys.modules['utils']
 
-from astroos.fetch import AstroosFetchSDSS
-from astroos.query import AstroosQueryNED, \
+from fetch import AstroosFetchSDSS
+from query import AstroosQueryNED, \
     AstroosQuerySimbad, AstroosQuerySDSS, \
     AstroQueryUtils as aq_utils
-from astroos.pipelines import StageCatalogSDSS, \
+from pipelines import StageCatalogSDSS, \
     StageFilterCatalogSDSS, \
     StageCatalogSDSS_V2, \
     StageFetchSDSS_V2_ManualCutout, StageFetchSDSS_V2_AutoCutout, \
     StageFetchSDSS, StageFetchSDSS_V3_ManualCutout, \
     PipelineClassification
-from astroos.datasets import FITS_Image_Features_Dataset
+from datasets import FITS_Image_Features_Dataset
 
-from astroos.utils import plot_random_samples_from_dataset
+from utils import plot_random_samples_from_dataset
 
-from astroos.transforms import AddGaussianNoise, \
+from transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
     PolarTransform, \

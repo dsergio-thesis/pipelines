@@ -29,12 +29,12 @@ if (sys.modules.get('catalogs') is not None):
 if (sys.modules.get('fetch') is not None):
     del sys.modules['fetch']
 
-from astroos.catalogs import AstroosCatalogSDSS, \
+from catalogs import AstroosCatalogSDSS, \
     AstroosCatalogLSST
-from astroos.query import AstroosQueryNED, \
+from query import AstroosQueryNED, \
     AstroosQuerySimbad, AstroosQuerySDSS, \
     AstroQueryUtils as aq_utils, AstroosQueryLSST
-from astroos.fetch import AstroosFetchSDSS, \
+from fetch import AstroosFetchSDSS, \
     AstroosFetchLSST, AstroosFetchSDSSManualCutout, \
     AstroosFetchManualFitsCutout
 
