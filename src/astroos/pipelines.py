@@ -448,7 +448,14 @@ class StageCatalogLSST(DataPipelineStage):
         # first check cache
         if os.path.exists(f"{self.stage_dir}/{query_info}.csv"):
             print(f"File {self.stage_dir}/{query_info}.csv already exists. ")
-            table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
+            # first read the table
+            existing_table = Table.read(f"{self.stage_dir}/{query_info}.csv", format="csv")
+            existing_ids = set(existing_table['objectId'])
+            mask = [oid not in existing_ids for oid in table['objectId']]
+            new_rows = table[mask]
+            existing_table = vstack([existing_table, new_rows])
+
+            existing_table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
 
         else:
             table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)

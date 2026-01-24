@@ -120,7 +120,7 @@ if __name__ == "__main__":
             metadata=pipeline_metadata,
             max_records=max_records,
             dataset=dataset_cartesian,
-            minor_version=None,
+            minor_version="a3",
         ),
     ]
 
@@ -134,7 +134,7 @@ if __name__ == "__main__":
 
     pipelines[1].add_stages([
         StageCatalogLSST(),
-        # StageFetchLSSTSoda(dataset_cartesian),
+        StageFetchLSSTSoda(dataset_cartesian),
     ])
 
     for p in pipelines:
