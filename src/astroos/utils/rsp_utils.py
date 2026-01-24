@@ -4,7 +4,7 @@
 import sys
 
 
-def init_rsp_mode():
+def init_rsp():
 
     rsp_mode = False
     try:

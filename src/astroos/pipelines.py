@@ -45,8 +45,26 @@ from astropy.wcs import WCS
 
 if (sys.modules.get('src.astroos.utils.rsp_utils') is not None): 
     del sys.modules['src.astroos.utils.rsp_utils']
-from src.astroos.utils.rsp_utils import init_rsp_mode
-rsp_mode = init_rsp_mode()
+
+rsp_mode = False
+try:
+    from lsst.rsp import get_tap_service
+    from lsst.rsp.utils import get_pyvo_auth
+    from lsst.rsp.service import get_siav2_service
+    from lsst.rsp.utils import get_pyvo_auth
+    import lsst.geom as geom
+
+
+    # other LSST dependencies
+    from pyvo.dal.adhoc import DatalinkResults
+    from astropy.time import Time
+    from pyvo.dal.adhoc import DatalinkResults, SodaQuery
+
+
+    rsp_mode = True
+    print("LSST RSP mode enabled.")
+except ImportError:
+    print("LSST RSP mode disabled.")
 
 
 # ============================================================
