@@ -133,7 +133,7 @@ if __name__ == "__main__":
     # ])
 
     pipelines[1].add_stages([
-        # StageCatalogLSST(),
+        StageCatalogLSST(),
         # StageFetchLSSTSoda(dataset_cartesian),
     ])
 
