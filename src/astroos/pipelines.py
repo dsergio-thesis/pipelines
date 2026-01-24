@@ -716,7 +716,8 @@ class StageFetchLSSTSoda(DataPipelineStage):
         for row in tqdm(df.itertuples(), total=len(df), desc="Downloading LSST SODA Cutout Images"):
             target_ra = row.coord_ra
             target_dec = row.coord_dec
-            circle = (target_ra, target_dec, 0.2)
+            search_radius = 0.2
+            circle = (target_ra, target_dec, search_radius
             result = service.search(
                 pos=circle,
                 calib_level=2,
@@ -745,7 +746,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
                     print("sq: ", sq)
 
                     spherePoint = geom.SpherePoint(target_ra*geom.degrees, target_dec*geom.degrees)
-                    Radius = 0.1 * u.deg
+                    Radius = search_radius * u.deg
                     sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
                                 spherePoint.getDec().asDegrees() * u.deg,
                                 Radius)
@@ -764,6 +765,10 @@ class StageFetchLSSTSoda(DataPipelineStage):
                         # cutout_bytes is a FITS file in bytes
                         hdul = fits.open(io.BytesIO(cutout_bytes))
                         print(hdul.info())
+
+                        data = hdul[0].data
+                        tensor = torch.from_numpy(data)
+                        print(tensor.shape)
                     except Exception as e:
                         print("no valid hdul", e)
 
