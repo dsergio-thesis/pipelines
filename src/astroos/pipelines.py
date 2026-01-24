@@ -455,6 +455,8 @@ class StageCatalogLSST(DataPipelineStage):
             new_rows = table[mask]
             existing_table = vstack([existing_table, new_rows])
 
+            self.output = existing_table.to_pandas()
+
             existing_table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
 
         else:
