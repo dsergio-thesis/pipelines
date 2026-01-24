@@ -8,9 +8,9 @@ import numpy as np
 from skimage import color, measure, transform
 
 
-if (sys.modules.get('morphometryka') is not None): 
-    del sys.modules['morphometryka']
-from morphometryka import simple_segmentation, \
+if (sys.modules.get('src.astroos.morphometryka') is not None): 
+    del sys.modules['src.astroos.morphometryka']
+from src.astroos.morphometryka import simple_segmentation, \
     measure_morfometry, \
     centroid_flux
 

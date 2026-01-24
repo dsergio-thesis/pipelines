@@ -13,18 +13,18 @@ from astropy.coordinates import SkyCoord
 from astropy.coordinates import ICRS, Galactic, FK4, FK5
 from astropy import units as u
 
-if (sys.modules.get('query') is not None):
-    del sys.modules['query']
-if (sys.modules.get('fetch') is not None):
-    del sys.modules['fetch']
-if (sys.modules.get('pipelines') is not None):
-    del sys.modules['pipelines']
-if (sys.modules.get('datasets') is not None):
-    del sys.modules['datasets']
-if (sys.modules.get('transforms') is not None):
-    del sys.modules['transforms']
-if (sys.modules.get('utils') is not None):
-    del sys.modules['utils']
+if (sys.modules.get('src.astroos.query') is not None):
+    del sys.modules['src.astroos.query']
+if (sys.modules.get('src.astroos.fetch') is not None):
+    del sys.modules['src.astroos.fetch']
+if (sys.modules.get('src.astroos.pipelines') is not None):
+    del sys.modules['src.astroos.pipelines']
+if (sys.modules.get('src.astroos.datasets') is not None):
+    del sys.modules['src.astroos.datasets']
+if (sys.modules.get('src.astroos.transforms') is not None):
+    del sys.modules['src.astroos.transforms']
+if (sys.modules.get('src.astroos.utils') is not None):
+    del sys.modules['src.astroos.utils']
 
 from src.astroos.fetch import AstroosFetchSDSS
 from src.astroos.query import AstroosQueryNED, \
@@ -38,7 +38,7 @@ from src.astroos.pipelines import StageCatalogSDSS, \
     PipelineClassification, StageCatalogLSST,  StageFetchLSSTSoda, PipelineDummy
 from src.astroos.datasets import FITS_Image_Features_Dataset
 
-from src.astroos.utils import plot_random_samples_from_dataset
+from src.astroos.utils.utils import plot_random_samples_from_dataset
 
 from src.astroos.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
@@ -112,10 +112,6 @@ if __name__ == "__main__":
     pipelines = [
         PipelineDummy(
             name="dummy_pipeline",
-            metadata={},
-            max_records=5,
-            dataset=None,
-            minor_version=None,
         ),
         PipelineClassification(
             name=name,

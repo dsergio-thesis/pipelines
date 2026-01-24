@@ -1,27 +1,3 @@
-
-
-# astroquery
-from astroquery.ipac.ned import Ned
-from astroquery.simbad import Simbad
-from astroquery.sdss import SDSS
-from astroquery.fermi import FermiLAT
-from astroquery.skyview import SkyView
-
-
-# LSST
-from pyvo.dal.adhoc import DatalinkResults
-from lsst.rsp import get_tap_service
-from lsst.rsp.utils import get_pyvo_auth
-
-
-# astropy
-from astropy.coordinates import SkyCoord
-from astropy import units
-from astropy.table import Table
-from astropy.visualization import (ImageNormalize, PercentileInterval, AsinhStretch)
-from astropy.io import fits
-
-# other stuff
 import os
 import sys
 import re
@@ -32,14 +8,39 @@ import requests
 from io import StringIO
 import pandas as pd
 from PIL import Image
-if (sys.modules.get('morphometryka') is not None): 
-    del sys.modules['morphometryka']
-from morphometryka import simple_segmentation, measure_morfometry, morfomytry
+
+# astroquery
+from astroquery.ipac.ned import Ned
+from astroquery.simbad import Simbad
+from astroquery.sdss import SDSS
+from astroquery.fermi import FermiLAT
+from astroquery.skyview import SkyView
+
+
+if (sys.modules.get('src.astroos.utils.rsp_utils') is not None): 
+    del sys.modules['src.astroos.utils.rsp_utils']
+
+from src.astroos.utils.rsp_utils import init_rsp_mode, rsp_mode
+init_rsp_mode()
+
+# other LSST dependencies
+from pyvo.dal.adhoc import DatalinkResults
+
+# astropy
+from astropy.coordinates import SkyCoord
+from astropy import units
+from astropy.table import Table
+from astropy.visualization import (ImageNormalize, PercentileInterval, AsinhStretch)
+from astropy.io import fits
+
+if (sys.modules.get('src.astroos.morphometryka') is not None): 
+    del sys.modules['src.astroos.morphometryka']
+from src.astroos.morphometryka import simple_segmentation, measure_morfometry, morfomytry
 from abc import ABC, abstractmethod
 
-if (sys.modules.get('tap_clients') is not None): 
-    del sys.modules['tap_clients']
-from tap_clients import PyvoTAPClient
+if (sys.modules.get('src.astroos.tap_clients') is not None): 
+    del sys.modules['src.astroos.tap_clients']
+from src.astroos.tap_clients import PyvoTAPClient
 
 # ============================================================
 # AstroosQuery Abstract Base Class

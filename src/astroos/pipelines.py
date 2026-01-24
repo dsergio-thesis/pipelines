@@ -22,19 +22,19 @@ from io import BytesIO
 
 import warnings
 
-if (sys.modules.get('query') is not None):
-    del sys.modules['query']
-if (sys.modules.get('catalogs') is not None):
-    del sys.modules['catalogs']
-if (sys.modules.get('fetch') is not None):
-    del sys.modules['fetch']
+if (sys.modules.get('src.astroos.query') is not None):
+    del sys.modules['src.astroos.query']
+if (sys.modules.get('src.astroos.catalogs') is not None):
+    del sys.modules['src.astroos.catalogs']
+if (sys.modules.get('src.astroos.fetch') is not None):
+    del sys.modules['src.astroos.fetch']
 
-from catalogs import AstroosCatalogSDSS, \
+from src.astroos.catalogs import AstroosCatalogSDSS, \
     AstroosCatalogLSST
-from query import AstroosQueryNED, \
+from src.astroos.query import AstroosQueryNED, \
     AstroosQuerySimbad, AstroosQuerySDSS, \
     AstroQueryUtils as aq_utils, AstroosQueryLSST
-from fetch import AstroosFetchSDSS, \
+from src.astroos.fetch import AstroosFetchSDSS, \
     AstroosFetchLSST, AstroosFetchSDSSManualCutout, \
     AstroosFetchManualFitsCutout
 
@@ -43,12 +43,11 @@ from astropy.io import fits
 import requests
 from astropy.wcs import WCS
 
+if (sys.modules.get('src.astroos.utils.rsp_utils') is not None): 
+    del sys.modules['src.astroos.utils.rsp_utils']
+from src.astroos.utils.rsp_utils import init_rsp_mode, rsp_mode
+init_rsp_mode()
 
-from lsst.rsp.service import get_siav2_service
-from lsst.rsp.utils import get_pyvo_auth
-from astropy.time import Time
-from pyvo.dal.adhoc import DatalinkResults, SodaQuery
-import lsst.geom as geom
 
 # ============================================================
 # Pipeline
@@ -209,7 +208,7 @@ class PipelineDummy(Pipeline):
     Dummy data pipeline for testing.
     """
 
-    def __init__(self, name, max_records, metadata={}, minor_version=None):
+    def __init__(self, name, max_records=1, metadata={}, minor_version=None):
         super().__init__(name=name, metadata=metadata, max_records=max_records, minor_version=minor_version)
         print("Initialized Dummy Pipeline.")
 
