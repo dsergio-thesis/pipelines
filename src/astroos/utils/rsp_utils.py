@@ -8,7 +8,7 @@ rsp_mode = False
 def init_rsp_mode():
 
     rsp_mode = False
-    if (sys.modules.get('lsst') is not None):
+    if (sys.modules.get('lsst.rsp') is not None):
         from lsst.rsp import get_tap_service
         from lsst.rsp.utils import get_pyvo_auth
         from lsst.rsp.service import get_siav2_service

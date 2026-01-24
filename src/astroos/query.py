@@ -19,12 +19,10 @@ from astroquery.skyview import SkyView
 
 if (sys.modules.get('src.astroos.utils.rsp_utils') is not None): 
     del sys.modules['src.astroos.utils.rsp_utils']
-
 from src.astroos.utils.rsp_utils import init_rsp_mode, rsp_mode
 init_rsp_mode()
 
-# other LSST dependencies
-from pyvo.dal.adhoc import DatalinkResults
+
 
 # astropy
 from astropy.coordinates import SkyCoord
