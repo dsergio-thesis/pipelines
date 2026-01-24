@@ -713,11 +713,14 @@ class StageFetchLSSTSoda(DataPipelineStage):
         time2 = Time(60623.259, format="mjd", scale="tai")
 
         table = None
+
+        tensors = []
+
         for row in tqdm(df.itertuples(), total=len(df), desc="Downloading LSST SODA Cutout Images"):
             target_ra = row.coord_ra
             target_dec = row.coord_dec
             search_radius = 0.2
-            circle = (target_ra, target_dec, search_radius
+            circle = (target_ra, target_dec, search_radius)
             result = service.search(
                 pos=circle,
                 calib_level=2,
@@ -766,8 +769,13 @@ class StageFetchLSSTSoda(DataPipelineStage):
                         hdul = fits.open(io.BytesIO(cutout_bytes))
                         print(hdul.info())
 
-                        data = hdul[0].data
-                        tensor = torch.from_numpy(data)
+                        arr = hdul[1].data
+                        if not arr.dtype.isnative:
+                            arr = arr.view(arr.dtype.newbyteorder('=')) 
+
+
+                        tensor = torch.from_numpy(arr)
+                        tensors.append[tensor]
                         print(tensor.shape)
                     except Exception as e:
                         print("no valid hdul", e)
@@ -787,6 +795,9 @@ class StageFetchLSSTSoda(DataPipelineStage):
         if table is not None:
             print(f"Downloaded {len(table)} LSST SODA cutout images.")
             print(table)
+
+        torch.save(tensors, f"{self.pipeline.dataset.dir}/X_train.pt")
+        print(f"Saved file: {self.pipeline.dataset.dir}/X_train.pt")
 
 # ============================================================
 # StageFilterCatalogSDSS

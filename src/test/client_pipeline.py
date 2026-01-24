@@ -103,7 +103,7 @@ if __name__ == "__main__":
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cartesian = FITS_Image_Features_Dataset(
-        dir="./data/demo2",
+        dir="./data/demo3",
         labels_init_file="./sdss_morph_types_info.csv",
         N_bands=5, 
         N_features=4, 
