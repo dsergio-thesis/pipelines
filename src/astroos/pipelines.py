@@ -200,6 +200,29 @@ class PipelineClassification(Pipeline):
         pass
 
 
+
+# ============================================================
+# PipelineDummy
+# ============================================================
+class PipelineDummy(Pipeline):
+    """
+    Dummy data pipeline for testing.
+    """
+
+    def __init__(self, name, max_records, metadata={}, minor_version=None):
+        super().__init__(name=name, metadata=metadata, max_records=max_records, minor_version=minor_version)
+        print("Initialized Dummy Pipeline.")
+
+    def _validate_prev_stage(self):
+        return True
+    
+    def run(self):
+        print("Running Dummy Pipeline...")
+
+    def prepare_pipeline(self):
+        pass
+
+
 # ============================================================
 # DataPipelineStage
 # ============================================================
