@@ -122,7 +122,7 @@ pipelines = [
 
 pipelines[0].add_stages([
     StageCatalogLSST(),
-    StageFetchLSSTSoda(dataset_cartesian),
+    # StageFetchLSSTSoda(dataset_cartesian),
 ])
 
 for p in pipelines:

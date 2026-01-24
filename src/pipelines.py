@@ -374,6 +374,7 @@ class StageCatalogLSST(DataPipelineStage):
             AND refExtendedness = 1
         """
 
+        # Extended Chandra Deep Field South (ECDFS)
         query = \
         """
         SELECT TOP {max_records} objectId, coord_ra, coord_dec, g_cModelMag, g_cModelMagErr, refExtendedness
