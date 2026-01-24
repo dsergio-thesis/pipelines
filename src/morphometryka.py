@@ -1,18 +1,3 @@
-"""
-Morfometryka morphometric measures.
-
-Based on:
-Ferrari, F., de Carvalho, R.R., Trevisan, M. 2015, "Morfometryka — A New Way of Establishing
-Morphological Classification of Galaxies", arXiv:1509.05430. :contentReference[oaicite:1]{index=1}
-
-Notes:
-- This is a practical, reproducible *approximation* of the original algorithm's measurements.
-- It focuses on robust, well-documented nonparametric measures: concentration, asymmetry,
-  smoothness (clumpiness), entropy, and a spirality proxy.
-- For production / catalog-scale use you would add: better segmentation/deblending, PSF
-  handling, masking of neighbors, photometric calibration, error propagation, and optional
-  parametric fits (Sérsic).
-"""
 
 from typing import Tuple, Optional
 import numpy as np
@@ -22,13 +7,10 @@ from skimage import measure, filters, morphology
 from skimage.measure import label, regionprops
 from math import log10
 
-# --- Utility functions ---
-
-
 def sigma_clip_background(image: np.ndarray, mask: Optional[np.ndarray] = None,
                           sigma: float = 3.0, iters: int = 5) -> Tuple[float, float]:
     """
-    Estimate background mean and std using iterative sigma-clipping.
+    Background mean and std using iterative sigma-clipping.
 
     Parameters
     ----------
@@ -80,12 +62,12 @@ def simple_segmentation(
         m_label: str = None,
     ) -> np.ndarray:
     """
-    A simple source segmentation to produce a galaxy mask.
+    Source segmentation to produce a galaxy mask.
 
     Steps:
     - Estimate background via sigma clipping
     - Threshold at mean + nsigma * std
-    - Keep largest connected component (assumed to be target galaxy) and remove small objects
+    - Keep largest connected component and remove small objects
 
     Parameters
     ----------
@@ -202,9 +184,7 @@ def growth_curve_radii(image: np.ndarray, mask: np.ndarray,
 def concentration_c(image: np.ndarray, mask: np.ndarray, center: Tuple[float, float], cmin=0.0, cmax=5.0) -> float:
     """
     Concentration index C = 5 * log10(r80 / r20)
-
     Where rX are radii containing X% of the total flux (measured inside mask).
-    This matches the common concentration definition used in galaxy morphology literature.
 
     Returns
     -------
@@ -350,7 +330,7 @@ def entropy_measure(image: np.ndarray, mask: np.ndarray, nbins: int = 64) -> flo
 
 def spirality_proxy(image: np.ndarray, mask: np.ndarray, center: Tuple[float, float]) -> float:
     """
-    A simple *spirality* proxy (σ_psi) based on gradients:
+    spirality (σ_psi) based on gradients:
 
     - compute image gradients (dy, dx) and gradient angle psi = atan2(dy, dx)
     - for each pixel inside mask compute radial angle theta_rad = atan2(y - yc, x - xc)
@@ -390,9 +370,6 @@ def spirality_proxy(image: np.ndarray, mask: np.ndarray, center: Tuple[float, fl
     # scale mad (0..1) to radians by multiplying by pi/2 for intuitive scale, then average
     sigma_psi = 0.5 * circ_dispersion + 0.5 * (mad * np.pi / 2.0)
     return float(sigma_psi)
-
-
-# --- Top-level wrapper ---
 
 
 def measure_morfometry(image: np.ndarray, mask: Optional[np.ndarray] = None,
