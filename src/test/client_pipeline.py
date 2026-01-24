@@ -85,6 +85,8 @@ if __name__ == "__main__":
         max_records = int(sys.argv[1])
     else:
         max_records = 3
+    
+    print(f"Max records to fetch: {max_records}")
 
     coords = SkyCoord(query_obj, frame=ICRS, unit=(u.hourangle, u.deg))
     radius_hour = u.hourangle *     0

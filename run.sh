@@ -1,1 +1,1 @@
-python -m src.test.client_pipeline
+python -m src.test.client_pipeline "$@"
