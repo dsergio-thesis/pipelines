@@ -724,37 +724,64 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 band=eff_wl,
                 time=(time1, time2),
             )
-            datalink_url = result[0].access_url
-            dl_result = DatalinkResults.from_result_url(datalink_url,
-                                                        session=get_pyvo_auth())
-            f"Datalink status: {dl_result.status}. Datalink service url: {datalink_url}"
-            sq = SodaQuery.from_resource(dl_result,
-                             dl_result.get_adhocservice_by_id("cutout-sync-exposure"),
-                             session=get_pyvo_auth())
+            print("Result:")
+            print(result)
 
-            spherePoint = geom.SpherePoint(target_ra*geom.degrees, target_dec*geom.degrees)
-            Radius = 0.01 * u.deg
-            sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
-                        spherePoint.getDec().asDegrees() * u.deg,
-                        Radius)
-            cutout_bytes = sq.execute_stream().read()
-            sq.raise_if_error()
-            
-            # cutout_bytes is a FITS file in bytes
-            hdul = fits.open(io.BytesIO(cutout_bytes))
-            print(hdul.info())
+            if (len(result) > 0):
 
-            if table is None:
-                table = result.to_table()
-            else:
-                table = vstack([table, result.to_table()], join_type='outer', metadata_conflicts='silent')
+                datalink_url = result[0].access_url
+                dl_result = DatalinkResults.from_result_url(datalink_url,
+                                                            session=get_pyvo_auth())
+                print(f"Datalink status: {dl_result.status}. Datalink service url: {datalink_url}")
+                # continue
 
-            print(f"Fetched {len(result)} images for objectId {row.objectId} at RA: {target_ra}, Dec: {target_dec}")
-            print(result.to_table())
+                try:
 
-        
-        print(f"Downloaded {len(table)} LSST SODA cutout images.")
-        print(table)
+                    
+                    sq = SodaQuery.from_resource(dl_result,
+                                     dl_result.get_adhocservice_by_id("cutout-sync-exposure"),
+                                     session=get_pyvo_auth())
+
+                    print("sq: ", sq)
+
+                    spherePoint = geom.SpherePoint(target_ra*geom.degrees, target_dec*geom.degrees)
+                    Radius = 0.1 * u.deg
+                    sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
+                                spherePoint.getDec().asDegrees() * u.deg,
+                                Radius)
+                    
+                    stream = sq.execute_stream()
+                    
+                    try:
+                        cutout_bytes = stream.read()
+
+                    except Exception as e:
+                        print("Stream read failed.")
+                        continue
+
+                    
+                    try:
+                        # cutout_bytes is a FITS file in bytes
+                        hdul = fits.open(io.BytesIO(cutout_bytes))
+                        print(hdul.info())
+                    except Exception as e:
+                        print("no valid hdul", e)
+
+
+
+                    if table is None:
+                        table = result.to_table()
+                    else:
+                        table = vstack([table, result.to_table()], join_type='outer', metadata_conflicts='silent')
+
+                    print(f"Fetched {len(result)} images for objectId {row.objectId} at RA: {target_ra}, Dec: {target_dec}")
+                    print(result.to_table())
+                except Exception as e:
+                    print("an error has occured:", e)
+
+        if table is not None:
+            print(f"Downloaded {len(table)} LSST SODA cutout images.")
+            print(table)
 
 # ============================================================
 # StageFilterCatalogSDSS
