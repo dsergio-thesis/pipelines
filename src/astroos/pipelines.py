@@ -729,6 +729,16 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 print(f"Fetched LSST SODA cutout images for RA: {target_ra}, DEC: {target_dec}, shape: {nchw.shape}")
 
                 hdu = fits.PrimaryHDU(nchw[row.Index].numpy())
+                hdu.header['label'] = 0
+                hdu.header['ra'] = target_ra
+                hdu.header['dec'] = target_dec
+                hdu.header['main_id'] = row.objectId
+                hdu.header['rvz_redshift'] = '-999'
+                hdu.header['min_ra'] = target_ra - 0.0138889
+                hdu.header['max_ra'] = target_ra + 0.0138889
+                hdu.header['min_dec'] = target_dec - 0.0138889
+                hdu.header['max_dec'] = target_dec + 0.0138889
+                self.dataset.append(hdu)
                 
 
             except Exception as e:
