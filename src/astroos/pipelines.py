@@ -808,10 +808,6 @@ class StageFetchLSSTSoda(DataPipelineStage):
             print(f"Downloaded {len(table)} LSST SODA cutout images.")
             print(table)
 
-        nchw = torch.rand((len(tensors), 1, 100, 100))
-        for tensor in tensors:
-            nchw = torch.cat((nchw, tensor.unsqueeze(0)), dim=0)
-
 
         print("nchw shape:", nchw.shape)
         torch.save(nchw, f"{self.pipeline.dataset.dir}/X_train.pt")
