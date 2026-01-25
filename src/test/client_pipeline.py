@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
     pipelines[1].add_stages([
         StageCatalogLSST(),
-        StageFetchLSSTSoda(dataset_cart_lsst),
+        # StageFetchLSSTSoda(dataset_cart_lsst),
     ])
 
     pipelines[2].add_stages([
