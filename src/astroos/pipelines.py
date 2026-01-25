@@ -728,7 +728,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 nchw[row.Index] = torch.tensor(band_images, dtype=torch.float32)
                 print(f"Fetched LSST SODA cutout images for RA: {target_ra}, DEC: {target_dec}, shape: {nchw.shape}")
 
-                hdu = fits.PrimaryHDU(nchw[row.Index].numpy())
+                hdu = fits.PrimaryHDU(data=nchw[row.Index].numpy(), header=fits.Header())
                 hdu.header['label'] = 0
                 hdu.header['ra'] = target_ra
                 hdu.header['dec'] = target_dec
@@ -738,7 +738,10 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 hdu.header['max_ra'] = target_ra + 0.0138889
                 hdu.header['min_dec'] = target_dec - 0.0138889
                 hdu.header['max_dec'] = target_dec + 0.0138889
-                self.dataset.append(hdu)
+                hdulist = fits.HDUList([hdu])
+                hdu_image = fits.ImageHDU(data=nchw[row.Index].numpy(), name='IMAGE')
+                hdulist.append(hdu_image)
+                self.dataset.append(hdulist)
                 
 
             except Exception as e:
