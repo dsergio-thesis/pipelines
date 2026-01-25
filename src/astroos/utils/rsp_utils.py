@@ -139,7 +139,7 @@ def get_cutout_bands(target_ra, target_dec, bands):
 
         cutout = ExposureF(mem)
         cutout = pad_exposure_ml(cutout)
-        band_images[band] = cutout
+        band_images[band] = cutout.getImage().getArray()
         print(f"cutout image shape: {cutout.getImage().getDimensions()}")
         print(f"cutout type: {type(cutout)}")
         print(f"cutout metadata: {cutout.getMetadata()}")

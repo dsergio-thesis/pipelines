@@ -42,9 +42,11 @@ import bz2, io
 from astropy.io import fits
 import requests
 from astropy.wcs import WCS
+from astropy.io import fits
 
 if (sys.modules.get('src.astroos.utils.rsp_utils') is not None): 
     del sys.modules['src.astroos.utils.rsp_utils']
+from src.astroos.utils.rsp_utils import get_cutout_bands
 
 rsp_mode = False
 try:
@@ -693,120 +695,37 @@ class StageFetchLSSTSoda(DataPipelineStage):
     def _validate_prev_stage(self):
         return True
 
-    def center_crop(self, x, crop_h, crop_w):
-        _, _, h, w = x.shape
-        top = (h - crop_h) // 2
-        left = (w - crop_w) // 2
-        return x[:, :, top:top+crop_h, left:left+crop_w]
-
     def run(self):
         
         # read the positions from the previous stage
 
         df = self.prev_stage.output
 
-        print(f"Fetching LSST SODA cutout images for {len(df)} objects...")
+        n = len(df)
 
-        ra = df['coord_ra'].to_list()
-        dec = df['coord_dec'].to_list()
+        print(f"Fetching LSST SODA cutout images for {n} objects...")
 
-        # list of tuples
-        positions = list(zip(ra, dec))
+        
 
-        service = get_siav2_service("dp1")
-
-        eff_wl = 622.1e-09
-        time1 = Time(60623.256, format="mjd", scale="tai")
-        time2 = Time(60623.259, format="mjd", scale="tai")
-
-        table = None
-
-        hdul_list = []
-
-        for row in tqdm(df.itertuples(), total=len(df), desc="Downloading LSST SODA Cutout Images"):
+        for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
 
             target_ra = row.coord_ra
             target_dec = row.coord_dec
-            search_radius = 0.2
-            circle = (target_ra, target_dec, search_radius)
-            result = service.search(
-                pos=circle,
-                calib_level=2,
-                dpsubtype='lsst.visit_image',
-                band=eff_wl,
-                time=(time1, time2),
-            )
-            print("Result:")
-            print(result)
 
-            if (len(result) > 0):
+            try:
+                band_images = get_cutout_bands(
+                    ra=target_ra,
+                    dec=target_dec,
+                )
 
-                datalink_url = result[0].access_url
-                dl_result = DatalinkResults.from_result_url(datalink_url,
-                                                            session=get_pyvo_auth())
-                print(f"Datalink status: {dl_result.status}. Datalink service url: {datalink_url}")
-                # continue
+                nchw = torch.tensor(band_images, dtype=torch.float32)
+                print(f"Fetched LSST SODA cutout images for RA: {target_ra}, DEC: {target_dec}, shape: {nchw.shape}")
+                
 
-                try:
+            except Exception as e:
+                print("an error has occured:", e)
 
-                    
-                    sq = SodaQuery.from_resource(dl_result,
-                                     dl_result.get_adhocservice_by_id("cutout-sync-exposure"),
-                                     session=get_pyvo_auth())
-
-                    print("sq: ", sq)
-
-                    spherePoint = geom.SpherePoint(target_ra*geom.degrees, target_dec*geom.degrees)
-                    Radius = search_radius * u.deg
-                    sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
-                                spherePoint.getDec().asDegrees() * u.deg,
-                                Radius)
-                    
-                    stream = sq.execute_stream()
-                    
-                    try:
-                        cutout_bytes = stream.read()
-
-                        mem = MemFileManager(len(cutout_bytes))
-                        mem.setData(cutout_bytes, len(cutout_bytes))
-
-                    except Exception as e:
-                        print("Stream read failed.")
-                        continue
-
-                    
-                    try:
-                        # cutout_bytes is a FITS file in bytes
-                        hdul = fits.open(io.BytesIO(mem))
-                        print(hdul.info())
-
-                        hdul_list.append(hdul)
-
-
-                        # arr = hdul[1].data
-                        # if not arr.dtype.isnative:
-                        #     arr = arr.view(arr.dtype.newbyteorder('=')) 
-                        # cropped_arr = self.center_crop(arr, 100, 100)
-                        # tensor = torch.from_numpy(cropped_arr)
-                        # print(tensor.shape)
-                    except Exception as e:
-                        print("no valid hdul", e)
-
-
-
-                    if table is None:
-                        table = result.to_table()
-                    else:
-                        table = vstack([table, result.to_table()], join_type='outer', metadata_conflicts='silent')
-
-                    print(f"Fetched {len(result)} images for objectId {row.objectId} at RA: {target_ra}, Dec: {target_dec}")
-                    print(result.to_table())
-                except Exception as e:
-                    print("an error has occured:", e)
-
-        if table is not None:
-            print(f"Downloaded {len(table)} LSST SODA cutout images.")
-            print(table)
+        
 
 
         print("nchw shape:", nchw.shape)
