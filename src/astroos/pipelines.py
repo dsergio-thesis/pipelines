@@ -692,6 +692,12 @@ class StageFetchLSSTSoda(DataPipelineStage):
     def _validate_prev_stage(self):
         return True
 
+    def center_crop(self, x, crop_h, crop_w):
+        _, _, h, w = x.shape
+        top = (h - crop_h) // 2
+        left = (w - crop_w) // 2
+        return x[:, :, top:top+crop_h, left:left+crop_w]
+
     def run(self):
         
         # read the positions from the previous stage
@@ -774,8 +780,11 @@ class StageFetchLSSTSoda(DataPipelineStage):
                             arr = arr.view(arr.dtype.newbyteorder('=')) 
 
 
-                        tensor = torch.from_numpy(arr)
-                        tensors.append[tensor]
+                        cropped_arr = self.center_crop(arr, 100, 100)
+
+                        tensor = torch.from_numpy(cropped_arr)
+
+                        tensors.append(tensor)
                         print(tensor.shape)
                     except Exception as e:
                         print("no valid hdul", e)
@@ -796,7 +805,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
             print(f"Downloaded {len(table)} LSST SODA cutout images.")
             print(table)
 
-        nchw = torch.uniform(0, 1, (len(tensors), 1, 100, 100))
+        nchw = torch.rand((len(tensors), 1, 100, 100))
         for tensor in tensors:
             nchw = torch.cat((nchw, tensor.unsqueeze(0)), dim=0)
 
