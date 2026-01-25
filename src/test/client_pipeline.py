@@ -99,11 +99,20 @@ if __name__ == "__main__":
         'query_radius': radius,
     }
 
-    name = "p5"
+    name = "p6"
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cartesian = FITS_Image_Features_Dataset(
-        dir="./data/demo3",
+        dir="./data/sdss-1",
+        labels_init_file="./sdss_morph_types_info.csv",
+        N_bands=5, 
+        N_features=4, 
+        transform=transformCartesian,
+        photometric_transform=MorphometryFeatures()
+    )
+
+    dataset_cart_sdss = FITS_Image_Features_Dataset(
+        dir="./data/sdss-1",
         labels_init_file="./sdss_morph_types_info.csv",
         N_bands=5, 
         N_features=4, 
@@ -120,23 +129,34 @@ if __name__ == "__main__":
             metadata=pipeline_metadata,
             max_records=max_records,
             dataset=dataset_cartesian,
-            minor_version="a3",
+            minor_version="lsst-1",
+        ),
+        PipelineClassification(
+            name=name,
+            metadata=pipeline_metadata,
+            max_records=max_records,
+            dataset=dataset_cart_sdss,
+            minor_version="sdss-1",
         ),
     ]
 
     pipelines[0].add_stages([
     ])
 
-    # pipelines[1].add_stages([
-    #     StageCatalogSDSS_V2(),
-    #     StageFetchSDSS_V3_ManualCutout(dataset_cartesian),
-    # ])
-
     pipelines[1].add_stages([
         StageCatalogLSST(),
         StageFetchLSSTSoda(dataset_cartesian),
     ])
 
-    for p in pipelines:
-        p.run_pipeline()
+    pipelines[2].add_stages([
+        StageCatalogSDSS_V2(),
+        StageFetchSDSS_V3_ManualCutout(dataset_cart_sdss),
+    ])
+
+    
+
+    pipelines[2].run_pipeline()
+
+    # for p in pipelines:
+    #     p.run_pipeline()
 

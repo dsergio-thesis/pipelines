@@ -777,7 +777,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
                     
                     try:
                         # cutout_bytes is a FITS file in bytes
-                        hdul = fits.open(io.BytesIO(cutout_bytes))
+                        hdul = fits.open(io.BytesIO(mem))
                         print(hdul.info())
 
                         hdul_list.append(hdul)
