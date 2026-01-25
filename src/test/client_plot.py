@@ -2,18 +2,18 @@ import sys
 from torchvision import transforms
 import cmcrameri.cm as cmc
 
-if (sys.modules.get('utils') is not None):
-    del sys.modules['utils']
-from astroos.utils import plot_random_samples_from_dataset
+if (sys.modules.get('src.astroos.utils.utils') is not None):
+    del sys.modules['src.astroos.utils.utils']
+from src.astroos.utils.utils import plot_random_samples_from_dataset
 
-if (sys.modules.get('datasets') is not None):
-    del sys.modules['datasets']
-from astroos.datasets import FITS_Image_Features_Dataset
+if (sys.modules.get('src.astroos.datasets') is not None):
+    del sys.modules['src.astroos.datasets']
+from src.astroos.datasets import FITS_Image_Features_Dataset
 
-if (sys.modules.get('transforms') is not None):
-    del sys.modules['transforms']
+if (sys.modules.get('src.astroos.transforms') is not None):
+    del sys.modules['src.astroos.transforms']
 
-from astroos.transforms import AddGaussianNoise, \
+from src.astroos.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
     PolarTransform, \
@@ -42,7 +42,7 @@ cmap = 'gist_ncar'
 cmap = cmc.batlow
 
 dataset_cartesian = FITS_Image_Features_Dataset(
-    dir="data/demo",
+    dir="data/demo3",
     N_bands=5, 
     N_features=4, 
     transform=transformCartesian,
