@@ -42,8 +42,8 @@ cmap = 'gist_ncar'
 cmap = cmc.batlow
 
 dataset_cartesian = FITS_Image_Features_Dataset(
-    dir="data/sdss",
-    N_bands=5, 
+    dir="data/lsst-1",
+    N_bands=2, 
     N_features=4, 
     transform=transformCartesian,
     photometric_transform=MorphometryFeatures()

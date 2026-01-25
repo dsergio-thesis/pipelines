@@ -706,7 +706,13 @@ class StageFetchLSSTSoda(DataPipelineStage):
         print(f"Fetching LSST SODA cutout images for {n} objects...")
 
         
+        bands = ['u', 'g', 'r', 'i', 'z']
+        bands = ['u', 'g']
 
+        num_bands = len(bands)
+        
+        
+        nchw = torch.zeros((n, num_bands, 200, 200), dtype=torch.float32)
         for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
 
             target_ra = row.coord_ra
@@ -716,10 +722,13 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 band_images = get_cutout_bands(
                     ra=target_ra,
                     dec=target_dec,
+                    bands = ['u', 'g']
                 )
 
-                nchw = torch.tensor(band_images, dtype=torch.float32)
+                nchw[row.Index] = torch.tensor(band_images, dtype=torch.float32)
                 print(f"Fetched LSST SODA cutout images for RA: {target_ra}, DEC: {target_dec}, shape: {nchw.shape}")
+
+                hdu = fits.PrimaryHDU(nchw[row.Index].numpy())
                 
 
             except Exception as e:
@@ -731,6 +740,10 @@ class StageFetchLSSTSoda(DataPipelineStage):
         print("nchw shape:", nchw.shape)
         torch.save(nchw, f"{self.pipeline.dataset.dir}/X_train.pt")
         print(f"Saved file: {self.pipeline.dataset.dir}/X_train.pt")
+        # placeholder labels
+        labels_tensor = torch.zeros((n,), dtype=torch.int64)
+        torch.save(labels_tensor, f"{self.pipeline.dataset.dir}/y_train.pt")
+        print(f"Saved file: {self.pipeline.dataset.dir}/y_train.pt")
 
 # ============================================================
 # StageFilterCatalogSDSS

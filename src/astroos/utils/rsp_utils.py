@@ -99,7 +99,7 @@ def pad_exposure_ml(exp, target=200, fill_value=0.0):
 
     return new_exp
 
-def get_cutout_bands(target_ra, target_dec, bands):
+def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
 
 
     service = get_siav2_service("dp1")
