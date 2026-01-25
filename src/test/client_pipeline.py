@@ -102,8 +102,8 @@ if __name__ == "__main__":
     name = "p6"
     labels_file = "./sdss_morph_types_info.csv"
 
-    dataset_cartesian = FITS_Image_Features_Dataset(
-        dir="./data/sdss-1",
+    dataset_cart_lsst = FITS_Image_Features_Dataset(
+        dir="./data/lsst-1",
         labels_init_file="./sdss_morph_types_info.csv",
         N_bands=5, 
         N_features=4, 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
             name=name,
             metadata=pipeline_metadata,
             max_records=max_records,
-            dataset=dataset_cartesian,
+            dataset=dataset_cart_lsst,
             minor_version="lsst-1",
         ),
         PipelineClassification(
@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
     pipelines[1].add_stages([
         StageCatalogLSST(),
-        StageFetchLSSTSoda(dataset_cartesian),
+        StageFetchLSSTSoda(dataset_cart_lsst),
     ])
 
     pipelines[2].add_stages([
@@ -155,7 +155,7 @@ if __name__ == "__main__":
 
     
 
-    pipelines[2].run_pipeline()
+    pipelines[1].run_pipeline()
 
     # for p in pipelines:
     #     p.run_pipeline()
