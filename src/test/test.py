@@ -30,53 +30,25 @@ from photutils.aperture import SkyEllipticalAperture
 import galsim as gs
 from lsst.gauss2d import Ellipse, EllipseMajor, Covariance
 
+from test3 import get_cutout_bands
+
+
 service = get_siav2_service("dp1")
 
 
 target_ra = 52.74819403
 target_dec = -27.8597582
 
-spherePoint = geom.SpherePoint(target_ra*geom.degrees, target_dec*geom.degrees)
 
-search_radius = 0.01
-circle = (target_ra, target_dec, search_radius)
-results = service.search(
-    pos=circle,
-    calib_level=3,
-)
 
-bands = ['u', 'g', 'r', 'i', 'z']
-band_images = {}
-
-for band in bands: 
-    table = results.to_table()
-    tx = np.where((table['dataproduct_subtype'] == 'lsst.deep_coadd')
-                & (table['lsst_band'] == band))[0]
-
-    print("tx: ", tx)
-
-    datalink_url = results[tx[0].item()].access_url
-    dl = DatalinkResults.from_result_url(datalink_url, session=get_pyvo_auth())
-
-    sq = SodaQuery.from_resource(dl,
-                                 dl.get_adhocservice_by_id("cutout-sync-exposure"),
-                                 session=get_pyvo_auth())
-
-    sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
-                 spherePoint.getDec().asDegrees() * u.deg,
-                 search_radius * u.deg)
-    cutout_bytes = sq.execute_stream().read()
-    mem = MemFileManager(len(cutout_bytes))
-    mem.setData(cutout_bytes, len(cutout_bytes))
-
-    cutout = ExposureF(mem)
-    band_images[band] = cutout
-    print(f"Retrieved {band}-band cutout image.")
+bands = ['u', 'g']
+band_images = get_cutout_bands(target_ra, target_dec, bands)
 
 # Display the images using matplotlib
 fig, axes = plt.subplots(1, len(bands), figsize=(15, 5))
 for ax, band in zip(axes, bands):
     image = band_images[band].getMaskedImage().getImage()
+    print(f"type of image.array: {type(image.array)}, shape: {image.array.shape}")
     ax.set_title(f'{band}-band')
     ax.axis('off')
 
