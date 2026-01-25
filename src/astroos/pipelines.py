@@ -721,7 +721,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
 
         table = None
 
-        tensors = []
+        hdul_list = []
 
         for row in tqdm(df.itertuples(), total=len(df), desc="Downloading LSST SODA Cutout Images"):
 
@@ -780,17 +780,15 @@ class StageFetchLSSTSoda(DataPipelineStage):
                         hdul = fits.open(io.BytesIO(cutout_bytes))
                         print(hdul.info())
 
-                        arr = hdul[1].data
-                        if not arr.dtype.isnative:
-                            arr = arr.view(arr.dtype.newbyteorder('=')) 
+                        hdul_list.append(hdul)
 
 
-                        cropped_arr = self.center_crop(arr, 100, 100)
-
-                        tensor = torch.from_numpy(cropped_arr)
-
-                        tensors.append(tensor)
-                        print(tensor.shape)
+                        # arr = hdul[1].data
+                        # if not arr.dtype.isnative:
+                        #     arr = arr.view(arr.dtype.newbyteorder('=')) 
+                        # cropped_arr = self.center_crop(arr, 100, 100)
+                        # tensor = torch.from_numpy(cropped_arr)
+                        # print(tensor.shape)
                     except Exception as e:
                         print("no valid hdul", e)
 
