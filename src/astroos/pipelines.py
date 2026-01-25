@@ -53,6 +53,7 @@ try:
     from lsst.rsp.service import get_siav2_service
     from lsst.rsp.utils import get_pyvo_auth
     import lsst.geom as geom
+    from lsst.afw.fits import MemFileManager
 
 
     # other LSST dependencies
@@ -723,6 +724,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
         tensors = []
 
         for row in tqdm(df.itertuples(), total=len(df), desc="Downloading LSST SODA Cutout Images"):
+
             target_ra = row.coord_ra
             target_dec = row.coord_dec
             search_radius = 0.2
@@ -764,6 +766,9 @@ class StageFetchLSSTSoda(DataPipelineStage):
                     
                     try:
                         cutout_bytes = stream.read()
+
+                        mem = MemFileManager(len(cutout_bytes))
+                        mem.setData(cutout_bytes, len(cutout_bytes))
 
                     except Exception as e:
                         print("Stream read failed.")
