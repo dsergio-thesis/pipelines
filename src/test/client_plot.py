@@ -42,10 +42,8 @@ cmap = 'gist_ncar'
 cmap = cmc.batlow
 
 dataset_cartesian = FITS_Image_Features_Dataset(
-    dir="data/lsst-2",
-    N_bands=2, 
-    N_features=4, 
-    transform=transformCartesian,
+    dir="data/lsst-3",
+    N_bands=5, 
     photometric_transform=None
 )
 
@@ -57,6 +55,6 @@ plot_random_samples_from_dataset(
     seed=random_seed, label_definitions=dataset_cartesian.labels.get_labels(), 
     cmap=cmap,
     plot_title="Multi-band Image Cutouts",
-    plot_filename="demo_cartesian_transform.png",
+    plot_filename="lsst_cart.png",
     simple_plot=False,
 )

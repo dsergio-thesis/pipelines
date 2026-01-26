@@ -297,7 +297,7 @@ def plot_random_samples_from_dataset(
 
 
     bands = ['u', 'g', 'r', 'i', 'z']
-    bands = ['ul', 'g']
+    # bands = ['u', 'g']
     num_rows = num_samples_to_display
     num_cols = len(bands) 
 
@@ -376,6 +376,10 @@ def plot_random_samples_from_dataset(
             features = np.array(features, dtype=np.float32)
             # print(f"features: {features} features.shape: {features.shape}")
             x = np.array([0, 1, 2, 3])
+
+            # set features to random numbers
+            features = np.random.uniform(0, 1, size=(4)) 
+
             ax_cash.bar(x, features, width=0.25, color='skyblue', edgecolor='black')
             # ax_cash.scatter(x, features, marker='o', color='blue')
             ax_cash.set_xticks(x)

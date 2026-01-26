@@ -707,7 +707,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
 
         
         bands = ['u', 'g', 'r', 'i', 'z']
-        bands = ['u', 'g']
+        # bands = ['u', 'g']
 
         num_bands = len(bands)
         
@@ -721,7 +721,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
             band_images = get_cutout_bands(
                 target_ra=target_ra,
                 target_dec=target_dec,
-                bands = ['u', 'g']
+                bands = bands 
             )
 
             nchw[row.Index] = torch.tensor(band_images, dtype=torch.float32)
