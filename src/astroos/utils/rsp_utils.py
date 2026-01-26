@@ -140,6 +140,9 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
         cutout = ExposureF(mem)
         cutout = pad_exposure_ml(cutout)
         band_images[i] = cutout.getImage().getArray()
+        # save as grayscale image
+        r = np.random.rand()
+        plt.imsave(f"cutout_{band}_{r}.png", cutout.getImage().getArray(), cmap='gray')
         print(f"cutout image shape: {cutout.getImage().getDimensions()}")
         print(f"cutout type: {type(cutout)}")
         print(f"cutout metadata: {cutout.getMetadata()}")
