@@ -297,8 +297,9 @@ def plot_random_samples_from_dataset(
 
 
     bands = ['u', 'g', 'r', 'i', 'z']
+    bands = ['ul', 'g']
     num_rows = num_samples_to_display
-    num_cols = 5  # number of bands
+    num_cols = len(bands) 
 
     fig = plt.figure(figsize=(16, num_samples_to_display * 4), constrained_layout=True)
     fig.suptitle(plot_title, fontsize=24)

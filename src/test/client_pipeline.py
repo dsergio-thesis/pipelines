@@ -103,12 +103,12 @@ if __name__ == "__main__":
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cart_lsst = FITS_Image_Features_Dataset(
-        dir="./data/lsst-1",
+        dir="./data/lsst-2",
         labels_init_file="./sdss_morph_types_info.csv",
-        N_bands=5, 
-        N_features=4, 
+        N_bands=2, 
+        N_features=0, 
         transform=transformCartesian,
-        photometric_transform=MorphometryFeatures()
+        photometric_transform=None
     )
 
     dataset_cart_sdss = FITS_Image_Features_Dataset(
@@ -129,7 +129,7 @@ if __name__ == "__main__":
             metadata=pipeline_metadata,
             max_records=max_records,
             dataset=dataset_cart_lsst,
-            minor_version="lsst-1",
+            minor_version="lsst-2",
         ),
         PipelineClassification(
             name=name,

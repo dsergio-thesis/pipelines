@@ -203,6 +203,7 @@ class FITS_Image_Features_Dataset(DataSetBase):
                     self.index.add(key)
             else:
                 self.hdu_list.writeto(self.filename)
+        print("initializing the dataset")
 
     def __len__(self):
         return len(self.hdu_list) - 1  # Exclude primary HDU
@@ -219,7 +220,8 @@ class FITS_Image_Features_Dataset(DataSetBase):
 
         # endianness
         if image.dtype.byteorder not in ("=", "|"):
-            image = image.byteswap().newbyteorder()
+            # image = image.byteswap().newbyteorder()
+            image = image.view(image.dtype.newbyteorder('='))
 
         # contiguous
         image = np.ascontiguousarray(image, dtype=np.float32)
@@ -255,6 +257,7 @@ class FITS_Image_Features_Dataset(DataSetBase):
         """
 
         main_id = hdu.header['main_id']
+        print(f"adding {main_id} to the dataset")
 
         key = main_id
 

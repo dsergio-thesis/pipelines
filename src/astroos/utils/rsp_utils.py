@@ -114,9 +114,9 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
         calib_level=3,
     )
 
-    band_images = {}
+    band_images = np.empty((len(bands), 200, 200)) 
 
-    for band in bands: 
+    for i, band in enumerate(bands): 
         table = results.to_table()
         tx = np.where((table['dataproduct_subtype'] == 'lsst.deep_coadd')
                     & (table['lsst_band'] == band))[0]
@@ -139,7 +139,7 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
 
         cutout = ExposureF(mem)
         cutout = pad_exposure_ml(cutout)
-        band_images[band] = cutout.getImage().getArray()
+        band_images[i] = cutout.getImage().getArray()
         print(f"cutout image shape: {cutout.getImage().getDimensions()}")
         print(f"cutout type: {type(cutout)}")
         print(f"cutout metadata: {cutout.getMetadata()}")

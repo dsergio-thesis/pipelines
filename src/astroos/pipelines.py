@@ -718,36 +718,31 @@ class StageFetchLSSTSoda(DataPipelineStage):
             target_ra = row.coord_ra
             target_dec = row.coord_dec
 
-            try:
-                band_images = get_cutout_bands(
-                    ra=target_ra,
-                    dec=target_dec,
-                    bands = ['u', 'g']
-                )
+            band_images = get_cutout_bands(
+                target_ra=target_ra,
+                target_dec=target_dec,
+                bands = ['u', 'g']
+            )
 
-                nchw[row.Index] = torch.tensor(band_images, dtype=torch.float32)
-                print(f"Fetched LSST SODA cutout images for RA: {target_ra}, DEC: {target_dec}, shape: {nchw.shape}")
+            nchw[row.Index] = torch.tensor(band_images, dtype=torch.float32)
+            print(f"Fetched LSST SODA cutout images for RA: {target_ra}, DEC: {target_dec}, shape: {nchw.shape}")
 
-                hdu = fits.PrimaryHDU(data=nchw[row.Index].numpy(), header=fits.Header())
-                hdu.header['label'] = 0
-                hdu.header['ra'] = target_ra
-                hdu.header['dec'] = target_dec
-                hdu.header['main_id'] = row.objectId
-                hdu.header['rvz_redshift'] = '-999'
-                hdu.header['min_ra'] = target_ra - 0.0138889
-                hdu.header['max_ra'] = target_ra + 0.0138889
-                hdu.header['min_dec'] = target_dec - 0.0138889
-                hdu.header['max_dec'] = target_dec + 0.0138889
-                hdulist = fits.HDUList([hdu])
-                hdu_image = fits.ImageHDU(data=nchw[row.Index].numpy(), name='IMAGE')
-                hdulist.append(hdu_image)
-                self.dataset.append(hdulist)
+            hdu = fits.PrimaryHDU(data=nchw[row.Index].numpy(), header=fits.Header())
+            hdu.header['label'] = 0
+            hdu.header['ra'] = target_ra
+            hdu.header['dec'] = target_dec
+            hdu.header['main_id'] = row.objectId
+            hdu.header['rvz_redshift'] = '-999'
+            hdu.header['min_ra'] = target_ra - 0.0138889
+            hdu.header['max_ra'] = target_ra + 0.0138889
+            hdu.header['min_dec'] = target_dec - 0.0138889
+            hdu.header['max_dec'] = target_dec + 0.0138889
+            # hdulist = fits.HDUList([hdu])
+            # hdu_image = fits.ImageHDU(data=nchw[row.Index].numpy(), name='IMAGE')
+            # hdulist.append(hdu_image)
+            self.dataset.append(hdu)
                 
 
-            except Exception as e:
-                print("an error has occured:", e)
-
-        
 
 
         print("nchw shape:", nchw.shape)
