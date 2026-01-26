@@ -51,7 +51,7 @@ print(f"Dataset size: {len(dataset_cartesian)} samples.")
 
 plot_random_samples_from_dataset(
     dataset_cartesian, 
-    num_samples_to_display=2,
+    num_samples_to_display=10,
     seed=random_seed, label_definitions=dataset_cartesian.labels.get_labels(), 
     cmap=cmap,
     plot_title="Multi-band Image Cutouts",
