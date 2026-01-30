@@ -712,7 +712,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
         num_bands = len(bands)
         
         
-        nchw = torch.zeros((n, num_bands, 200, 200), dtype=torch.float32)
+        nchw = torch.empty((n, num_bands, 200, 200), dtype=torch.float32)
         for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
 
             target_ra = row.coord_ra
