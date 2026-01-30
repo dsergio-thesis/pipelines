@@ -1,2 +1,2 @@
 
-python -m src.test.client_plot 
+python -m src.test.client_plot "$@"

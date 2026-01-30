@@ -39,7 +39,7 @@ if len(sys.argv) > 1:
 else:
     num = 5
 cmap = 'gist_ncar'
-cmap = cmc.batlow
+# cmap = cmc.batlow
 
 dataset_cartesian = FITS_Image_Features_Dataset(
     dir="data/lsst-4",
