@@ -7,46 +7,39 @@ import os
 from skimage import morphology
 from PIL import Image
 import pandas as pd
+import importlib
 
 # astropy
 from astropy.coordinates import SkyCoord
 from astropy.coordinates import ICRS, Galactic, FK4, FK5
 from astropy import units as u
 
-if (sys.modules.get('src.astroos.query') is not None):
-    del sys.modules['src.astroos.query']
-if (sys.modules.get('src.astroos.fetch') is not None):
-    del sys.modules['src.astroos.fetch']
-if (sys.modules.get('src.astroos.pipelines') is not None):
-    del sys.modules['src.astroos.pipelines']
-if (sys.modules.get('src.astroos.datasets') is not None):
-    del sys.modules['src.astroos.datasets']
-if (sys.modules.get('src.astroos.transforms') is not None):
-    del sys.modules['src.astroos.transforms']
-if (sys.modules.get('src.astroos.utils') is not None):
-    del sys.modules['src.astroos.utils']
 
-from src.astroos.fetch import AstroosFetchSDSS
-from src.astroos.query import AstroosQueryNED, \
+from astroos_pipelines.query import AstroosQueryNED, \
     AstroosQuerySimbad, AstroosQuerySDSS, \
     AstroQueryUtils as aq_utils
-from src.astroos.pipelines import StageCatalogSDSS, \
+from astroos_pipelines.fetch import AstroosFetchSDSS
+from astroos_pipelines.pipelines import StageCatalogSDSS, \
     StageFilterCatalogSDSS, \
     StageCatalogSDSS_V2, \
     StageFetchSDSS_V2_ManualCutout, StageFetchSDSS_V2_AutoCutout, \
     StageFetchSDSS, StageFetchSDSS_V3_ManualCutout, \
     PipelineClassification, StageCatalogLSST,  StageFetchLSSTSoda, PipelineDummy
-from src.astroos.datasets import FITS_Image_Features_Dataset
-
-from src.astroos.utils.utils import plot_random_samples_from_dataset
-
-from src.astroos.transforms import AddGaussianNoise, \
+from astroos_pipelines.datasets import FITS_Image_Features_Dataset
+from astroos_pipelines.utils.utils import plot_random_samples_from_dataset
+from asgroos_pipeliens.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
     PolarTransform, \
     CropZeros, \
     CropAroundCentroid
 
+importlib.reload(sys.modules['astroos_pipelines.fetch'])
+importlib.reload(sys.modules['astroos_pipelines.pipelines'])
+importlib.reload(sys.modules['astroos_pipelines.datasets'])
+importlib.reload(sys.modules['astroos_pipelines.query'])
+importlib.reload(sys.modules['astroos_pipelines.utils.utils'])
+importlib.reload(sys.modules['asgroos_pipeliens.transforms'])
 
 
 if __name__ == "__main__":

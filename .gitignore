@@ -210,3 +210,5 @@ _pipelines/
 
 # Vim
 **/*.swp
+
+**/.DS_Store

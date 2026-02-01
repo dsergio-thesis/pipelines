@@ -1,19 +1,11 @@
 import sys
 from torchvision import transforms
 import cmcrameri.cm as cmc
+import importlib
 
-if (sys.modules.get('src.astroos.utils.utils') is not None):
-    del sys.modules['src.astroos.utils.utils']
-from src.astroos.utils.utils import plot_random_samples_from_dataset
-
-if (sys.modules.get('src.astroos.datasets') is not None):
-    del sys.modules['src.astroos.datasets']
-from src.astroos.datasets import FITS_Image_Features_Dataset
-
-if (sys.modules.get('src.astroos.transforms') is not None):
-    del sys.modules['src.astroos.transforms']
-
-from src.astroos.transforms import AddGaussianNoise, \
+from astroos_pipelines.utils.utils import plot_random_samples_from_dataset
+from astroos_pipelines.datasets import FITS_Image_Features_Dataset
+from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
     PolarTransform, \
