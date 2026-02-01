@@ -225,6 +225,7 @@ class FITS_Image_Features_Dataset(DataSetBase):
 
         # contiguous
         image = np.ascontiguousarray(image, dtype=np.float32)
+        image = np.nan_to_num(image, nan=0.0, posinf=0.0, neginf=0.0)
 
         image_features = np.zeros((self.N_bands, self.N_features), dtype=np.float32)
 
@@ -242,7 +243,7 @@ class FITS_Image_Features_Dataset(DataSetBase):
 
         # return torch.tensor(transformed_image), torch.tensor(label, dtype=torch.long), torch.tensor(image_features), self.hdu_list[index].header
         # return torch.tensor(transformed_image), torch.tensor(label), torch.tensor(image_features), self.hdu_list[index].header
-        return torch.tensor(transformed_image), torch.tensor(label), image_features, self.hdu_list[index].header
+        return torch.tensor(transformed_image, dtype=torch.float32), torch.tensor(label), image_features, self.hdu_list[index].header
 
     def _contains(self, main_id):
         return main_id in self.index

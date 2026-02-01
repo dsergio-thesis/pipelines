@@ -31,10 +31,10 @@ if len(sys.argv) > 1:
 else:
     num = 5
 cmap = 'gist_ncar'
-cmap = cmc.batlow
+# cmap = cmc.batlow
 
 dataset_cartesian = FITS_Image_Features_Dataset(
-    dir="data/lsst-3",
+    dir="data/lsst-4",
     N_bands=5, 
     photometric_transform=None
 )
@@ -43,7 +43,7 @@ print(f"Dataset size: {len(dataset_cartesian)} samples.")
 
 plot_random_samples_from_dataset(
     dataset_cartesian, 
-    num_samples_to_display=10,
+    num_samples_to_display=num,
     seed=random_seed, label_definitions=dataset_cartesian.labels.get_labels(), 
     cmap=cmap,
     plot_title="Multi-band Image Cutouts",

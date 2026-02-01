@@ -243,8 +243,9 @@ def plot_random_samples_from_dataset(
     random_ras = [dataset[i][3]['ra'] for i in random_indices]
     random_decs = [dataset[i][3]['dec'] for i in random_indices]
     random_rvz = [dataset[i][3]['rvz_redshift'] for i in random_indices]
-    # for i in range(len(random_samples)):
-    #     print(random_samples[i])
+    for i in range(len(random_samples)):
+        print(random_samples[i].shape)
+        print("mean: ", random_samples[i].mean())
 
     # labels = label_definitions("./sdss_morph_types_info.csv")
     # print(labels)
