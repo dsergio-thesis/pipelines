@@ -27,7 +27,7 @@ from astroos_pipelines.pipelines import StageCatalogSDSS, \
     PipelineClassification, StageCatalogLSST,  StageFetchLSSTSoda, PipelineDummy
 from astroos_pipelines.datasets import FITS_Image_Features_Dataset
 from astroos_pipelines.utils.utils import plot_random_samples_from_dataset
-from asgroos_pipeliens.transforms import AddGaussianNoise, \
+from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
     PolarTransform, \
@@ -39,7 +39,7 @@ importlib.reload(sys.modules['astroos_pipelines.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.utils.utils'])
-importlib.reload(sys.modules['asgroos_pipeliens.transforms'])
+importlib.reload(sys.modules['astroos_pipelines.transforms'])
 
 
 if __name__ == "__main__":
