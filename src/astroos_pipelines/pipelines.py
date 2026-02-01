@@ -25,7 +25,17 @@ import importlib
 from astroos_pipelines.query import AstroosQuerySDSS, AstroosQueryLSST
 from astroos_pipelines.fetch import AstroosFetchSDSSManualCutout, AstroosFetchManualFitsCutout
 from astroos_pipelines.catalogs import AstroosCatalogSDSS, AstroosCatalogLSST   
-from astroos_pipelines.utils.rsp_utils import get_cutout_bands
+
+try:
+    from astroos_pipelines.utils.rsp_utils import get_cutout_bands
+    importlib.reload(sys.modules['astroos_pipelines.utils.rsp_utils'])
+except ImportError:
+    print("astroos_pipelines.utils.rsp_utils not found.")
+
+importlib.reload(sys.modules['astroos_pipelines.query'])
+importlib.reload(sys.modules['astroos_pipelines.fetch'])
+importlib.reload(sys.modules['astroos_pipelines.catalogs'])
+
 
 import bz2, io
 from astropy.io import fits

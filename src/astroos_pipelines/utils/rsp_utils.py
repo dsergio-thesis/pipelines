@@ -24,7 +24,7 @@ def init_rsp():
 
         rsp_mode = True
         print("LSST RSP mode enabled.")
-    except ImportError:
+    except ModuleNotFoundError:
         print("LSST RSP mode disabled.")
 
     return rsp_mode
@@ -40,17 +40,6 @@ from pyvo.dal.adhoc import DatalinkResults
 import numpy as np
 import matplotlib.pyplot as plt
 
-import lsst.geom as geom
-
-from lsst.rsp import get_tap_service
-from lsst.rsp.utils import get_pyvo_auth
-from lsst.rsp.service import get_siav2_service
-
-import lsst.afw.display as afwDisplay
-from lsst.afw.image import ExposureF
-from lsst.afw.fits import MemFileManager
-import lsst.afw.geom.ellipses as ellipses
-
 from pyvo.dal.adhoc import DatalinkResults, SodaQuery
 
 from astropy.wcs import WCS
@@ -60,8 +49,19 @@ import astropy.units as u
 from photutils.aperture import SkyEllipticalAperture
 
 import galsim as gs
-from lsst.gauss2d import Ellipse, EllipseMajor, Covariance
 
+try:
+    from lsst.gauss2d import Ellipse, EllipseMajor, Covariance
+    import lsst.geom as geom
+    from lsst.rsp import get_tap_service
+    from lsst.rsp.utils import get_pyvo_auth
+    from lsst.rsp.service import get_siav2_service
+    import lsst.afw.display as afwDisplay
+    from lsst.afw.image import ExposureF
+    from lsst.afw.fits import MemFileManager
+    import lsst.afw.geom.ellipses as ellipses
+except:
+    print("RSP not supported")
 
 def pad_exposure_ml(exp, target=200, fill_value=0.0):
     """Pad or crop an ExposureF to a fixed size for ML, keeping the original WCS untouched."""

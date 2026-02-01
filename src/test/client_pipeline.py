@@ -146,7 +146,7 @@ if __name__ == "__main__":
         StageFetchSDSS_V3_ManualCutout(dataset_cart_sdss),
     ])
 
-    pipelines[1].run_pipeline()
+    pipelines[2].run_pipeline()
 
     # for p in pipelines:
     #     p.run_pipeline()
