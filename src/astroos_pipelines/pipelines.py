@@ -721,10 +721,22 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 bands = bands 
             )
 
-            nchw[row.Index] = torch.tensor(band_images, dtype=torch.float32)
-            print(f"Fetched LSST SODA cutout images for RA: {target_ra}, DEC: {target_dec}, shape: {nchw.shape}")
+            # nchw[row.Index] = torch.tensor(band_images, dtype=torch.float32)
+            # print(f"Fetched LSST SODA cutout images for RA: {target_ra}, DEC: {target_dec}, shape: {nchw.shape}")
+            # data = nchw[row.Index].cpu().numpy().astype(np.float32)
 
-            hdu = fits.PrimaryHDU(data=nchw[row.Index].numpy(), header=fits.Header())
+            # f32_max = np.finfo(np.float32).max
+            # f32_min = np.finfo(np.float32).min
+
+            # bad_mask = (
+                # ~np.isfinite(data) |
+                # (data >= f32_max * 0.99) |
+                # (data <= f32_min * 0.99)
+            # )
+
+            # data[bad_mask] = np.nan
+
+            hdu = fits.ImageHDU(data=band_images, header=fits.Header())
             hdu.header['label'] = 0
             hdu.header['ra'] = target_ra
             hdu.header['dec'] = target_dec
