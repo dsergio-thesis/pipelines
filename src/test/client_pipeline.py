@@ -92,7 +92,7 @@ if __name__ == "__main__":
         'query_radius': radius,
     }
 
-    name = "p6"
+    name = "p7"
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cart_lsst = FITS_Image_Features_Dataset(
@@ -122,7 +122,7 @@ if __name__ == "__main__":
             metadata=pipeline_metadata,
             max_records=max_records,
             dataset=dataset_cart_lsst,
-            minor_version="lsst-3",
+            minor_version=None,
         ),
         PipelineClassification(
             name=name,
@@ -146,7 +146,7 @@ if __name__ == "__main__":
         StageFetchSDSS_V3_ManualCutout(dataset_cart_sdss),
     ])
 
-    pipelines[2].run_pipeline()
+    pipelines[1].run_pipeline()
 
     # for p in pipelines:
     #     p.run_pipeline()
