@@ -185,9 +185,12 @@ class FITS_Image_Features_Dataset(DataSetBase):
                  transform=None,
                  photometric_transform=None):
         super().__init__(dir=dir)
+
         self.transform = transform
+
         self.hdu_primary = fits.PrimaryHDU()
         self.hdu_list = fits.HDUList([self.hdu_primary])
+
         self.photometric_transform = photometric_transform
         self.N_bands = N_bands
         self.N_features = N_features
@@ -218,6 +221,11 @@ class FITS_Image_Features_Dataset(DataSetBase):
         image = np.array(self.hdu_list[index].data)
         # print(f"calling __getitem__ for index {index}, image shape: {image.shape}")
 
+        # image[~np.isfinite(image)] = np.nan
+        # image[image <= -3e38] = np.nan
+        # image[image >=  3e38] = np.nan
+
+
         # endianness
         if image.dtype.byteorder not in ("=", "|"):
             # image = image.byteswap().newbyteorder()
@@ -225,8 +233,25 @@ class FITS_Image_Features_Dataset(DataSetBase):
 
         # contiguous
         image = np.ascontiguousarray(image, dtype=np.float32)
-        image = np.nan_to_num(image, nan=0.0, posinf=0.0, neginf=0.0)
 
+        x = image[0,:,:]
+        print("NaNs:", np.isnan(x).sum())
+        print("Infs:", np.isinf(x).sum())
+        print("Finite:", np.isfinite(x).sum())
+
+        image = np.nan_to_num(
+            image,
+            nan=0.0,
+            posinf=0.0,
+            neginf=0.0
+        )
+
+        image_b1 = image[0,:,:]
+        print(f"Band 1 - dtype: {image_b1.dtype}, shape: {image_b1.shape}, min: {np.min(image_b1)}, max: {np.max(image_b1)}, mean: {np.mean(image_b1)}, std: {np.std(image_b1)}")
+        
+        # print(f"image dtype: {image.dtype}, shape: {image.shape}, min: {np.min(image)}, max: {np.max(image)}, mean: {np.mean(image)}, std: {np.std(image)}")
+        # image = np.random.normal(size=image.shape).astype(np.float32)
+        # image = np.nan_to_num(image, nan=0.0, posinf=0.0, neginf=0.0)
         image_features = np.zeros((self.N_bands, self.N_features), dtype=np.float32)
 
         if self.photometric_transform is not None:
