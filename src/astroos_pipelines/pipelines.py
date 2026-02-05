@@ -406,7 +406,13 @@ class StageCatalogLSST(DataPipelineStage):
         
         query = \
         """
-        SELECT TOP {max_records} objectId, coord_ra, coord_dec, g_cModelMag, g_cModelMagErr, refExtendedness
+        SELECT TOP {max_records} 
+            objectId, 
+            coord_ra, 
+            coord_dec, 
+            g_cModelMag, 
+            g_cModelMagErr, 
+            refExtendedness
         FROM dp1.Object
         WHERE coord_ra BETWEEN 4.0641 AND 106.8238
             AND coord_dec BETWEEN -72.7414 AND 8.0037
@@ -417,7 +423,21 @@ class StageCatalogLSST(DataPipelineStage):
         # Extended Chandra Deep Field South (ECDFS)
         query = \
         """
-        SELECT TOP {max_records} objectId, coord_ra, coord_dec, g_cModelMag, g_cModelMagErr, refExtendedness
+        SELECT TOP {max_records} 
+            objectId, 
+            coord_ra, 
+            coord_dec, 
+
+            u_psfFlux,
+            u_psfFluxErr
+            
+            g_psfFlux,
+            g_psfFluxErr,
+
+            g_cModelMag, 
+            g_cModelMagErr, 
+
+            refExtendedness
         FROM dp1.Object
         WHERE coord_ra BETWEEN 52 AND 54
             AND coord_dec BETWEEN -28 AND -26
