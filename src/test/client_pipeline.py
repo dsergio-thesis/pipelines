@@ -96,7 +96,7 @@ if __name__ == "__main__":
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cart_lsst = FITS_Image_Features_Dataset(
-        dir="./data/lsst-4",
+    dir="./data/lsst-5",
         labels_init_file="./sdss_morph_types_info.csv",
         N_bands=5, 
         N_features=0, 
