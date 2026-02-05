@@ -219,7 +219,7 @@ class FITS_Image_Features_Dataset(DataSetBase):
         index = idx + 1
 
         image = np.array(self.hdu_list[index].data)
-        # print(f"calling __getitem__ for index {index}, image shape: {image.shape}")
+        print(f"calling __getitem__ for index {index}, image shape: {image.shape}")
 
         # image[~np.isfinite(image)] = np.nan
         # image[image <= -3e38] = np.nan
@@ -228,23 +228,25 @@ class FITS_Image_Features_Dataset(DataSetBase):
 
         # endianness
         if image.dtype.byteorder not in ("=", "|"):
+            # pass
             # image = image.byteswap().newbyteorder()
-            image = image.view(image.dtype.newbyteorder('='))
+            # image = image.view(image.dtype.newbyteorder('='))
+            image = image.byteswap().newbyteorder()
 
         # contiguous
-        image = np.ascontiguousarray(image, dtype=np.float32)
+        # image = np.ascontiguousarray(image, dtype=np.float32)
 
         x = image[0,:,:]
         print("NaNs:", np.isnan(x).sum())
         print("Infs:", np.isinf(x).sum())
         print("Finite:", np.isfinite(x).sum())
 
-        image = np.nan_to_num(
-            image,
-            nan=0.0,
-            posinf=0.0,
-            neginf=0.0
-        )
+        # image = np.nan_to_num(
+            # image,
+            # nan=0.0,
+            # posinf=0.0,
+            # neginf=0.0
+        # )
 
         image_b1 = image[0,:,:]
         print(f"Band 1 - dtype: {image_b1.dtype}, shape: {image_b1.shape}, min: {np.min(image_b1)}, max: {np.max(image_b1)}, mean: {np.mean(image_b1)}, std: {np.std(image_b1)}")
