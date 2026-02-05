@@ -92,7 +92,7 @@ if __name__ == "__main__":
         'query_radius': radius,
     }
 
-    name = "p7"
+    name = "p8"
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cart_lsst = FITS_Image_Features_Dataset(
@@ -129,7 +129,7 @@ if __name__ == "__main__":
             metadata=pipeline_metadata,
             max_records=max_records,
             dataset=dataset_cart_sdss,
-            minor_version="sdss-1",
+            minor_version=None,
         ),
     ]
 
