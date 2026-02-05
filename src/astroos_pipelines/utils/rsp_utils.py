@@ -63,38 +63,46 @@ try:
 except:
     print("RSP not supported")
 
+
 def pad_exposure_ml(exp, target=200, fill_value=0.0):
-    """Pad or crop an ExposureF to a fixed size for ML, keeping the original WCS untouched."""
-    h, w = exp.image.array.shape
+    """Pad or crop an ExposureF to a fixed size, re-centering WCS on RA/Dec."""
+
+    img = exp.image.array
+    h, w = img.shape
+
+    # Compute padding offsets
     pad_x = max(target - w, 0)
     pad_y = max(target - h, 0)
-    pad_left = pad_x // 2
-    pad_top = pad_y // 2
+    x0 = pad_x // 2
+    y0 = pad_y // 2
 
-    # New arrays
-    new_img = np.full((target, target), fill_value, dtype=exp.image.array.dtype)
+    # Allocate new arrays
+    new_img = np.full((target, target), fill_value, dtype=img.dtype)
     new_mask = np.zeros((target, target), dtype=exp.mask.array.dtype)
     new_var = np.zeros((target, target), dtype=exp.variance.array.dtype)
 
-    # Determine copy coordinates
-    y0 = pad_top
-    x0 = pad_left
-    y1 = y0 + h
-    x1 = x0 + w
+    # Copy data
+    new_img[y0:y0+h, x0:x0+w] = img
+    new_mask[y0:y0+h, x0:x0+w] = exp.mask.array
+    new_var[y0:y0+h, x0:x0+w] = exp.variance.array
 
-    # Copy original data
-    new_img[y0:y1, x0:x1] = exp.image.array
-    new_mask[y0:y1, x0:x1] = exp.mask.array
-    new_var[y0:y1, x0:x1] = exp.variance.array
-
-    # Create a new ExposureF without WCS modification
+    # Create new exposure
     new_exp = ExposureF(target, target)
     new_exp.image.array[:, :] = new_img
     new_exp.mask.array[:, :] = new_mask
     new_exp.variance.array[:, :] = new_var
 
-    # Keep original WCS for plotting
-    new_exp.setWcs(exp.getWcs())
+    # --- WCS FIX ---
+    wcs = exp.getWcs()
+    if wcs is not None:
+        wcs = wcs.clone()
+
+        # Shift reference pixel by padding offset
+        shift = geom.Extent2D(x0, y0)
+        wcs = wcs.shiftReferencePixel(shift)
+
+        new_exp.setWcs(wcs)
+
     new_exp.setPhotoCalib(exp.getPhotoCalib())
 
     return new_exp
