@@ -285,7 +285,7 @@ class FITS_Image_Features_Dataset(DataSetBase):
         """
 
         main_id = hdu.header['main_id']
-        print(f"adding {main_id} to the dataset")
+        # print(f"adding {main_id} to the dataset")
 
         key = main_id
 

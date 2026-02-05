@@ -122,7 +122,7 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
         tx = np.where((table['dataproduct_subtype'] == 'lsst.deep_coadd')
                     & (table['lsst_band'] == band))[0]
 
-        print("tx: ", tx)
+        # print("tx: ", tx)
 
         datalink_url = results[tx[0].item()].access_url
         dl = DatalinkResults.from_result_url(datalink_url, session=get_pyvo_auth())
@@ -145,10 +145,10 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
         band_images[i] = image
 
         # save as grayscale image
-        plt.imsave(f"images/cutout_{r}_{band}.png", image, cmap='gray')
-        print(f"cutout image shape: {cutout.getImage().getDimensions()}")
-        print(f"cutout type: {type(cutout)}")
-        print(f"cutout metadata: {cutout.getMetadata()}")
-        print(f"Retrieved {band}-band cutout image. nans: {np.sum(np.isnan(image))}, inf: {np.sum(np.isinf(image))}")
+        # plt.imsave(f"images/cutout_{r}_{band}.png", image, cmap='gray')
+        # print(f"cutout image shape: {cutout.getImage().getDimensions()}")
+        # print(f"cutout type: {type(cutout)}")
+        # print(f"cutout metadata: {cutout.getMetadata()}")
+        # print(f"Retrieved {band}-band cutout image. nans: {np.sum(np.isnan(image))}, inf: {np.sum(np.isinf(image))}")
 
     return band_images
