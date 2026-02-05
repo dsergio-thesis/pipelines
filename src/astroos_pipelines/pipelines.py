@@ -425,41 +425,39 @@ class StageCatalogLSST(DataPipelineStage):
         query = \
         """
         SELECT TOP {max_records}
-            objectId,
-            coord_ra,
-            coord_dec,
+        objectId,
+        coord_ra,
+        coord_dec,
 
-            -- u
-            u_psfFlux,        u_psfFluxErr,        u_psfFlux_flag,
-            u_cModelFlux,     u_cModelFluxErr,     u_free_cModelFlux_flag,
+        -- u
+        u_psfFlux,            u_psfFluxErr,            u_psfFlux_flag,
+        u_free_cModelFlux,    u_free_cModelFluxErr,    u_free_cModelFlux_flag,
 
-            -- g
-            g_psfFlux,        g_psfFluxErr,        g_psfFlux_flag,
-            g_cModelFlux,     g_cModelFluxErr,     g_free_cModelFlux_flag,
+        -- g
+        g_psfFlux,            g_psfFluxErr,            g_psfFlux_flag,
+        g_free_cModelFlux,    g_free_cModelFluxErr,    g_free_cModelFlux_flag,
 
-            -- r
-            r_psfFlux,        r_psfFluxErr,        r_psfFlux_flag,
-            r_cModelFlux,     r_cModelFluxErr,     r_free_cModelFlux_flag,
+        -- r
+        r_psfFlux,            r_psfFluxErr,            r_psfFlux_flag,
+        r_free_cModelFlux,    r_free_cModelFluxErr,    r_free_cModelFlux_flag,
 
-            -- i
-            i_psfFlux,        i_psfFluxErr,        i_psfFlux_flag,
-            i_cModelFlux,     i_cModelFluxErr,     i_free_cModelFlux_flag,
+        -- i
+        i_psfFlux,            i_psfFluxErr,            i_psfFlux_flag,
+        i_free_cModelFlux,    i_free_cModelFluxErr,    i_free_cModelFlux_flag,
 
-            -- z
-            z_psfFlux,        z_psfFluxErr,        z_psfFlux_flag,
-            z_cModelFlux,     z_cModelFluxErr,     z_free_cModelFlux_flag,
+        -- z
+        z_psfFlux,            z_psfFluxErr,            z_psfFlux_flag,
+        z_free_cModelFlux,    z_free_cModelFluxErr,    z_free_cModelFlux_flag,
 
-            -- y
-            y_psfFlux,        y_psfFluxErr,        y_psfFlux_flag,
-            y_cModelFlux,     y_cModelFluxErr,     y_free_cModelFlux_flag,
+        -- y
+        y_psfFlux,            y_psfFluxErr,            y_psfFlux_flag,
+        y_free_cModelFlux,    y_free_cModelFluxErr,    y_free_cModelFlux_flag,
 
-            refExtendedness,
-            detect_isPrimary
+        refExtendedness
 
-        FROM dp1.object
+        FROM dp1.Object
         WHERE coord_ra BETWEEN 52 AND 54
           AND coord_dec BETWEEN -28 AND -26
-          AND detect_isPrimary = true
         """
 
         query = query.format(max_records=self.pipeline.max_records)
