@@ -111,7 +111,6 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
     image_width = 400
 
     band_images = np.empty((len(bands), image_width, image_width)) 
-    r = np.random.rand()
 
     for i, band in enumerate(bands): 
         table = results.to_table()
@@ -129,7 +128,7 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
 
         sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
                      spherePoint.getDec().asDegrees() * u.deg,
-                     search_radius * u.deg)
+                     (search_radius * 2) * u.deg)
         cutout_bytes = sq.execute_stream().read()
         mem = MemFileManager(len(cutout_bytes))
         mem.setData(cutout_bytes, len(cutout_bytes))
