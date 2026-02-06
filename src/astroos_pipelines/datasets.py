@@ -1,4 +1,5 @@
 
+from cProfile import label
 import numpy as np
 import sys
 import torch
@@ -271,6 +272,182 @@ class FITS_Image_Features_Dataset(DataSetBase):
         # return torch.tensor(transformed_image), torch.tensor(label, dtype=torch.long), torch.tensor(image_features), self.hdu_list[index].header
         # return torch.tensor(transformed_image), torch.tensor(label), torch.tensor(image_features), self.hdu_list[index].header
         return torch.tensor(transformed_image, dtype=torch.float32), torch.tensor(label), image_features, self.hdu_list[index].header
+
+    def _contains(self, main_id):
+        return main_id in self.index
+
+    def append(self, hdu):
+        """
+        Append an HDU to the dataset.
+        Parameters
+        ----------
+        hdu : astropy.io.fits.HDU
+            HDU to append.
+        """
+
+        main_id = hdu.header['main_id']
+        # print(f"adding {main_id} to the dataset")
+
+        key = main_id
+
+        # Add to index and hdu_list
+        self.index.add(key)
+
+        self.hdu_list.append(hdu)
+        self.hdu_list.writeto(self.filename, overwrite=True)
+    
+    def num_classes(self):
+        return self.labels.num_classes()
+    
+    def num_features(self):
+        return self.N_features
+
+    def num_bands(self):
+        return self.N_bands
+
+    def get_subset(self, indices):
+        subset_hdu_list = fits.HDUList([self.hdu_primary])
+        for idx in indices:
+            index = idx + 1  # skip primary HDU
+            subset_hdu_list.append(self.hdu_list[index])
+        
+        subset_dataset = FITS_Image_Features_Dataset(
+            dir=self.dir,
+            N_bands=self.N_bands,
+            N_features=self.N_features,
+            transform=self.transform,
+            photometric_transform=self.photometric_transform
+        )
+        subset_dataset.hdu_list = subset_hdu_list
+        subset_dataset.index = {self.hdu_list[idx + 1].header['main_id'] for idx in indices}
+        
+        return subset_dataset
+
+
+class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
+    """
+    FITS Dataset
+    Contains 
+     * band images
+     * morphometric features,
+     * photometric features
+     * labels
+     * WCS headers
+    
+    TODO: potentially include spectra/spectral features in future.
+
+    Attributes
+    ----------
+    dir : str
+        Directory where the dataset is stored.
+    labels : Labels
+        Labels object for managing class labels.
+    hdu_primary : astropy.io.fits.PrimaryHDU
+        Primary HDU for the FITS file.
+    hdu_list : astropy.io.fits.HDUList
+        List of HDUs in the FITS file.
+    transform : torchvision.transforms.Compose or None
+        Transformations to apply to the images.
+    morphometric_transform : callable or None
+        Function to compute morphometric features from the images. Previously called photometric_transform, but renamed for clarity.
+    photometric_transform : callable or None
+        Function to transform photometric features.
+    N_bands : int
+        Number of bands in the images.
+    N_morphometric_features : int
+        Number of morphometric features to compute.
+    N_photometric_features : int
+        Number of photometric features to compute.
+    index : set
+        Set of main_id values for quick lookup of existing entries in the dataset.
+    """
+
+    def __init__(self,
+                 dir,
+                 labels_init_file=None,
+                 N_bands=5,
+                 N_morphometric_features=4,
+                 N_photometric_features=4,
+                 transform=None,
+                 morphometric_transform=None,
+                 photometric_transform=None):
+        super().__init__(dir=dir)
+
+        self.transform = transform
+
+        self.hdu_primary = fits.PrimaryHDU()
+        self.hdu_list = fits.HDUList([self.hdu_primary])
+
+        self.photometric_transform = photometric_transform
+        self.morphometric_transform = morphometric_transform
+
+        self.N_bands = N_bands
+
+        self.N_morphometric_features = N_morphometric_features
+        self.N_photometric_features = N_photometric_features
+
+        self.labels = Labels(dir=dir, labels_init_file=labels_init_file)
+
+        self.index = set()
+        if self.filename is not None:
+            if os.path.exists(self.filename):
+                self.hdu_list = fits.open(self.filename)
+                for hdu in self.hdu_list[1:]:  # skip primary
+                    key = hdu.header['main_id']
+                    self.index.add(key)
+            else:
+                self.hdu_list.writeto(self.filename)
+        print("initializing the dataset")
+
+    def __len__(self):
+        return len(self.hdu_list) - 1  # Exclude primary HDU
+
+    def __getitem__(self, idx):
+        """
+        Get item by index. Each item consists of N_bands images, label, photometric features.
+        """
+
+        # skip primary HDU
+        index = idx + 1
+
+        image = np.array(self.hdu_list[index].data)
+        print(f"calling __getitem__ for index {index}, image shape: {image.shape}")
+
+
+        # endianness
+        if image.dtype.byteorder not in ("=", "|"):
+            image = image.byteswap().newbyteorder()
+
+        # contiguous
+        # image = np.ascontiguousarray(image, dtype=np.float32)
+
+        x = image[0,:,:]
+        print("NaNs:", np.isnan(x).sum())
+        print("Infs:", np.isinf(x).sum())
+        print("Finite:", np.isfinite(x).sum())
+        
+        image_morphommetric_features = np.zeros((self.N_bands, self.N_morphometric_features), dtype=np.float32)
+        if self.morphometric_transform is not None:
+            image_morphommetric_features = self.morphometric_transform(image)
+        
+        image_photometric_features = np.zeros((self.N_bands, self.N_photometric_features), dtype=np.float32)
+        if (self.hdu_list[index].header['photometric_features'] is not None):
+            image_photometric_features = self.hdu_list[index].header['photometric_features']
+        if self.photometric_transform is not None:
+            image_photometric_features = self.photometric_transform(image_photometric_features)
+
+        label = self.hdu_list[index].header['label']
+
+        if self.transform:
+            transformed_image = self.transform(image)
+        else:
+            transformed_image = image
+
+        return (torch.tensor(transformed_image, dtype=torch.float32),
+                torch.tensor(label),  
+                image_morphommetric_features,
+                image_photometric_features,
+                self.hdu_list[index].header)
 
     def _contains(self, main_id):
         return main_id in self.index

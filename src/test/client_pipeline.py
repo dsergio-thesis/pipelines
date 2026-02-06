@@ -25,7 +25,8 @@ from astroos_pipelines.pipelines import StageCatalogSDSS, \
     StageFetchSDSS_V2_ManualCutout, StageFetchSDSS_V2_AutoCutout, \
     StageFetchSDSS, StageFetchSDSS_V3_ManualCutout, \
     PipelineClassification, StageCatalogLSST,  StageFetchLSSTSoda, PipelineDummy
-from astroos_pipelines.datasets import FITS_Image_Features_Dataset
+from astroos_pipelines.datasets import FITS_Image_Features_Dataset, \
+    FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.utils.utils import plot_random_samples_from_dataset
 from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
@@ -95,12 +96,14 @@ if __name__ == "__main__":
     name = "p8"
     labels_file = "./sdss_morph_types_info.csv"
 
-    dataset_cart_lsst = FITS_Image_Features_Dataset(
+    dataset_cart_lsst = FITS_Image_Morphometry_Photometry_Dataset(
     dir="./data/lsst-5",
         labels_init_file="./sdss_morph_types_info.csv",
         N_bands=5, 
-        N_features=0, 
+        N_morphometric_features=0,
+        N_photometric_features=4,
         transform=transformCartesian,
+        morphometric_transform=MorphometryFeatures(),
         photometric_transform=None
     )
 
