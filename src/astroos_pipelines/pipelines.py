@@ -1011,12 +1011,14 @@ class StageCatalogLSST(DataPipelineStage):
 
             ;
             """
-            res = Simbad.query_tap(query.format(
+            query = query.format(
                 ra_min=row['coord_ra'] - 0.01, 
                 ra_max=row['coord_ra'] + 0.01, 
                 dec_min=row['coord_dec'] - 0.01, 
                 dec_max=row['coord_dec'] + 0.01,
-            ))
+            )
+            res = Simbad.query_tap(query)
+            print(query)
 
             label_index = -1  # default to -1 for unknown
             for match_data in res:
