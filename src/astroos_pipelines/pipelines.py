@@ -994,37 +994,38 @@ class StageCatalogLSST(DataPipelineStage):
 
         # add label from Simbad crossmatch if available
         for i, row in df.iterrows():
-            coord = SkyCoord(ra=row['coord_ra']*u.deg, dec=row['coord_dec']*u.deg)
-            sdss_data = SDSS.query_crossid_async(
-                        SkyCoord(row['coord_ra'], row['coord_dec'], unit=(u.deg, u.deg)), radius=5 * u.arcsec)
-            
+
+            query = \
+            """
+            SELECT TOP 1 * 
+            FROM basic b JOIN otypedef o ON b.otype = o.otype 
+            WHERE main_id LIKE 'SDSS%' AND
+
+            ra >= {ra_min} AND
+            ra < {ra_max} AND
+            dec >= {dec_min} AND
+            dec <= {dec_max} AND
+            (o.otype_longname = 'Galaxy' OR o.otype_longname = 'Star') AND
+            -- b.rvz_redshift < 0.05 AND
+            (b.morph_type IS NOT NULL)
+
+            ;
+            """
+            res = Simbad.query_tap(query.format(
+                ra_min=row['coord_ra'] - 0.01, 
+                ra_max=row['coord_ra'] + 0.01, 
+                dec_min=row['coord_dec'] - 0.01, 
+                dec_max=row['coord_dec'] + 0.01,
+            ))
+
             label_index = -1  # default to -1 for unknown
-            if len(sdss_data.text.split("\n")) <= 2:
-                print(f"No SDSS data found for {row['main_id']}. Skipping...")
-                continue
-            else:
-                header = sdss_data.text.split("\n")[1]
-                data = sdss_data.text.split("\n")[2]
-                if str(data).strip() == "":
-                    print(f"No SDSS data found for {data['main_id']}. Skipping...")
-                    continue
-                morph_type = str(data['morph_type'])
-                print(f"SDSS data found for {data['main_id']}. Morphological type: {morph_type}")
+            for match_data in res:
+                morph_type = str(match_data['morph_type'])
+                print(f"SDSS data found for {match_data['main_id']}. Morphological type: {morph_type}")
                 label_index = self.pipeline.dataset.labels._get_label_index(morph_type)
-
-                # label_index = label_definitions.get_label_index(morph_type)
             
-            res = Simbad.query_region(coord, radius=5 * u.arcsec)
-            if res is None or len(res) == 0:
-                print(f"[WARNING] No Simbad result for RA={row['coord_ra']}, Dec={row['coord_dec']}. Test Data.")
-                continue
-            match = res[0]
-            label = str(match['morph_type']) if 'morph_type' in match else 'Unknown'
-            print(f"RA={row['coord_ra']}, Dec={row['coord_dec']} -> Simbad label: {label}")
-
             print("Simbad: ")
             print(res)
-            label = -1
             df.at[i, 'label'] = label_index
 
         # convert back to table
