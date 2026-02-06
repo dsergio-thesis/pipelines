@@ -999,15 +999,15 @@ class StageCatalogLSST(DataPipelineStage):
             """
             SELECT TOP 1 * 
             FROM basic b JOIN otypedef o ON b.otype = o.otype 
-            WHERE main_id LIKE 'SDSS%' AND
-
-            ra >= {ra_min} AND
-            ra < {ra_max} AND
-            dec >= {dec_min} AND
-            dec <= {dec_max} AND
-            (o.otype_longname = 'Galaxy' OR o.otype_longname = 'Star') AND
+            -- WHERE main_id LIKE 'SDSS%' AND
+            WHERE 
+            ra >= {ra_min}
+            AND ra < {ra_max} 
+            AND dec >= {dec_min} 
+            AND dec <= {dec_max} 
+            AND (o.otype_longname = 'Galaxy' OR o.otype_longname = 'Star')
             -- b.rvz_redshift < 0.05 AND
-            (b.morph_type IS NOT NULL)
+            -- (b.morph_type IS NOT NULL)
 
             ;
             """
@@ -1018,16 +1018,21 @@ class StageCatalogLSST(DataPipelineStage):
                 dec_max=row['coord_dec'] + 0.01,
             )
             res = Simbad.query_tap(query)
-            print(f"Query: {query}, number of results: {len(res) if res is not None else 0}")
+            # print(f"Query: {query}, number of results: {len(res) if res is not None else 0}")
 
             label_index = -1  # default to -1 for unknown
             for match_data in res:
+                pass
+                #for i in match_data.colnames:
+                    #print(f"{i}, {match_data[i]}")
                 morph_type = str(match_data['morph_type'])
-                print(f"SDSS data found for {match_data['main_id']}. Morphological type: {morph_type}")
+                print(f"Simbad data found for {match_data['main_id']}. Type: {match_data['otype_longname']}, Morphological type: [{morph_type}]")
+
+
                 label_index = self.pipeline.dataset.labels._get_label_index(morph_type)
             
-            print("Simbad: ")
-            print(res)
+            # print("Simbad: ")
+            # print(res)
             df.at[i, 'label'] = label_index
 
         # convert back to table

@@ -97,7 +97,7 @@ if __name__ == "__main__":
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cart_lsst = FITS_Image_Morphometry_Photometry_Dataset(
-            dir="./data/lsst-10",
+            dir="./data/lsst-11",
         labels_init_file="./sdss_morph_types_info.csv",
         N_bands=5, 
         N_morphometric_features=0,
@@ -141,7 +141,7 @@ if __name__ == "__main__":
 
     pipelines[1].add_stages([
         StageCatalogLSST(),
-        # StageFetchLSSTSoda(dataset_cart_lsst),
+        StageFetchLSSTSoda(dataset_cart_lsst),
     ])
 
     pipelines[2].add_stages([
