@@ -6,6 +6,11 @@ import torch
 import os
 import importlib
 from astropy.io import fits
+import os
+import csv
+import numpy as np
+import torch
+from astropy.io import fits
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -325,43 +330,6 @@ class FITS_Image_Features_Dataset(DataSetBase):
 
 
 class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
-    """
-    FITS Dataset
-    Contains 
-     * band images
-     * morphometric features,
-     * photometric features
-     * labels
-     * WCS headers
-    
-    TODO: potentially include spectra/spectral features in future.
-
-    Attributes
-    ----------
-    dir : str
-        Directory where the dataset is stored.
-    labels : Labels
-        Labels object for managing class labels.
-    hdu_primary : astropy.io.fits.PrimaryHDU
-        Primary HDU for the FITS file.
-    hdu_list : astropy.io.fits.HDUList
-        List of HDUs in the FITS file.
-    transform : torchvision.transforms.Compose or None
-        Transformations to apply to the images.
-    morphometric_transform : callable or None
-        Function to compute morphometric features from the images. Previously called photometric_transform, but renamed for clarity.
-    photometric_transform : callable or None
-        Function to transform photometric features.
-    N_bands : int
-        Number of bands in the images.
-    N_morphometric_features : int
-        Number of morphometric features to compute.
-    N_photometric_features : int
-        Number of photometric features to compute.
-    index : set
-        Set of main_id values for quick lookup of existing entries in the dataset.
-    """
-
     def __init__(self,
                  dir,
                  labels_init_file=None,
@@ -374,127 +342,122 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         super().__init__(dir=dir)
 
         self.transform = transform
-
-        self.hdu_primary = fits.PrimaryHDU()
-        self.hdu_list = fits.HDUList([self.hdu_primary])
-
         self.photometric_transform = photometric_transform
         self.morphometric_transform = morphometric_transform
 
         self.N_bands = N_bands
-
         self.N_morphometric_features = N_morphometric_features
         self.N_photometric_features = N_photometric_features
 
         self.labels = Labels(dir=dir, labels_init_file=labels_init_file)
 
-        self.index = set()
-        if self.filename is not None:
-            if os.path.exists(self.filename):
-                self.hdu_list = fits.open(self.filename)
-                for hdu in self.hdu_list[1:]:  # skip primary
-                    key = hdu.header['main_id']
-                    self.index.add(key)
-            else:
-                self.hdu_list.writeto(self.filename)
+        # Manifest
+        self.manifest_file = os.path.join(self.dir, "manifest.csv")
+        self.manifest_list = []
+        self.manifest_set = set()
+
+        self._load_manifest()
+
         print("initializing the dataset")
 
+    def _load_manifest(self):
+        if not os.path.exists(self.manifest_file):
+            return
+
+        with open(self.manifest_file, "r", newline="") as f:
+            reader = csv.DictReader(f)
+            if "objectId" not in reader.fieldnames:
+                raise ValueError(f"manifest.csv must contain an 'objectId' column, got {reader.fieldnames}")
+
+            for row in reader:
+                oid = row["objectId"].strip()
+                if oid and oid not in self.manifest_set:
+                    self.manifest_set.add(oid)
+                    self.manifest_list.append(oid)
+
+    def _append_to_manifest_file(self, objectId: str):
+        file_exists = os.path.exists(self.manifest_file)
+
+        with open(self.manifest_file, "a", newline="") as f:
+            fieldnames = ["objectId"]
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+
+            if not file_exists:
+                writer.writeheader()
+
+            writer.writerow({"objectId": objectId})
+
     def __len__(self):
-        return len(self.hdu_list) - 1  # Exclude primary HDU
+        return len(self.manifest_list)
 
     def __getitem__(self, idx):
+        objectId = self.manifest_list[idx]
+        hdul_filename = os.path.join(self.dir, f"{objectId}.fits")
+
+        # Always close FITS after reading
+        with fits.open(hdul_filename, memmap=False) as hdul:
+            # Prefer EXTNAME if you can enforce it; otherwise keep [1]/[2]
+            img_hdu = hdul["CUTOUTS"] if "CUTOUTS" in hdul else hdul[1]
+            pho_hdu = hdul["PHOTO"]   if "PHOTO"   in hdul else (hdul[2] if len(hdul) > 2 else None)
+
+            image = np.array(img_hdu.data, dtype=np.float32)  # (B,H,W)
+
+            # Endianness safety
+            if image.dtype.byteorder not in ("=", "|"):
+                image = image.byteswap().newbyteorder()
+
+            # Morphometry
+            if self.morphometric_transform is not None:
+                morph = self.morphometric_transform(image).astype(np.float32)
+            else:
+                morph = np.zeros((self.N_bands, self.N_morphometric_features), dtype=np.float32)
+
+            # Photometry
+            if pho_hdu is not None and pho_hdu.data is not None:
+                phot = np.array(pho_hdu.data, dtype=np.float32)
+            else:
+                phot = np.zeros((self.N_bands, self.N_photometric_features), dtype=np.float32)
+
+            if self.photometric_transform is not None:
+                phot = self.photometric_transform(phot).astype(np.float32)
+
+            label = int(img_hdu.header.get("label", 0))
+
+            # Image transform (torchvision usually expects CHW as torch tensor)
+            if self.transform is not None:
+                # if your transform expects torch.Tensor, convert first
+                img_for_tf = torch.from_numpy(image)
+                img = self.transform(img_for_tf)
+            else:
+                img = torch.from_numpy(image)
+
+            return (
+                img.to(torch.float32),
+                torch.tensor(label, dtype=torch.long),
+                torch.from_numpy(morph).to(torch.float32),
+                torch.from_numpy(phot).to(torch.float32),
+                dict(img_hdu.header)  # safer for DataLoader collation than Header object
+            )
+
+    def append(self, hdul):
         """
-        Get item by index. Each item consists of N_bands images, label, photometric features.
+        Save one object HDUList to disk and register in manifest.
+        Expects:
+          hdul[1] = CUTOUTS image HDU (or named 'CUTOUTS')
+          hdul[2] = PHOTO image HDU (or named 'PHOTO')
         """
+        # Get main_id as string for filenames + CSV
+        img_hdu = hdul["CUTOUTS"] if "CUTOUTS" in hdul else hdul[1]
+        main_id = str(img_hdu.header["main_id"])
 
-        # skip primary HDU
-        index = idx + 1
+        # Skip if already present
+        if main_id in self.manifest_set:
+            return
 
-        image = np.array(self.hdu_list[index].data)
-        print(f"calling __getitem__ for index {index}, image shape: {image.shape}")
+        out_path = os.path.join(self.dir, f"{main_id}.fits")
+        hdul.writeto(out_path, overwrite=True)
 
-
-        # endianness
-        if image.dtype.byteorder not in ("=", "|"):
-            image = image.byteswap().newbyteorder()
-
-        # contiguous
-        # image = np.ascontiguousarray(image, dtype=np.float32)
-
-        x = image[0,:,:]
-        print("NaNs:", np.isnan(x).sum())
-        print("Infs:", np.isinf(x).sum())
-        print("Finite:", np.isfinite(x).sum())
-        
-        image_morphommetric_features = np.zeros((self.N_bands, self.N_morphometric_features), dtype=np.float32)
-        if self.morphometric_transform is not None:
-            image_morphommetric_features = self.morphometric_transform(image)
-        
-        image_photometric_features = np.zeros((self.N_bands, self.N_photometric_features), dtype=np.float32)
-        if (self.hdu_list[index].header['photometric_features'] is not None):
-            image_photometric_features = self.hdu_list[index].header['photometric_features']
-        if self.photometric_transform is not None:
-            image_photometric_features = self.photometric_transform(image_photometric_features)
-
-        label = self.hdu_list[index].header['label']
-
-        if self.transform:
-            transformed_image = self.transform(image)
-        else:
-            transformed_image = image
-
-        return (torch.tensor(transformed_image, dtype=torch.float32),
-                torch.tensor(label),  
-                image_morphommetric_features,
-                image_photometric_features,
-                self.hdu_list[index].header)
-
-    def _contains(self, main_id):
-        return main_id in self.index
-
-    def append(self, hdu):
-        """
-        Append an HDU to the dataset.
-        Parameters
-        ----------
-        hdu : astropy.io.fits.HDU
-            HDU to append.
-        """
-
-        main_id = hdu.header['main_id']
-        # print(f"adding {main_id} to the dataset")
-
-        key = main_id
-
-        # Add to index and hdu_list
-        self.index.add(key)
-
-        self.hdu_list.append(hdu)
-        self.hdu_list.writeto(self.filename, overwrite=True)
-    
-    def num_classes(self):
-        return self.labels.num_classes()
-    
-    def num_features(self):
-        return self.N_features
-
-    def num_bands(self):
-        return self.N_bands
-
-    def get_subset(self, indices):
-        subset_hdu_list = fits.HDUList([self.hdu_primary])
-        for idx in indices:
-            index = idx + 1  # skip primary HDU
-            subset_hdu_list.append(self.hdu_list[index])
-        
-        subset_dataset = FITS_Image_Features_Dataset(
-            dir=self.dir,
-            N_bands=self.N_bands,
-            N_features=self.N_features,
-            transform=self.transform,
-            photometric_transform=self.photometric_transform
-        )
-        subset_dataset.hdu_list = subset_hdu_list
-        subset_dataset.index = {self.hdu_list[idx + 1].header['main_id'] for idx in indices}
-        
-        return subset_dataset
+        # Update in-memory + on-disk manifest
+        self.manifest_set.add(main_id)
+        self.manifest_list.append(main_id)
+        self._append_to_manifest_file(main_id)
