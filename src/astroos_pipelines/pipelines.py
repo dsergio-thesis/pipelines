@@ -1009,6 +1009,7 @@ class StageCatalogLSST(DataPipelineStage):
                     print(f"No SDSS data found for {row['main_id']}. Skipping...")
                     continue
                 morph_type = str(row['morph_type'])
+                print(f"SDSS data found for {row['main_id']}. Morphological type: {morph_type}")
                 label_index = self.pipeline.dataset.labels._get_label_index(morph_type)
 
                 # label_index = label_definitions.get_label_index(morph_type)
