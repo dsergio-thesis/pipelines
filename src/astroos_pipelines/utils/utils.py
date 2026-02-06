@@ -270,7 +270,7 @@ def plot_random_samples_from_dataset(
 
     for i in range(len(random_main_ids)):
         row = pd.DataFrame([{
-            'main_id': random_main_ids[i],
+            'main_id': str(random_main_ids[i]),
             'rvz_redshift': random_rvz[i],
             'ra': random_ras[i],
             'dec': random_decs[i],
@@ -321,7 +321,7 @@ def plot_random_samples_from_dataset(
         plot_index = i * 4 - 4
 
         label_classname = label_definitions.iloc[int(random_labels[i-1])]["long_name"]
-        info = random_samples_info.iloc[i-1]['main_id'] if not random_samples_info.empty else ""
+        info = str(random_samples_info.iloc[i-1]['main_id']) if not random_samples_info.empty else ""
 
         redshift = random_samples_info.iloc[i-1]['rvz_redshift']
         ax_info = fig.add_subplot(gs[plot_index, :])

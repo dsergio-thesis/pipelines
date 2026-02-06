@@ -973,8 +973,11 @@ class StageCatalogLSST(DataPipelineStage):
         refExtendedness
 
         FROM dp1.Object
-        WHERE coord_ra BETWEEN 52 AND 54
-          AND coord_dec BETWEEN -28 AND -26
+        -- WHERE coord_ra BETWEEN 52 AND 54
+        --   AND coord_dec BETWEEN -28 AND -26
+
+        WHERE coord_ra BETWEEN 53.1 AND 53.2
+          AND coord_dec BETWEEN -27.9 AND -27.6
         """
 
         query = query.format(max_records=self.pipeline.max_records)
