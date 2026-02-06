@@ -20,7 +20,7 @@ transformCartesian = transforms.Compose([
     # transforms.ToTensor(),
     # AddGaussianNoise(mean=0., std=0.3),
     # transforms.CenterCrop(30),
-    # CropAroundCentroid(crop_size=(100, 100)),
+    CropAroundCentroid(crop_size=(30, 30)),
     # SegmentationTransform(nsigma=0.2, min_area=40),
     # CropAroundCentroid(crop_size=(30, 30)),
     # CropAroundCentroid(crop_size=(20, 20)),
@@ -37,7 +37,7 @@ cmap = 'gist_ncar'
 # cmap = cmc.batlow
 
 dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
-    dir="data/lsst-9",
+    dir="data/lsst-10",
     transform=transformCartesian,
     morphometric_transform=MorphometryFeatures()
 )

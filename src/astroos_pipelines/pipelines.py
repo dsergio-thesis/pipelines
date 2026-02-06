@@ -45,6 +45,7 @@ from astropy.io import fits
 
 
 from astroquery.simbad import Simbad
+from astroquery.sdss import SDSS
 
 
 rsp_mode = False
@@ -994,6 +995,24 @@ class StageCatalogLSST(DataPipelineStage):
         # add label from Simbad crossmatch if available
         for i, row in df.iterrows():
             coord = SkyCoord(ra=row['coord_ra']*u.deg, dec=row['coord_dec']*u.deg)
+            sdss_data = SDSS.query_crossid_async(
+                        SkyCoord(row['coord_ra'], row['coord_dec'], unit=(u.deg, u.deg)), radius=5 * u.arcsec)
+            
+            label_index = -1  # default to -1 for unknown
+            if len(sdss_data.text.split("\n")) <= 2:
+                print(f"No SDSS data found for {row['main_id']}. Skipping...")
+                continue
+            else:
+                header = sdss_data.text.split("\n")[1]
+                data = sdss_data.text.split("\n")[2]
+                if str(data).strip() == "":
+                    print(f"No SDSS data found for {row['main_id']}. Skipping...")
+                    continue
+                morph_type = str(row['morph_type'])
+                label_index = self.pipeline.dataset.labels._get_label_index(morph_type)
+
+                # label_index = label_definitions.get_label_index(morph_type)
+            
             res = Simbad.query_region(coord, radius=5 * u.arcsec)
             if res is None or len(res) == 0:
                 print(f"[WARNING] No Simbad result for RA={row['coord_ra']}, Dec={row['coord_dec']}. Test Data.")
@@ -1005,7 +1024,7 @@ class StageCatalogLSST(DataPipelineStage):
             print("Simbad: ")
             print(res)
             label = -1
-            df.at[i, 'label'] = label
+            df.at[i, 'label'] = label_index
 
         # convert back to table
         table = Table.from_pandas(df)
