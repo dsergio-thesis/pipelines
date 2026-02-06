@@ -1083,7 +1083,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
         n = len(df)
         print(f"Fetching LSST SODA cutout images for {n} objects...")
 
-        bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' if you queried it / want it
+        bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
         num_bands = len(bands)
 
         # precompute safe scales (dataset-level)
@@ -1107,9 +1107,9 @@ class StageFetchLSSTSoda(DataPipelineStage):
                     x1 = 0.0
                     x2 = 0.0
                     x3 = 0.0
-                    bad = 1.0  # treat missing as bad; alternatively add a separate has-band feature
+                    bad = 1.0  # treat missing as bad
                 else:
-                    # arcsinh scaling (stable with negatives)
+                    # arcsinh scaling 
                     x1 = np.arcsinh(float(flux) / flux_scale)
                     x2 = np.arcsinh(float(err) / err_scale)
 
