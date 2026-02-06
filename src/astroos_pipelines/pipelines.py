@@ -1018,7 +1018,7 @@ class StageCatalogLSST(DataPipelineStage):
                 dec_max=row['coord_dec'] + 0.01,
             )
             res = Simbad.query_tap(query)
-            print(query)
+            print(f"Query: {query}, number of results: {len(res) if res is not None else 0}")
 
             label_index = -1  # default to -1 for unknown
             for match_data in res:
