@@ -18,7 +18,7 @@ from astroos_pipelines.transforms import AddGaussianNoise, \
 
 transformCartesian = transforms.Compose([
     # transforms.ToTensor(),
-    AddGaussianNoise(mean=0., std=0.3),
+    # AddGaussianNoise(mean=0., std=0.3),
     # transforms.CenterCrop(30),
     # CropAroundCentroid(crop_size=(100, 100)),
     # SegmentationTransform(nsigma=0.2, min_area=40),
@@ -38,6 +38,8 @@ cmap = 'gist_ncar'
 
 dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
     dir="data/lsst-5",
+    transform=transformCartesian,
+    morphometric_transform=MorphometryFeatures()
 )
 
 print(f"Dataset size: {len(dataset_cartesian)} samples.")

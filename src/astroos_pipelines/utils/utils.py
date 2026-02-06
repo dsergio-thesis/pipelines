@@ -239,6 +239,7 @@ def plot_random_samples_from_dataset(
     random_samples = [dataset[i][0] for i in random_indices]
     random_labels = [dataset[i][1] for i in random_indices]
     random_morph_features = [dataset[i][2] for i in random_indices]
+    random_phot_features = [dataset[i][3] for i in random_indices]
     random_image_bounds = [(dataset[i][4]['MIN_RA'], dataset[i][4]['MAX_RA'],
                             dataset[i][4]['MIN_DEC'], dataset[i][4]['MAX_DEC'])
                            for i in random_indices]
@@ -308,16 +309,16 @@ def plot_random_samples_from_dataset(
     fig = plt.figure(figsize=(16, num_samples_to_display * 4), constrained_layout=True)
     fig.suptitle(plot_title, fontsize=24)
     gs = gridspec.GridSpec(
-        num_rows * 3, 
+        num_rows * 4, 
         num_cols, 
         figure=fig,
         width_ratios=[1.0] * num_cols,
-        height_ratios=([.25] + [3.0] + [1.0]) * num_rows,
+        height_ratios=([.25] + [3.0] + [1.0] + [1.0]) * num_rows,
     )
 
     for i in range(num_rows):  # rows
         # i += 1
-        plot_index = i * 3 - 3
+        plot_index = i * 4 - 4
 
         label_classname = label_definitions.iloc[int(random_labels[i-1])]["long_name"]
         info = random_samples_info.iloc[i-1]['main_id'] if not random_samples_info.empty else ""
@@ -382,7 +383,7 @@ def plot_random_samples_from_dataset(
             x = np.array([0, 1, 2, 3])
 
             # set features to random numbers
-            features = np.random.uniform(0, 1, size=(4)) 
+            # features = np.random.uniform(0, 1, size=(4)) 
 
             ax_cash.bar(x, features, width=0.25, color='skyblue', edgecolor='black')
             # ax_cash.scatter(x, features, marker='o', color='blue')
@@ -391,8 +392,23 @@ def plot_random_samples_from_dataset(
             ax_cash.set_xticklabels(['C', 'A', 'S', 'H'])
             ax_cash.tick_params(axis='x', labelsize=14, pad=2)
             ax_cash.set_ylim(0.0, 1.0)
-            ax_cash.set_xlabel('Morphometric feature', fontsize=12)
+            ax_cash.set_xlabel('Morphometry', fontsize=12)
             ax_cash.set_ylabel('Norm', fontsize=12)
+
+
+
+            ax_cash = fig.add_subplot(gs[plot_index + 3, j])
+            phot = random_phot_features[i-1][j]
+            phot = np.array(phot, dtype=np.float32)
+            x = np.array([0, 1, 2, 3])
+            ax_cash.bar(x, phot, width=0.25, color='skyblue', edgecolor='black')
+            ax_cash.set_xticks(x)
+            # ax_cash.set_yticks(np.linspace(0.0, 1.0, num=3))
+            ax_cash.set_xticklabels(['x1', 'x2', 'x3', 'x4'])
+            ax_cash.tick_params(axis='x', labelsize=11, pad=2)
+            ax_cash.set_ylim(0.0 if np.min(phot) > 0 else np.min(phot) * 2, np.max(phot) * 2)
+            ax_cash.set_xlabel('Photometry', fontsize=12)
+            ax_cash.set_ylabel('Value', fontsize=12)
 
 
             # ax_cash.set_aspect(2.0)

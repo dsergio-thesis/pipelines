@@ -44,6 +44,9 @@ from astropy.wcs import WCS
 from astropy.io import fits
 
 
+from astroquery.simbad import Simbad
+
+
 rsp_mode = False
 try:
     from lsst.rsp import get_tap_service
@@ -985,6 +988,16 @@ class StageCatalogLSST(DataPipelineStage):
         # convert table to pandas dataframe
         df = table.to_pandas()
 
+        # add label from Simbad crossmatch if available
+        for i, row in df.iterrows():
+            coord = SkyCoord(ra=row['coord_ra']*u.deg, dec=row['coord_dec']*u.deg)
+            res = Simbad.query_region(coord, radius=5 * u.arcsec)
+            if res is None or len(res) == 0:
+                print(f"[WARNING] No Simbad result for RA={row['coord_ra']}, Dec={row['coord_dec']}. Test Data.")
+                continue
+            label = str(row['morph_type']) if 'morph_type' in row else 'Unknown'
+            print(f"RA={row['coord_ra']}, Dec={row['coord_dec']} -> Simbad label: {label}")
+            df.at[i, 'label'] = label
 
         # convert back to table
         table = Table.from_pandas(df)

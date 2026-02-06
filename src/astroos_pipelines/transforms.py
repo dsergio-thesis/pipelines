@@ -61,7 +61,7 @@ class MorphometryFeatures:
 
         all_channels = image.squeeze()
 
-        cash_images = torch.empty((all_channels.shape[0], 4))
+        cash_images = np.empty((all_channels.shape[0], 4))
         # print(f"cash_images.shape: {cash_images.shape}")
 
         for c in range(all_channels.shape[0]):
@@ -76,11 +76,15 @@ class MorphometryFeatures:
 
             # print(f"Channel {c} - mask.shape: {mask.shape}")
 
+            cash_images[c, 0] = res['C']
+            cash_images[c, 1] = res['A']
+            cash_images[c, 2] = res['S']
+            cash_images[c, 3] = res['H']
 
-            cash_images[c, 0] = torch.tensor(res['C'])
-            cash_images[c, 1] = torch.tensor(res['A'])
-            cash_images[c, 2] = torch.tensor(res['S'])
-            cash_images[c, 3] = torch.tensor(res['H'])
+            # cash_images[c, 0] = torch.tensor(res['C'])
+            # cash_images[c, 1] = torch.tensor(res['A'])
+            # cash_images[c, 2] = torch.tensor(res['S'])
+            # cash_images[c, 3] = torch.tensor(res['H'])
 
 
 
