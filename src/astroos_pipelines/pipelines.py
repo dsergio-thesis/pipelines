@@ -998,8 +998,13 @@ class StageCatalogLSST(DataPipelineStage):
             if res is None or len(res) == 0:
                 print(f"[WARNING] No Simbad result for RA={row['coord_ra']}, Dec={row['coord_dec']}. Test Data.")
                 continue
-            label = str(row['morph_type']) if 'morph_type' in row else 'Unknown'
+            match = res[0]
+            label = str(match['morph_type']) if 'morph_type' in match else 'Unknown'
             print(f"RA={row['coord_ra']}, Dec={row['coord_dec']} -> Simbad label: {label}")
+
+            print("Simbad: ")
+            print(res)
+            label = -1
             df.at[i, 'label'] = label
 
         # convert back to table
