@@ -108,7 +108,9 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
         calib_level=3,
     )
 
-    band_images = np.empty((len(bands), 200, 200)) 
+    image_width = 400
+
+    band_images = np.empty((len(bands), image_width, image_width)) 
     r = np.random.rand()
 
     for i, band in enumerate(bands): 
@@ -133,7 +135,7 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
         mem.setData(cutout_bytes, len(cutout_bytes))
 
         cutout = ExposureF(mem)
-        cutout = pad_exposure_ml(cutout)
+        cutout = pad_exposure_ml(cutout, image_width)
         image = cutout.getImage().getArray()
 
         band_images[i] = image

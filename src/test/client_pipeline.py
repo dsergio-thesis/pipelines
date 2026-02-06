@@ -97,7 +97,7 @@ if __name__ == "__main__":
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cart_lsst = FITS_Image_Morphometry_Photometry_Dataset(
-            dir="./data/lsst-8",
+            dir="./data/lsst-9",
         labels_init_file="./sdss_morph_types_info.csv",
         N_bands=5, 
         N_morphometric_features=0,
