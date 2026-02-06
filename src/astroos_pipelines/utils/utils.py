@@ -232,17 +232,20 @@ def plot_random_samples_from_dataset(
         np.random.seed()
     random_indices = np.random.choice(len(dataset), size=num_samples_to_display, replace=False)
 
+    print("First index:")
+    print(dataset[0])
+
     # print("Random indices:", random_indices)
     random_samples = [dataset[i][0] for i in random_indices]
     random_labels = [dataset[i][1] for i in random_indices]
     random_morph_features = [dataset[i][2] for i in random_indices]
-    random_image_bounds = [(dataset[i][3]['min_ra'], dataset[i][3]['max_ra'],
-                            dataset[i][3]['min_dec'], dataset[i][3]['max_dec'])
+    random_image_bounds = [(dataset[i][4]['MIN_RA'], dataset[i][4]['MAX_RA'],
+                            dataset[i][4]['MIN_DEC'], dataset[i][4]['MAX_DEC'])
                            for i in random_indices]
-    random_main_ids = [dataset[i][3]['main_id'] for i in random_indices]
-    random_ras = [dataset[i][3]['ra'] for i in random_indices]
-    random_decs = [dataset[i][3]['dec'] for i in random_indices]
-    random_rvz = [dataset[i][3]['rvz_redshift'] for i in random_indices]
+    random_main_ids = [dataset[i][4]['MAIN_ID'] for i in random_indices]
+    random_ras = [dataset[i][4]['RA'] for i in random_indices]
+    random_decs = [dataset[i][4]['DEC'] for i in random_indices]
+    random_rvz = [dataset[i][4]['rvz_redshift'] for i in random_indices]
     for i in range(len(random_samples)):
         print(random_samples[i].shape)
         print("mean: ", random_samples[i].mean())

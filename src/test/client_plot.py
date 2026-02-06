@@ -4,7 +4,8 @@ import cmcrameri.cm as cmc
 import importlib
 
 from astroos_pipelines.utils.utils import plot_random_samples_from_dataset
-from astroos_pipelines.datasets import FITS_Image_Features_Dataset
+from astroos_pipelines.datasets import FITS_Image_Features_Dataset, \
+    FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
@@ -35,10 +36,8 @@ else:
 cmap = 'gist_ncar'
 # cmap = cmc.batlow
 
-dataset_cartesian = FITS_Image_Features_Dataset(
-    dir="data/lsst-4",
-    N_bands=5, 
-    photometric_transform=None
+dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
+    dir="data/lsst-5",
 )
 
 print(f"Dataset size: {len(dataset_cartesian)} samples.")
