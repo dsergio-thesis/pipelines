@@ -126,12 +126,13 @@ class DataLoaderFITS(DataLoader):
 
     @staticmethod
     def custom_collate(batch):
-        images, labels, features, headers = zip(*batch)
+        images, labels, morph_features, phot_features, headers = zip(*batch)
         images = torch.stack(images)
         labels = torch.stack(labels)
-        features = torch.stack(features)
+        morph_features = torch.stack(morph_features)
+        phot_features = torch.stack(phot_features)
         headers = list(headers)
-        return images, labels, features, headers 
+        return images, labels, morph_features, phot_features, headers 
 
 
 class CutoutDataset(DataSetBase):
@@ -389,6 +390,9 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
 
     def __len__(self):
         return len(self.manifest_list)
+    
+    def num_classes(self):
+        return self.labels.num_classes()
 
     def __getitem__(self, idx):
         objectId = self.manifest_list[idx]

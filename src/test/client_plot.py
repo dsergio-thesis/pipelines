@@ -37,7 +37,7 @@ cmap = 'gist_ncar'
 # cmap = cmc.batlow
 
 dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
-    dir="data/lsst-10",
+    dir="data/lsst-11",
     transform=transformCartesian,
     morphometric_transform=MorphometryFeatures()
 )
