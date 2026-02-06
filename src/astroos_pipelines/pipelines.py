@@ -471,8 +471,6 @@ class StageCatalogLSST(DataPipelineStage):
         # convert table to pandas dataframe
         df = table.to_pandas()
 
-        # remove rows with NaN values of 'g_cModelMag'
-        df = df.dropna(subset=['g_cModelMag'])
 
         # convert back to table
         table = Table.from_pandas(df)
