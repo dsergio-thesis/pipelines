@@ -212,3 +212,4 @@ _pipelines/
 **/*.swp
 
 **/.DS_Store
+env.sh

@@ -1,12 +1,6 @@
-import torch
-from torchvision import datasets, transforms
-import numpy as np
-import matplotlib.pyplot as plt
+from torchvision import transforms
 import sys
 import os
-from skimage import morphology
-from PIL import Image
-import pandas as pd
 import importlib
 
 # astropy
@@ -43,8 +37,7 @@ importlib.reload(sys.modules['astroos_pipelines.utils.utils'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
 
 
-if __name__ == "__main__":
-
+def main():
     transformPolar = transforms.Compose([
         # transforms.ToTensor(),
         # AddGaussianNoise(mean=0., std=0.3),
@@ -97,7 +90,7 @@ if __name__ == "__main__":
     labels_file = "./sdss_morph_types_info.csv"
 
     dataset_cart_lsst = FITS_Image_Morphometry_Photometry_Dataset(
-            dir="./data/lsst-11",
+            dataset_dir="./data/lsst-11",
         labels_init_file="./sdss_morph_types_info.csv",
         N_bands=5, 
         N_morphometric_features=0,
@@ -154,3 +147,7 @@ if __name__ == "__main__":
     # for p in pipelines:
     #     p.run_pipeline()
 
+
+
+if __name__ == "__main__":
+    main()

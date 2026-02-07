@@ -24,12 +24,12 @@ class DataSetBase(Dataset):
     Base class for datasets.
     """
 
-    def __init__(self, dir):
+    def __init__(self, dataset_dir):
         super().__init__()
-        self.dir = dir
+        self.dataset_dir = dataset_dir
         # create directory if not exists
-        os.makedirs(self.dir, exist_ok=True)
-        self.filename = os.path.join(self.dir, "dataset.fits")
+        os.makedirs(self.dataset_dir, exist_ok=True)
+        # self.filename = os.path.join(self.dir, "dataset.fits")
 
     def __len__(self):
         raise NotImplementedError("Subclasses must implement __len__ method.")
@@ -65,7 +65,7 @@ class SDSSDataset(DataSetBase):
                  labels_tensor, 
                  m_features_transform=None, 
                  transform=None):
-        super().__init__()
+        super().__init__(dataset_dir=None)
         self.data_tensor = data_tensor
         self.labels_tensor = labels_tensor
         self.m_features_transform = m_features_transform
@@ -142,7 +142,7 @@ class CutoutDataset(DataSetBase):
     def __init__(self, 
                  m_features_transform=None, 
                  transform=None):
-        super().__init__()
+        super().__init__(dataset_dir=None)
         self.m_features_transform = m_features_transform
         self.transform = transform
 
@@ -178,161 +178,161 @@ class CutoutDataset(DataSetBase):
 
 
 
-class FITS_Image_Features_Dataset(DataSetBase):
-    """
-    FITS Dataset containing band images, photometric features, labels, WCS headers, etc.
-    Could possibly include spectra/spectral features in future.
-    """
+# class FITS_Image_Features_Dataset(DataSetBase):
+    # """
+    # FITS Dataset containing band images, photometric features, labels, WCS headers, etc.
+    # Could possibly include spectra/spectral features in future.
+    # """
 
-    def __init__(self,
-                 dir,
-                 labels_init_file=None,
-                 N_bands=5,
-                 N_features=4,
-                 transform=None,
-                 photometric_transform=None):
-        super().__init__(dir=dir)
+    # def __init__(self,
+                 # dir,
+                 # labels_init_file=None,
+                 # N_bands=5,
+                 # N_features=4,
+                 # transform=None,
+                 # photometric_transform=None):
+        # super().__init__(dir=dir)
 
-        self.transform = transform
+        # self.transform = transform
 
-        self.hdu_primary = fits.PrimaryHDU()
-        self.hdu_list = fits.HDUList([self.hdu_primary])
+        # self.hdu_primary = fits.PrimaryHDU()
+        # self.hdu_list = fits.HDUList([self.hdu_primary])
 
-        self.photometric_transform = photometric_transform
-        self.N_bands = N_bands
-        self.N_features = N_features
+        # self.photometric_transform = photometric_transform
+        # self.N_bands = N_bands
+        # self.N_features = N_features
 
-        self.labels = Labels(dir=dir, labels_init_file=labels_init_file)
+        # self.labels = Labels(dir=dir, labels_init_file=labels_init_file)
 
-        self.index = set()
-        if self.filename is not None:
-            if os.path.exists(self.filename):
-                self.hdu_list = fits.open(self.filename)
-                for hdu in self.hdu_list[1:]:  # skip primary
-                    key = hdu.header['main_id']
-                    self.index.add(key)
-            else:
-                self.hdu_list.writeto(self.filename)
-        print("initializing the dataset")
+        # self.index = set()
+        # if self.filename is not None:
+            # if os.path.exists(self.filename):
+                # self.hdu_list = fits.open(self.filename)
+                # for hdu in self.hdu_list[1:]:  # skip primary
+                    # key = hdu.header['main_id']
+                    # self.index.add(key)
+            # else:
+                # self.hdu_list.writeto(self.filename)
+        # print("initializing the dataset")
 
-    def __len__(self):
-        return len(self.hdu_list) - 1  # Exclude primary HDU
+    # def __len__(self):
+        # return len(self.hdu_list) - 1  # Exclude primary HDU
 
-    def __getitem__(self, idx):
-        """
-        Get item by index. Each item consists of N_bands images, label, photometric features.
-        """
-        # skip primary HDU
-        index = idx + 1
+    # def __getitem__(self, idx):
+        # """
+        # Get item by index. Each item consists of N_bands images, label, photometric features.
+        # """
+        # # skip primary HDU
+        # index = idx + 1
 
-        image = np.array(self.hdu_list[index].data)
-        print(f"calling __getitem__ for index {index}, image shape: {image.shape}")
+        # image = np.array(self.hdu_list[index].data)
+        # print(f"calling __getitem__ for index {index}, image shape: {image.shape}")
 
-        # image[~np.isfinite(image)] = np.nan
-        # image[image <= -3e38] = np.nan
-        # image[image >=  3e38] = np.nan
+        # # image[~np.isfinite(image)] = np.nan
+        # # image[image <= -3e38] = np.nan
+        # # image[image >=  3e38] = np.nan
 
 
-        # endianness
-        if image.dtype.byteorder not in ("=", "|"):
-            # pass
+        # # endianness
+        # if image.dtype.byteorder not in ("=", "|"):
+            # # pass
+            # # image = image.byteswap().newbyteorder()
+            # # image = image.view(image.dtype.newbyteorder('='))
             # image = image.byteswap().newbyteorder()
-            # image = image.view(image.dtype.newbyteorder('='))
-            image = image.byteswap().newbyteorder()
 
-        # contiguous
-        # image = np.ascontiguousarray(image, dtype=np.float32)
+        # # contiguous
+        # # image = np.ascontiguousarray(image, dtype=np.float32)
 
-        x = image[0,:,:]
-        print("NaNs:", np.isnan(x).sum())
-        print("Infs:", np.isinf(x).sum())
-        print("Finite:", np.isfinite(x).sum())
+        # x = image[0,:,:]
+        # print("NaNs:", np.isnan(x).sum())
+        # print("Infs:", np.isinf(x).sum())
+        # print("Finite:", np.isfinite(x).sum())
 
-        # image = np.nan_to_num(
-            # image,
-            # nan=0.0,
-            # posinf=0.0,
-            # neginf=0.0
+        # # image = np.nan_to_num(
+            # # image,
+            # # nan=0.0,
+            # # posinf=0.0,
+            # # neginf=0.0
+        # # )
+
+        # image_b1 = image[0,:,:]
+        # print(f"Band 1 - dtype: {image_b1.dtype}, shape: {image_b1.shape}, min: {np.min(image_b1)}, max: {np.max(image_b1)}, mean: {np.mean(image_b1)}, std: {np.std(image_b1)}")
+        
+        # # print(f"image dtype: {image.dtype}, shape: {image.shape}, min: {np.min(image)}, max: {np.max(image)}, mean: {np.mean(image)}, std: {np.std(image)}")
+        # # image = np.random.normal(size=image.shape).astype(np.float32)
+        # # image = np.nan_to_num(image, nan=0.0, posinf=0.0, neginf=0.0)
+        # image_features = np.zeros((self.N_bands, self.N_features), dtype=np.float32)
+
+        # if self.photometric_transform is not None:
+            # image_features = self.photometric_transform(image)
+
+        # label = self.hdu_list[index].header['label']
+
+        # if self.transform:
+            # transformed_image = self.transform(image)
+        # else:
+            # transformed_image = image
+
+        # # print(f"Returning item index {index}, transformed_image shape: {transformed_image.shape}, label: {label}, image_features shape: {image_features.shape}")
+
+        # # return torch.tensor(transformed_image), torch.tensor(label, dtype=torch.long), torch.tensor(image_features), self.hdu_list[index].header
+        # # return torch.tensor(transformed_image), torch.tensor(label), torch.tensor(image_features), self.hdu_list[index].header
+        # return torch.tensor(transformed_image, dtype=torch.float32), torch.tensor(label), image_features, self.hdu_list[index].header
+
+    # def _contains(self, main_id):
+        # return main_id in self.index
+
+    # def append(self, hdu):
+        # """
+        # Append an HDU to the dataset.
+        # Parameters
+        # ----------
+        # hdu : astropy.io.fits.HDU
+            # HDU to append.
+        # """
+
+        # main_id = hdu.header['main_id']
+        # # print(f"adding {main_id} to the dataset")
+
+        # key = main_id
+
+        # # Add to index and hdu_list
+        # self.index.add(key)
+
+        # self.hdu_list.append(hdu)
+        # self.hdu_list.writeto(self.filename, overwrite=True)
+    
+    # def num_classes(self):
+        # return self.labels.num_classes()
+    
+    # def num_features(self):
+        # return self.N_features
+
+    # def num_bands(self):
+        # return self.N_bands
+
+    # def get_subset(self, indices):
+        # subset_hdu_list = fits.HDUList([self.hdu_primary])
+        # for idx in indices:
+            # index = idx + 1  # skip primary HDU
+            # subset_hdu_list.append(self.hdu_list[index])
+        
+        # subset_dataset = FITS_Image_Features_Dataset(
+            # dir=self.dir,
+            # N_bands=self.N_bands,
+            # N_features=self.N_features,
+            # transform=self.transform,
+            # photometric_transform=self.photometric_transform
         # )
-
-        image_b1 = image[0,:,:]
-        print(f"Band 1 - dtype: {image_b1.dtype}, shape: {image_b1.shape}, min: {np.min(image_b1)}, max: {np.max(image_b1)}, mean: {np.mean(image_b1)}, std: {np.std(image_b1)}")
+        # subset_dataset.hdu_list = subset_hdu_list
+        # subset_dataset.index = {self.hdu_list[idx + 1].header['main_id'] for + idx in indices}
         
-        # print(f"image dtype: {image.dtype}, shape: {image.shape}, min: {np.min(image)}, max: {np.max(image)}, mean: {np.mean(image)}, std: {np.std(image)}")
-        # image = np.random.normal(size=image.shape).astype(np.float32)
-        # image = np.nan_to_num(image, nan=0.0, posinf=0.0, neginf=0.0)
-        image_features = np.zeros((self.N_bands, self.N_features), dtype=np.float32)
-
-        if self.photometric_transform is not None:
-            image_features = self.photometric_transform(image)
-
-        label = self.hdu_list[index].header['label']
-
-        if self.transform:
-            transformed_image = self.transform(image)
-        else:
-            transformed_image = image
-
-        # print(f"Returning item index {index}, transformed_image shape: {transformed_image.shape}, label: {label}, image_features shape: {image_features.shape}")
-
-        # return torch.tensor(transformed_image), torch.tensor(label, dtype=torch.long), torch.tensor(image_features), self.hdu_list[index].header
-        # return torch.tensor(transformed_image), torch.tensor(label), torch.tensor(image_features), self.hdu_list[index].header
-        return torch.tensor(transformed_image, dtype=torch.float32), torch.tensor(label), image_features, self.hdu_list[index].header
-
-    def _contains(self, main_id):
-        return main_id in self.index
-
-    def append(self, hdu):
-        """
-        Append an HDU to the dataset.
-        Parameters
-        ----------
-        hdu : astropy.io.fits.HDU
-            HDU to append.
-        """
-
-        main_id = hdu.header['main_id']
-        # print(f"adding {main_id} to the dataset")
-
-        key = main_id
-
-        # Add to index and hdu_list
-        self.index.add(key)
-
-        self.hdu_list.append(hdu)
-        self.hdu_list.writeto(self.filename, overwrite=True)
-    
-    def num_classes(self):
-        return self.labels.num_classes()
-    
-    def num_features(self):
-        return self.N_features
-
-    def num_bands(self):
-        return self.N_bands
-
-    def get_subset(self, indices):
-        subset_hdu_list = fits.HDUList([self.hdu_primary])
-        for idx in indices:
-            index = idx + 1  # skip primary HDU
-            subset_hdu_list.append(self.hdu_list[index])
-        
-        subset_dataset = FITS_Image_Features_Dataset(
-            dir=self.dir,
-            N_bands=self.N_bands,
-            N_features=self.N_features,
-            transform=self.transform,
-            photometric_transform=self.photometric_transform
-        )
-        subset_dataset.hdu_list = subset_hdu_list
-        subset_dataset.index = {self.hdu_list[idx + 1].header['main_id'] for idx in indices}
-        
-        return subset_dataset
+        # return subset_dataset+ 
 
 
 class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
     def __init__(self,
-                 dir,
+                 dataset_dir,
                  labels_init_file=None,
                  N_bands=5,
                  N_morphometric_features=4,
@@ -340,7 +340,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
                  transform=None,
                  morphometric_transform=None,
                  photometric_transform=None):
-        super().__init__(dir=dir)
+        super().__init__(dataset_dir=dataset_dir)
 
         self.transform = transform
         self.photometric_transform = photometric_transform
@@ -350,10 +350,10 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         self.N_morphometric_features = N_morphometric_features
         self.N_photometric_features = N_photometric_features
 
-        self.labels = Labels(dir=dir, labels_init_file=labels_init_file)
+        self.labels = Labels(labels_dir=dataset_dir, labels_init_file=labels_init_file)
 
         # Manifest
-        self.manifest_file = os.path.join(self.dir, "manifest.csv")
+        self.manifest_file = os.path.join(self.dataset_dir, "manifest.csv")
         self.manifest_list = []
         self.manifest_set = set()
 
@@ -396,7 +396,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
 
     def __getitem__(self, idx):
         objectId = self.manifest_list[idx]
-        hdul_filename = os.path.join(self.dir, f"{objectId}.fits")
+        hdul_filename = os.path.join(self.dataset_dir, f"{objectId}.fits")
 
         # Always close FITS after reading
         with fits.open(hdul_filename, memmap=False) as hdul:
@@ -458,7 +458,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         if main_id in self.manifest_set:
             return
 
-        out_path = os.path.join(self.dir, f"{main_id}.fits")
+        out_path = os.path.join(self.dataset_dir, f"{main_id}.fits")
         hdul.writeto(out_path, overwrite=True)
 
         # Update in-memory + on-disk manifest

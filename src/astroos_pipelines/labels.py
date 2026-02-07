@@ -8,9 +8,9 @@ class Labels:
     Class to handle loading and managing classification labels from a CSV file.
     """
     
-    def __init__(self, dir, labels_init_file, required_columns=None, unknown_label_index=31):
-        self.dir = dir
-        os.makedirs(self.dir, exist_ok=True)
+    def __init__(self, labels_dir, labels_init_file, required_columns=None, unknown_label_index=31):
+        self.labels_dir = labels_dir
+        os.makedirs(self.labels_dir, exist_ok=True)
         self.required_columns = required_columns or ['label_index', 'short_name']
         self.unknown_label_index = unknown_label_index
 
@@ -23,7 +23,7 @@ class Labels:
             self._initialize_labels()
 
     def _load_labels(self):
-        labels_file = os.path.join(self.dir, "labels.csv")
+        labels_file = os.path.join(self.labels_dir, "labels.csv")
         if os.path.exists(labels_file):
             self.labels = pd.read_csv(labels_file)
             self._validate_labels()
@@ -60,8 +60,8 @@ class Labels:
         self._save_labels()
 
     def _save_labels(self):
-        self.labels.to_csv(f"{self.dir}/labels.csv", index=True)
-        print(f"Saved labels to {self.dir}/labels.csv")
+        self.labels.to_csv(f"{self.labels_dir}/labels.csv", index=True)
+        print(f"Saved labels to {self.labels_dir}/labels.csv")
 
     def _add_label(self, label):
         if label not in self.labels.index:
