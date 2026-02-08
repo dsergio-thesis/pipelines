@@ -24,8 +24,8 @@ def init_rsp():
 
         rsp_mode = True
         print("LSST RSP mode enabled.")
-    except ModuleNotFoundError:
-        print("LSST RSP mode disabled.")
+    except ModuleNotFoundError as e:
+        print(f"LSST RSP mode disabled. Error: {e}")
 
     return rsp_mode
 

@@ -47,10 +47,11 @@ def main():
     pipeline_minor_version = config.pipeline_minor_version
 
     print(f"Config summary: ")
-    print(f"Dataset directory: {dataset_dir}")
-    print(f"Dataset name: {dataset_name}")
-    print(f"Pipeline name: {pipeline_name}")
-    print(f"Pipeline minor version: {pipeline_minor_version}")
+    print(f" - Dataset directory: {dataset_dir}")
+    print(f" - Dataset name: {dataset_name}")
+    print(f" - Pipeline name: {pipeline_name}")
+    print(f" - Pipeline minor version: {pipeline_minor_version}")
+    print(f" - Coordinates: {coord}, and radius: {radius}")
 
     transformPolar = transforms.Compose([
         # transforms.ToTensor(),

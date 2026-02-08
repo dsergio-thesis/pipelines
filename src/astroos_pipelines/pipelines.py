@@ -66,8 +66,8 @@ try:
 
     rsp_mode = True
     print("LSST RSP mode enabled.")
-except ImportError:
-    print("LSST RSP mode disabled.")
+except ImportError as e:
+    print(f"LSST RSP mode disabled. Error {e}")
 
 
 # ============================================================
@@ -918,28 +918,8 @@ class StageCatalogLSST(DataPipelineStage):
         ra_min = (query_coords.ra.deg - delta_ra) % 360
         ra_max = (query_coords.ra.deg + delta_ra) % 360
 
-        query = f"SELECT TOP {self.pipeline.max_records} * " \
-            f"FROM dp1.Object WHERE coord_ra BETWEEN {ra_min} AND {ra_max} AND " \
-            f" coord_dec BETWEEN {dec_min} AND {dec_max}"
-        
-        query = \
-        """
-        SELECT TOP {max_records} 
-            objectId, 
-            coord_ra, 
-            coord_dec, 
-            g_cModelMag, 
-            g_cModelMagErr, 
-            refExtendedness
-        FROM dp1.Object
-        WHERE coord_ra BETWEEN 4.0641 AND 106.8238
-            AND coord_dec BETWEEN -72.7414 AND 8.0037
-            AND g_cModelMag < 24 
-            AND refExtendedness = 1
-        """
 
         # Extended Chandra Deep Field South (ECDFS)
-        
         query = \
         """
         SELECT TOP {max_records}
@@ -977,11 +957,20 @@ class StageCatalogLSST(DataPipelineStage):
         -- WHERE coord_ra BETWEEN 52 AND 54
         --   AND coord_dec BETWEEN -28 AND -26
 
-        WHERE coord_ra BETWEEN 53.1 AND 53.2
-          AND coord_dec BETWEEN -27.9 AND -27.6
+        -- WHERE coord_ra BETWEEN 53.1 AND 53.2
+        --  AND coord_dec BETWEEN -27.9 AND -27.6
+        WHERE coord_ra BETWEEN {ra_min} AND {ra_max}
+            AND coord_dec BETWEEN {dec_min} AND {dec_max}
+
         """
 
-        query = query.format(max_records=self.pipeline.max_records)
+        query = query.format(
+                max_records=self.pipeline.max_records,
+                ra_min=ra_min,
+                ra_max=ra_max,
+                dec_min=dec_min,
+                dec_max=dec_max
+                )
 
         # sync
         table = client.query(query)

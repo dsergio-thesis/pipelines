@@ -7,5 +7,6 @@ if [ ! -f env.sh ]; then
 fi
 
 source env.sh
+export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
 
-PYTHONPATH=src python -m test.client_lsst_pipeline "$@"
+python -m test.client_lsst_pipeline "$@"
