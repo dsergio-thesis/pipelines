@@ -13,4 +13,6 @@ def test_pipeline_classification():
 
 def test_dataset_loading():
     dataset = FITS_Image_Morphometry_Photometry_Dataset(dataset_dir="test_data")
-    assert len(dataset) is  0
+    assert len(dataset) is 0
+
+

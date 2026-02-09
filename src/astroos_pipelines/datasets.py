@@ -29,7 +29,6 @@ class DataSetBase(Dataset):
         self.dataset_dir = dataset_dir
         # create directory if not exists
         os.makedirs(self.dataset_dir, exist_ok=True)
-        # self.filename = os.path.join(self.dir, "dataset.fits")
 
     def __len__(self):
         raise NotImplementedError("Subclasses must implement __len__ method.")
@@ -133,48 +132,6 @@ class DataLoaderFITS(DataLoader):
         phot_features = torch.stack(phot_features)
         headers = list(headers)
         return images, labels, morph_features, phot_features, headers 
-
-
-class CutoutDataset(DataSetBase):
-    """
-    """
-
-    def __init__(self, 
-                 m_features_transform=None, 
-                 transform=None):
-        super().__init__(dataset_dir=None)
-        self.m_features_transform = m_features_transform
-        self.transform = transform
-
-    def __len__(self):
-        return len(self.data_tensor)
-
-    def __getitem__(self, idx):
-        sample = self.data_tensor[idx]
-        label = self.labels_tensor[idx]
-        transformed_sample = sample
-        # first apply standard transforms
-        if (self.transform is not None):
-            transformed_sample = self.transform(sample)
-
-        # then apply morphometric features extraction
-        if (self.m_features_transform is not None):
-            m_features = self.m_features_transform(transformed_sample)
-            # m_features = m_features.view(-1)
-        else:
-            m_features = torch.tensor([])
-
-        # sample = sample.numpy()
-        # m_features = m_features.numpy()
-        return transformed_sample, label, m_features
-
-    def get_unique_labels(self):
-        return list(set(self.get_labels()))
-    
-    def summary(self):
-        from collections import Counter
-        label_counts = Counter(self.get_labels())
-        return dict(label_counts)
 
 
 
