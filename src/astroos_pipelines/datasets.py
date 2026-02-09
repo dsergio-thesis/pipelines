@@ -350,7 +350,12 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         self.N_morphometric_features = N_morphometric_features
         self.N_photometric_features = N_photometric_features
 
-        self.labels = Labels(labels_dir=dataset_dir, labels_init_file=labels_init_file)
+        if labels_init_file is not None and not os.path.exists(labels_init_file):
+            raise ValueError(f"labels_init_file '{labels_init_file}' does not exist")
+        if labels_init_file is None:
+            print("Warning: No labels_init_file provided, labels will be empty. Call dataset.labels.load_from_file() later to load labels if needed.")
+        else:
+            self.labels = Labels(labels_dir=dataset_dir, labels_init_file=labels_init_file)
 
         # Manifest
         self.manifest_file = os.path.join(self.dataset_dir, "manifest.csv")
