@@ -75,9 +75,5 @@ class Labels:
     def num_classes(self):
         return len(self.labels)
 
-# main function for testing
-if __name__ == "__main__":
-    labels = Labels("sdss_morph_types_info.csv")
-    print(labels.get_label_definitions())
 
 

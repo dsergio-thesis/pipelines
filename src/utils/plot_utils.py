@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from torch import optim
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 import time
 
@@ -23,196 +24,8 @@ import matplotlib.ticker as mticker
 # Batlow
 import cmcrameri.cm as cmc
 
-def train_image(model, dataloader, opt, n_epochs=1, loss_fn=F.cross_entropy, device=device):
-    
-    model.train()
-    
-    start = time.time()
-    
-    for i in range(n_epochs):
-        error = 0
-        loss_ = 0.0
-        sample_count = 0
-        
-        for j, batch in enumerate(dataloader):
-            if j % 10 == 0:
-                # print(f"mini batch: {j} | elapsed time: {time.time()-start:.2f} seconds")
-                pass
-            
-            # print(batch.shape)
-            
-            X, y, _, _ = batch
-
-            # print("X")
-            # print(X.shape)
-
-            # print(X)
-            
-            X = X.to(device) #Torch dataloader returns images into NCHW format
-
-            # print(f"X shape: {X.shape}")
-            # print(f"y shape: {y.shape}")
-
-            y = y.to(device)
-            
-            Z = model(X)
-#            print(f"Z shape: {Z.size()}")
-#            print(f"y shape: {y.size()}")
-            loss = loss_fn(Z, y)
-            loss.backward()  
-            opt.step()
-
-            
-            opt.zero_grad()
-            
-            with torch.no_grad():
-                loss_ += loss * X.shape[0]
-                error += (Z.argmax(dim=1) != y).sum().to("cpu")
-                
-                sample_count += X.shape[0]
-
-    return loss_ / sample_count, error/sample_count
-
-
-def test_image(model, dataloader, loss_fn=F.cross_entropy, device=device):
-
-    model.eval()
-
-    with torch.no_grad():
-        error = torch.tensor(0, device=device)
-        loss = torch.tensor(0.0, device=device)
-        sample_count = 0
-        for i, batch in enumerate(dataloader):
-            X, y, _, _ = batch
-            X = X.to(device) #Torch dataloader returns images into NCHW format
-            y = y.to(device)
-
-            Z = model(X)
-            loss += loss_fn(Z, y) * X.shape[0]
-            error += (Z.argmax(dim=1) != y).sum().to("cpu")
-            sample_count += X.shape[0]
-        return loss/sample_count, error/sample_count
-
-def predict(model, dataloader, device=device):
-
-    model.eval()
-    predictions = []
-    with torch.no_grad():
-        for i, batch in enumerate(dataloader):
-            X, _ = batch
-            X = X.to(device) #Torch dataloader returns images into NCHW format
-
-            Z = model(X)
-            predictions.append(Z.argmax(dim=1).to("cpu"))
-    predictions = torch.cat(predictions, dim=0)
-    return predictions
-
-    
-import matplotlib.pyplot as plt
-import numpy as np
-
-def plt_loss_error(train_l=None, test_l=None, train_e=None, test_e=None):
-    # Convert tensors to numpy
-    train_loss = [t.cpu().numpy() for t in train_l]
-    test_loss = [t.cpu().numpy() for t in test_l]
-    train_error = [t.cpu().numpy() for t in train_e]
-    test_error = [t.cpu().numpy() for t in test_e]
-    
-    x = np.arange(len(train_l))
-    
-    fig, ax1 = plt.subplots(figsize=(8,5))
-    
-    # Plot loss on left y-axis
-    ax1.plot(x, train_loss, label="Train Loss", color="tab:blue", linestyle='-')
-    ax1.plot(x, test_loss, label="Test Loss", color="tab:blue", linestyle='--')
-    ax1.set_xlabel("Epoch")
-    ax1.set_ylabel("Loss", color="tab:blue")
-    ax1.tick_params(axis='y', labelcolor="tab:blue")
-    
-    # Create second y-axis for error
-    ax2 = ax1.twinx()
-    ax2.plot(x, train_error, label="Train Error", color="tab:red", linestyle='-')
-    ax2.plot(x, test_error, label="Test Error", color="tab:red", linestyle='--')
-    ax2.set_ylabel("Error", color="tab:red")
-    ax2.tick_params(axis='y', labelcolor="tab:red")
-    
-    # Combine legends
-    lines, labels = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines + lines2, labels + labels2, loc="upper right")
-    
-    plt.title("Training Loss and Error")
-    plt.tight_layout()
-    plt.savefig("plot_error_loss.png", dpi=300)
-    plt.close()
-
-
-def plot_survey_images(data, nrows=2, ncols=5, figsize=[8,4], title='', idx=0, each_label=None):
-    '''Plot an array of images'''
-
-    c = 0
-
-    if each_label is None:
-        each_label = [f'{i+1}' for i in range(nrows)]
-
-    fig, ax = plt.subplots(nrows=nrows, ncols=ncols, figsize=figsize)
-
-    # fig.subplots_adjust(left=0.15, right=0.95, wspace=0.01, hspace=0.01, bottom=0.15)
-
-    for i in range(nrows):
-        for j in range(ncols):
-
-            if (idx + i >= data.shape[0]):
-                break            
-                
-            if j == 0:
-                ax[i][j].set_ylabel(each_label[i], fontsize=12, rotation=0, labelpad=30)
-            # if j == 0:
-            #     ax[i, j].text(-0.1, 0.5, each_label[i], va='center', ha='left', transform=ax[i, j].transAxes)
-
-
-            ax[i][j].imshow(data[idx + i][j], cmap='gist_ncar')
-
-        if (i == 0):
-            ax[i][j].xaxis.set_major_formatter(plt.NullFormatter())
-        if (j != 0):
-            ax[i][j].yaxis.set_major_formatter(plt.NullFormatter())
-
-        # ax[i][j].imshow(data[idx + i][j], cmap='gist_ncar')
-            
-        # if (j < ncols):
-        #     j += 1
-        # if (j == ncols):
-        #     j = 0
-        #     if (i < nrows - 1):
-        #         i += 1
-        c += 1
-
-    fig.suptitle(f"{title} idx={idx}", fontsize=16)
-
-    ax[nrows-1][int(ncols/2)].set_xlabel('$band$')   
-
-
-import pandas as pd
-
-def label_definitions(classification_labels_file):
-
-    label_definitions = pd.read_csv(classification_labels_file)
-
-    # add column in the beginning, which is an index
-    if ("label_index" not in label_definitions.columns):
-        label_definitions.insert(0, 'index', range(1, len(label_definitions) + 1))
-    label_definitions.to_csv(classification_labels_file, index=False)
-
-    # add index for fast lookup
-    label_definitions.set_index('morph_type', inplace=True)
-
-    return label_definitions
-
-
 import warnings
 warnings.filterwarnings("error", message="Mean of empty slice")
-
 
 def plot_random_samples_from_dataset(
         dataset, 
@@ -224,6 +37,28 @@ def plot_random_samples_from_dataset(
         plot_filename=None,
         simple_plot=False,
         ):
+    """
+    Plot random samples from a dataset with their labels and features.
+    
+    Parameters
+    ----------
+    dataset : torch.utils.data.Dataset
+        The dataset to sample from. Each item should return (image, label, morph_features, phot_features, metadata).
+    label_definitions : pd.DataFrame
+        DataFrame containing label definitions with 'short_name' as index and 'long_name' as a column.
+    num_samples_to_display : int, optional
+        Number of random samples to display (default is 5).
+    seed : int, optional
+        Random seed for reproducibility (default is None).
+    cmap : str, optional
+        Colormap to use for displaying images (default is 'gist_ncar').
+    plot_title : str, optional
+        Title for the plot (default is empty string).
+    plot_filename : str, optional
+        If provided, the plot will be saved to this filename instead of displayed (default is None).
+    simple_plot : bool, optional
+        If True, only display the main_id as label. If False, display the full label with class name and redshift (default is False).
+    """
     
     print(f"Plotting {num_samples_to_display} random samples from dataset of size {len(dataset)}")
     if seed is not None:

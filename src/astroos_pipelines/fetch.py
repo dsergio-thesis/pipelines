@@ -51,67 +51,6 @@ class AstroosFetch(ABC):
 
 
 # ============================================================
-# AstroosFetchLSST
-# ============================================================
-class AstroosFetchLSST(AstroosFetch):
-    def __init__(self, label_definitions):
-        super().__init__(label_definitions=label_definitions)
-        self.label_definitions = label_definitions
-
-    def fetch_images(self, positions, cache_dir, n=300):
-        """
-        Fetch LSST cutout images for given positions.
-
-        Parameters:
-        - positions: list of (ra, dec) tuples in degrees
-        - cache_dir: directory to cache downloaded images
-        - n: size of the cutout image (n x n pixels)
-
-        Returns:
-        - list of cutout images as numpy arrays
-        """
-
-        sia_url = "https://data.lsst.cloud/api/dp1/query"
-
-
-        os.makedirs(cache_dir, exist_ok=True)
-
-        # Placeholder implementation: In practice, this would involve querying
-        # the LSST data access services to retrieve the images.
-        output_images = []
-        for ra, dec in tqdm(positions, desc="Fetching LSST images"):
-
-            params = {
-                "POS": f"{ra},{dec}",     # RA, Dec
-                "SIZE": "0.1",          # in degrees
-                "FORMAT": "image/fits",
-                "MAXREC": "1"
-            }
-
-            response = requests.get(sia_url, params=params)
-            response.raise_for_status()
-
-            votable = parse_single_table(BytesIO(response.content))
-            urls = votable.array['access_url']  # URLs to the FITS images
-
-            # Download first FITS image
-            fits_url = urls[0]
-            fits_response = requests.get(fits_url)
-            fits_file = fits.open(BytesIO(fits_response.content))
-
-            print(fits_file.info())
-            fits_file.close()
-
-
-            # Here we would construct the URL and download the image.
-            # For now, we create a dummy image.
-            cutout = np.zeros((6, n, n), dtype=float)  # Assuming 6 bands for LSST
-            output_images.append(cutout)
-
-        return output_images
-
-
-# ============================================================
 # AstroosFetchSDSS
 # ============================================================
 class AstroosFetchSDSS(AstroosFetch):
@@ -322,15 +261,6 @@ class AstroosFetchSDSSManualCutout(AstroosFetch):
                         raw = bz2.decompress(f.read())
                         hdul = fits.open(io.BytesIO(raw))
                         band_images[band_index] = hdul[0].data.astype(float)
-
-
-
-
-                        
-                        
-                        
-                        
-
 
 
                         # if band == 'r':

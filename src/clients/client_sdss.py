@@ -8,10 +8,7 @@ from astropy.coordinates import SkyCoord
 from astropy.coordinates import ICRS, Galactic, FK4, FK5
 from astropy import units as u
 
-
-from astroos_pipelines.query import AstroosQueryNED, \
-    AstroosQuerySimbad, AstroosQuerySDSS, \
-    AstroQueryUtils as aq_utils
+from astroos_pipelines.query import AstroosQuerySDSS
 from astroos_pipelines.fetch import AstroosFetchSDSS
 from astroos_pipelines.pipelines import StageCatalogSDSS, \
     StageFilterCatalogSDSS, \
@@ -20,7 +17,7 @@ from astroos_pipelines.pipelines import StageCatalogSDSS, \
     StageFetchSDSS, StageFetchSDSS_V3_ManualCutout, \
     PipelineClassification, StageCatalogLSST,  StageFetchLSSTSoda, PipelineDummy
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
-from astroos_pipelines.utils.utils import plot_random_samples_from_dataset
+from utils.utils import plot_random_samples_from_dataset
 from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
@@ -32,9 +29,8 @@ importlib.reload(sys.modules['astroos_pipelines.fetch'])
 importlib.reload(sys.modules['astroos_pipelines.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
-importlib.reload(sys.modules['astroos_pipelines.utils.utils'])
+importlib.reload(sys.modules['utils.utils'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
-
 
 def main():
 

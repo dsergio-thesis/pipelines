@@ -9,4 +9,4 @@ fi
 source env.sh
 export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
 
-python -m test.client_lsst_pipeline "$@"
+python -m client.lsst "$@"

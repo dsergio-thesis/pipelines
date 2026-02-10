@@ -7,7 +7,7 @@ import torch
 import numpy as np
 from skimage import color, measure, transform
 
-from astroos_pipelines.morphometryka import simple_segmentation, \
+from astroos_pipelines.morphometry import simple_segmentation, \
     measure_morfometry, \
     centroid_flux
 

@@ -27,15 +27,14 @@ from astroos_pipelines.fetch import AstroosFetchSDSSManualCutout, AstroosFetchMa
 from astroos_pipelines.catalogs import AstroosCatalogSDSS, AstroosCatalogLSST   
 
 try:
-    from astroos_pipelines.utils.rsp_utils import get_cutout_bands
-    importlib.reload(sys.modules['astroos_pipelines.utils.rsp_utils'])
+    from utils.rsp_utils import get_cutout_bands
+    importlib.reload(sys.modules['utils.rsp_utils'])
 except ImportError:
-    print("astroos_pipelines.utils.rsp_utils not found.")
+    print("utils.rsp_utils not found.")
 
 importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.fetch'])
 importlib.reload(sys.modules['astroos_pipelines.catalogs'])
-
 
 import bz2, io
 from astropy.io import fits
@@ -43,10 +42,8 @@ import requests
 from astropy.wcs import WCS
 from astropy.io import fits
 
-
 from astroquery.simbad import Simbad
 from astroquery.sdss import SDSS
-
 
 rsp_mode = False
 try:
@@ -57,17 +54,14 @@ try:
     import lsst.geom as geom
     from lsst.afw.fits import MemFileManager
 
-
     # other LSST dependencies
     from pyvo.dal.adhoc import DatalinkResults
     from astropy.time import Time
     from pyvo.dal.adhoc import DatalinkResults, SodaQuery
-
-
     rsp_mode = True
-    print("LSST RSP mode enabled.")
+
 except ImportError as e:
-    print(f"LSST RSP mode disabled. Error {e}")
+    pass
 
 
 # ============================================================
@@ -93,7 +87,7 @@ class Pipeline(ABC):
         self.stages_added = False
         self.metadata = metadata
         self.output = None
-        print(f"Data pipeline created: {self.pipeline_name}")
+        print(f"[PIPELINE] '{self.pipeline_name}' initialized at directory: {self.pipeline_dir}")
 
     def _construct_name(self, 
                         name: str, 
@@ -218,7 +212,6 @@ class PipelineClassification(Pipeline):
 
     def prepare_pipeline(self):
         pass
-
 
 
 # ============================================================
