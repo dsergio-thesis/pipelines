@@ -6,7 +6,8 @@ import sys
 # CONFIG — change these values
 # ----------------------------
 
-LOG_LEVEL = logging.DEBUG          # DEBUG / INFO / WARNING / ERROR
+# DEBUG / INFO / WARNING / ERROR
+LOG_LEVEL = logging.ERROR 
 LOG_DEST = "both"                 # "stdout" | "file" | "both"
 LOG_FILE = "debug.log"
 

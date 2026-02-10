@@ -1041,22 +1041,23 @@ class StageCatalogLSST(DataPipelineStage):
         query_info = f"lsst_tap__limit{self.pipeline.max_records}__ra{ra_min:.4f}_{ra_max:.4f}__dec{dec_min:.4f}_{dec_max:.4f}"
 
         # first check cache
-        if os.path.exists(f"{self.stage_dir}/{query_info}.csv"):
-            log.info(f"File {self.stage_dir}/{query_info}.csv already exists. ")
-            # first read the table
-            existing_table = Table.read(f"{self.stage_dir}/{query_info}.csv", format="csv")
-            existing_ids = set(existing_table['objectId'])
-            mask = [oid not in existing_ids for oid in table['objectId']]
-            new_rows = table[mask]
-            existing_table = vstack([existing_table, new_rows])
+        # do this later
+        # if os.path.exists(f"{self.stage_dir}/{query_info}.csv"):
+            # log.info(f"File {self.stage_dir}/{query_info}.csv already exists. ")
+            # # first read the table
+            # existing_table = Table.read(f"{self.stage_dir}/{query_info}.csv", format="csv")
+            # existing_ids = set(existing_table['objectId'])
+            # mask = [oid not in existing_ids for oid in table['objectId']]
+            # new_rows = table[mask]
+            # existing_table = vstack([existing_table, new_rows])
 
-            self.output = existing_table.to_pandas()
+            # self.output = existing_table.to_pandas()
 
-            existing_table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
+            # existing_table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
 
-        else:
-            table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
-            log.info(f"Saved query result to {self.stage_dir}/{query_info}.csv")
+        # else:
+        table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
+        log.info(f"Saved query result to {self.stage_dir}/{query_info}.csv")
 
 
 

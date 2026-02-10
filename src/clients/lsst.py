@@ -107,7 +107,7 @@ def main():
         StageFetchLSSTSoda(dataset_cart_lsst),
         ])
 
-    pipelines[0].run_pipeline()
+    pipelines[1].run_pipeline()
 
     # for p in pipelines:
     #     p.run_pipeline()
