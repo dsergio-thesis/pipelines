@@ -8,16 +8,10 @@ from astropy.coordinates import SkyCoord
 from astropy.coordinates import ICRS, Galactic, FK4, FK5
 from astropy import units as u
 
-from astroos_pipelines.query import AstroosQuerySDSS
-from astroos_pipelines.fetch import AstroosFetchSDSS
-from astroos_pipelines.pipelines import StageCatalogSDSS, \
-    StageFilterCatalogSDSS, \
-    StageCatalogSDSS_V2, \
-    StageFetchSDSS_V2_ManualCutout, StageFetchSDSS_V2_AutoCutout, \
-    StageFetchSDSS, StageFetchSDSS_V3_ManualCutout, \
-    PipelineClassification, StageCatalogLSST,  StageFetchLSSTSoda, PipelineDummy
+from astroos_pipelines.sdss.pipelines import StageCatalogSDSS_V2, StageFetchSDSS_V3_ManualCutout
+from astroos_pipelines.pipelines import PipelineClassification, PipelineDummy
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
-from config.pipeline_config import PipelineConfig
+from config.astroos_config import AstroosConfig
 from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
@@ -25,12 +19,11 @@ from astroos_pipelines.transforms import AddGaussianNoise, \
     CropZeros, \
     CropAroundCentroid
 
-importlib.reload(sys.modules['astroos_pipelines.fetch'])
+importlib.reload(sys.modules['astroos_pipelines.sdss.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
-importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
-importlib.reload(sys.modules['config.pipeline_config'])
+importlib.reload(sys.modules['config.astroos_config'])
 
 import sys
 import importlib
@@ -42,7 +35,7 @@ log = logging.getLogger(__name__)
 
 def main():
 
-    config = PipelineConfig.from_cli()
+    config = AstroosConfig.from_cli()
     coord, radius = config.get_target("CDF_South")
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name

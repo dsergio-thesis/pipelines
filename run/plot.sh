@@ -8,4 +8,4 @@ fi
 source env.sh
 export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
 
-python -m clients.plot "$@" --max-records 2 --dataset-name sdss-2
+python -m clients.plot "$@" --max-records 2 --dataset-name lsst-12

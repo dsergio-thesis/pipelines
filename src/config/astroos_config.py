@@ -25,7 +25,7 @@ class CoordSpec:
 
 
 @dataclass(frozen=True)
-class PipelineConfig:
+class AstroosConfig:
     dataset_dir: Path
     dataset_name: str
     pipeline_dir: Path
