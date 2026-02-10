@@ -22,16 +22,16 @@ from io import BytesIO
 import warnings
 import importlib
 
+from utils.formatting_utils import ascii_kv_table
+importlib.reload(sys.modules['utils.formatting_utils'])
+
+
 from astroos_pipelines.query import AstroosQuerySDSS, AstroosQueryLSST
 from astroos_pipelines.fetch import AstroosFetchSDSSManualCutout, AstroosFetchManualFitsCutout
 from astroos_pipelines.catalogs import AstroosCatalogSDSS, AstroosCatalogLSST   
+from utils.rsp_utils import get_cutout_bands
 
-try:
-    from utils.rsp_utils import get_cutout_bands
-    importlib.reload(sys.modules['utils.rsp_utils'])
-except ImportError:
-    print("utils.rsp_utils not found.")
-
+importlib.reload(sys.modules['utils.rsp_utils'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.fetch'])
 importlib.reload(sys.modules['astroos_pipelines.catalogs'])
@@ -63,6 +63,12 @@ try:
 except ImportError as e:
     pass
 
+from logger.logger import setup_logging
+importlib.reload(sys.modules['logger.logger'])
+import logging
+setup_logging()
+log = logging.getLogger(__name__)
+
 
 # ============================================================
 # Pipeline
@@ -87,7 +93,7 @@ class Pipeline(ABC):
         self.stages_added = False
         self.metadata = metadata
         self.output = None
-        print(f"[PIPELINE] '{self.pipeline_name}' initialized at directory: {self.pipeline_dir}")
+        log.debug(f"[PIPELINE] '{self.pipeline_name}' initialized at directory: {self.pipeline_dir}")
 
     def _construct_name(self, 
                         name: str, 
@@ -109,7 +115,7 @@ class Pipeline(ABC):
         # find highest numbered subdir v2.x
         existing_dirs = [d for d in os.listdir(f"./_pipelines") if d.startswith(name)]
         if existing_dirs and minor_version is None:
-            print([d.split("_v2.") for d in existing_dirs])
+            log.debug([d.split("_v2.") for d in existing_dirs])
             highest_version = max([int(d.split("_v2.")[-1]) for d in existing_dirs])
             pipeline_name = f"{name}_v2.{highest_version + 1}"
             pipeline_dir = f"./_pipelines/{name}_v2.{highest_version + 1}"
@@ -139,7 +145,7 @@ class Pipeline(ABC):
                 stage.stage_dir = os.path.join(stage.pipeline.pipeline_dir, stage.stage_name)
                 os.makedirs(stage.stage_dir, exist_ok=True)
             
-            print(f"Adding stage:\n{stage}")
+            log.debug(f"Adding stage:\n{stage}")
             self.stages.append(stage)
 
             # stage = StageInfo()
@@ -158,15 +164,15 @@ class Pipeline(ABC):
         
         self.prepare_pipeline()
 
-        print(f"---------------- Running data pipeline ---------------- \n"
-              f"directory: {self.pipeline_dir}...")
+        print(f"---------------- Running Pipeline ---------------- \n")
+        log.info(f"running pipeline at directory: {self.pipeline_dir}...")
         for stage in self.stages:
-            print(f"{stage.stage_index} Running stage: {stage.stage_name}")
+            log.info(f"{stage.stage_index} Running stage: {stage.stage_name}")
             if not stage._validate_prev_stage():
                 raise RuntimeError(f"Invalid inputs for stage {stage.stage_name}.")
             stage.run()
-            print()
-        print("Data pipeline completed.")
+            log.info(f"Completed stage: {stage.stage_name}")
+        print("Pipeline completed.")
 
         self.output = self.stages[-1].output
     
@@ -175,7 +181,7 @@ class Pipeline(ABC):
         if os.path.exists(self.pipeline_dir):
             import shutil
             # shutil.rmtree(self.pipeline_dir)
-            print(f"Cleared pipeline directory: {self.pipeline_dir}")
+            log.info(f"Cleared pipeline directory: {self.pipeline_dir}")
 
     def __repr__(self):
         s = f"Pipeline(pipeline_name={self.pipeline_name}, max_records={self.max_records})"
@@ -213,6 +219,16 @@ class PipelineClassification(Pipeline):
     def prepare_pipeline(self):
         pass
 
+    def __repr__(self):
+        info = ascii_kv_table([
+            ("pipeline_name", self.pipeline_name),
+            ("max_records", self.max_records),
+            ("dataset", self.dataset.dataset_dir if self.dataset else ""),
+            ("X_train_filename", self.X_train_filename),
+            ("y_train_filename", self.y_train_filename),
+        ], title="PipelineClassification")
+        return info
+
 
 # ============================================================
 # PipelineDummy
@@ -224,14 +240,14 @@ class PipelineDummy(Pipeline):
 
     def __init__(self, name, max_records=1, metadata={}, minor_version=None):
         super().__init__(name=name, metadata=metadata, max_records=max_records, minor_version=minor_version)
-        print("Initialized Dummy Pipeline.")
+        log.info(f"Initialized dummy pipeline with name: {self.pipeline_name}")
 
     def _validate_prev_stage(self):
         return True
     
     def run(self):
-        print("Running Dummy Pipeline...")
-        print("Dummy Pipeline completed.")
+        log.info("Running Dummy Pipeline...")
+        log.info("Dummy Pipeline completed.")
 
     def prepare_pipeline(self):
         pass
@@ -291,7 +307,7 @@ class StageInfo(DataPipelineStage):
         s = f"{self.stage_index} Stage {self.stage_name}"
         if self.prev_stage is not None:
             s += f" reporting on {self.prev_stage.stage_name}: output: {self.prev_stage.output}\n"
-        print(s)
+        log.info(s)
 
 
 # ============================================================
@@ -455,7 +471,7 @@ class StageFetchSDSS_V3_ManualCutout(DataPipelineStage):
             required_columns.append(f"{band}_field04d")
 
         if not all(col in df.columns for col in required_columns):
-            print(f"Missing columns in DataFrame: {[col for col in required_columns if col not in df.columns]}")
+            log.error(f"Missing columns in DataFrame: {[col for col in required_columns if col not in df.columns]}")
             raise ValueError(f"DataFrame from previous stage must contain columns: {required_columns}. Actual columns: {df.columns.tolist()}")
 
         return True
@@ -465,7 +481,7 @@ class StageFetchSDSS_V3_ManualCutout(DataPipelineStage):
 
         df, image_url_format_string = self.prev_stage.output
 
-        print(image_url_format_string)
+        log.info(f"Image URL format string: {image_url_format_string}")
 
         astroosFetch = AstroosFetchManualFitsCutout(
             df=df,
@@ -478,14 +494,14 @@ class StageFetchSDSS_V3_ManualCutout(DataPipelineStage):
 
         self.output = output, labels, output_band_bounds
 
-        images_tensor = torch.tensor(output, dtype=torch.float32)
-        labels_tensor = torch.tensor(labels, dtype=torch.int64)
-        torch.save(images_tensor, f"{self.pipeline.dataset.dir}/X_train.pt")
-        torch.save(labels_tensor, f"{self.pipeline.dataset.dir}/y_train.pt")
-        print(f"Saved file: {self.pipeline.dataset.dir}/X_train.pt and {self.pipeline.dataset.dir}/y_train.pt")
+        # images_tensor = torch.tensor(output, dtype=torch.float32)
+        # labels_tensor = torch.tensor(labels, dtype=torch.int64)
+        # torch.save(images_tensor, f"{self.pipeline.dataset.dir}/X_train.pt")
+        # torch.save(labels_tensor, f"{self.pipeline.dataset.dir}/y_train.pt")
+        # print(f"Saved file: {self.pipeline.dataset.dir}/X_train.pt and {self.pipeline.dataset.dir}/y_train.pt")
 
-        self.pipeline.X_train_filename = f"{self.pipeline.dataset.dir}/X_train.pt"
-        self.pipeline.y_train_filename = f"{self.pipeline.dataset.dir}/y_train.pt"
+        # self.pipeline.X_train_filename = f"{self.pipeline.dataset.dir}/X_train.pt"
+        # self.pipeline.y_train_filename = f"{self.pipeline.dataset.dir}/y_train.pt"
 
 
 # ============================================================
@@ -1026,7 +1042,7 @@ class StageCatalogLSST(DataPipelineStage):
 
         # first check cache
         if os.path.exists(f"{self.stage_dir}/{query_info}.csv"):
-            print(f"File {self.stage_dir}/{query_info}.csv already exists. ")
+            log.info(f"File {self.stage_dir}/{query_info}.csv already exists. ")
             # first read the table
             existing_table = Table.read(f"{self.stage_dir}/{query_info}.csv", format="csv")
             existing_ids = set(existing_table['objectId'])
@@ -1040,7 +1056,7 @@ class StageCatalogLSST(DataPipelineStage):
 
         else:
             table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
-            print(f"Saved query result to {self.stage_dir}/{query_info}.csv")
+            log.info(f"Saved query result to {self.stage_dir}/{query_info}.csv")
 
 
 

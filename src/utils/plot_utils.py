@@ -121,7 +121,7 @@ def plot_random_samples_from_dataset(
     for i in range(num_samples_to_display):
         summary.append(
             (random_labels[i], 
-             label_definitions.iloc[int(random_labels[i])]["long_name"],
+             label_definitions.iloc[int(random_labels[i])]["long_name"] if label_definitions is not None else "",
              random_samples_info.iloc[i] if not random_samples_info.empty else "",
              random_morph_features[i] if random_morph_features else ""
             ))
@@ -155,7 +155,7 @@ def plot_random_samples_from_dataset(
         # i += 1
         plot_index = i * 4 - 4
 
-        label_classname = label_definitions.iloc[int(random_labels[i-1])]["long_name"]
+        label_classname = label_definitions.iloc[int(random_labels[i-1])]["long_name"] if label_definitions is not None else ""
         info = str(random_samples_info.iloc[i-1]['main_id']) if not random_samples_info.empty else ""
 
         redshift = random_samples_info.iloc[i-1]['rvz_redshift']

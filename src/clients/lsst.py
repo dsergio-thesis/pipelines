@@ -1,3 +1,4 @@
+from networkx import radius
 from torchvision import transforms
 import sys
 import os
@@ -32,6 +33,12 @@ importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
 importlib.reload(sys.modules['config.pipeline_config'])
 
+from logger.logger import setup_logging
+importlib.reload(sys.modules['logger.logger'])
+import logging
+setup_logging()
+log = logging.getLogger(__name__)
+
 def main():
 
     config = PipelineConfig.from_cli()
@@ -42,6 +49,8 @@ def main():
     pipeline_minor_version = config.pipeline_minor_version
     max_records = config.max_records
     label_def_file = config.label_def_file
+
+    print()
     print(config)
 
     pipeline_metadata = {'query_coords': coord, 'query_radius': radius}

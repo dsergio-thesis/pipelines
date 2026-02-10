@@ -14,9 +14,17 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 
 from astroos_pipelines.labels import Labels
-
 importlib.reload(sys.modules['astroos_pipelines.labels'])
 
+from utils.formatting_utils import ascii_kv_table
+importlib.reload(sys.modules['utils.formatting_utils'])
+
+
+from logger.logger import setup_logging
+importlib.reload(sys.modules['logger.logger'])
+import logging
+setup_logging()
+log = logging.getLogger(__name__)
 
 class DataSetBase(Dataset):
     """
@@ -33,6 +41,7 @@ class DataSetBase(Dataset):
         self.dataset_dir = dataset_dir
         # create directory if not exists
         os.makedirs(self.dataset_dir, exist_ok=True)
+        log.info(f"Dataset directory set to: {self.dataset_dir}")
 
     def __len__(self):
         raise NotImplementedError("Must implement __len__ method.")
@@ -140,9 +149,11 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         self.N_photometric_features = N_photometric_features
 
         if labels_init_file is not None and not os.path.exists(labels_init_file):
+            log.error(f"labels_init_file '{labels_init_file}' does not exist")
             raise ValueError(f"labels_init_file '{labels_init_file}' does not exist")
         if labels_init_file is None:
-            print("Warning: No labels_init_file provided, labels will be empty. Call dataset.labels.load_from_file() later to load labels if needed.")
+            log.warning("No labels_init_file provided, labels will be empty. Call dataset.labels.load_from_file() later to load labels if needed.")
+            self.labels = None
         else:
             self.labels = Labels(labels_dir=dataset_dir, labels_init_file=labels_init_file)
 
@@ -153,7 +164,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
 
         self._load_manifest()
 
-        print("initializing the dataset")
+        log.info(f"initializing dataset {self.dataset_dir} with {len(self.manifest_list)} objects from manifest")
 
     def _load_manifest(self):
         if not os.path.exists(self.manifest_file):
@@ -186,7 +197,14 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         return len(self.manifest_list)
     
     def num_classes(self):
+        if self.labels is None:
+            return 0
         return self.labels.num_classes()
+    
+    def get_labels(self):
+        if self.labels is None:
+            return None
+        return self.labels.get_labels()
 
     def __getitem__(self, idx):
         objectId = self.manifest_list[idx]
@@ -259,3 +277,20 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         self.manifest_set.add(main_id)
         self.manifest_list.append(main_id)
         self._append_to_manifest_file(main_id)
+    
+    def _contains(self, main_id):
+        return main_id in self.manifest_set
+
+    def __repr__(self):
+        info = [
+            ("dataset_dir", self.dataset_dir),
+            ("num_objects", len(self.manifest_list)),
+            ("num_classes", self.num_classes()),
+            ("N_bands", self.N_bands),
+            ("N_morphometric_features", self.N_morphometric_features),
+            ("N_photometric_features", self.N_photometric_features),
+            ("manifest", self.manifest_file),
+            ("morphometric_transform", ""),
+            ("photometric_transform", ""),
+        ]
+        return ascii_kv_table(info, title="FITS_Image_Morphometry_Photometry_Dataset")

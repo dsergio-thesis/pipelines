@@ -1,9 +1,11 @@
+import os
 import sys
 from torchvision import transforms
 import cmcrameri.cm as cmc
 import importlib
 
-from utils.utils import plot_random_samples_from_dataset
+from config.pipeline_config import PipelineConfig
+from utils.plot_utils import plot_random_samples_from_dataset
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
@@ -12,7 +14,20 @@ from astroos_pipelines.transforms import AddGaussianNoise, \
     CropZeros, \
     CropAroundCentroid
 
+importlib.reload(sys.modules['astroos_pipelines.datasets'])
+importlib.reload(sys.modules['astroos_pipelines.transforms'])
+importlib.reload(sys.modules['config.pipeline_config'])
+importlib.reload(sys.modules['utils.plot_utils'])
+
 def main():
+
+    config = PipelineConfig.from_cli()
+    dataset_dir = config.dataset_dir
+    dataset_name = config.dataset_name
+    max_records = config.max_records
+    print()
+    print(config)
+    
     transformCartesian = transforms.Compose([
         # transforms.ToTensor(),
         # AddGaussianNoise(mean=0., std=0.3),
@@ -25,26 +40,23 @@ def main():
     ])
 
     random_seed = 1
-
-    if len(sys.argv) > 1:
-        num = int(sys.argv[1])
-    else:
-        num = 5
     cmap = 'gist_ncar'
     # cmap = cmc.batlow
 
     dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
-        dir="data/lsst-11",
+        dataset_dir=os.path.join(dataset_dir, dataset_name),
         transform=transformCartesian,
         morphometric_transform=MorphometryFeatures()
     )
 
-    print(f"Dataset size: {len(dataset_cartesian)} samples.")
+    print()
+    print(dataset_cartesian)
 
     plot_random_samples_from_dataset(
         dataset_cartesian, 
-        num_samples_to_display=num,
-        seed=random_seed, label_definitions=dataset_cartesian.labels.get_labels(), 
+        num_samples_to_display=max_records,
+        seed=random_seed, 
+        label_definitions=dataset_cartesian.get_labels(), 
         cmap=cmap,
         plot_title="LSST Cartesian Samples",
         plot_filename="lsst_cart.png",

@@ -17,7 +17,7 @@ from astroos_pipelines.pipelines import StageCatalogSDSS, \
     StageFetchSDSS, StageFetchSDSS_V3_ManualCutout, \
     PipelineClassification, StageCatalogLSST,  StageFetchLSSTSoda, PipelineDummy
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
-from utils.utils import plot_random_samples_from_dataset
+from config.pipeline_config import PipelineConfig
 from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
     SegmentationTransform, \
@@ -29,10 +29,31 @@ importlib.reload(sys.modules['astroos_pipelines.fetch'])
 importlib.reload(sys.modules['astroos_pipelines.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
-importlib.reload(sys.modules['utils.utils'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
+importlib.reload(sys.modules['config.pipeline_config'])
+
+import sys
+import importlib
+from logger.logger import setup_logging
+importlib.reload(sys.modules['logger.logger'])
+import logging
+setup_logging()
+log = logging.getLogger(__name__)
 
 def main():
+
+    config = PipelineConfig.from_cli()
+    coord, radius = config.get_target("CDF_South")
+    dataset_dir = config.dataset_dir
+    dataset_name = config.dataset_name
+    pipeline_name = config.pipeline_name
+    pipeline_minor_version = config.pipeline_minor_version
+    max_records = config.max_records
+    label_def_file = config.label_def_file
+    print()
+    print(config)
+
+    pipeline_metadata = {'query_coords': coord, 'query_radius': radius}
 
     transformPolar = transforms.Compose([
         # transforms.ToTensor(),
@@ -53,57 +74,33 @@ def main():
         # CropAroundCentroid(crop_size=(20, 20)),
         # SegmentationTransform(nsigma=0.2, min_area=40),
     ])
-
-    # Example coordinates:
-
-    # Format HH MM SS.SSS +DD MM SS.SS
-    virgo_cluster =  '12 30 49.423 +12 23 28.04'
-    obj_3c273 = '12 29 06.699 +02 03 08.60'
-    someother = '14 35 42.8685615528 +40 18 02.133470196'
-
-    query_obj = someother
-
-    # get from args if provided
-    if len(sys.argv) > 1:
-        max_records = int(sys.argv[1])
-    else:
-        max_records = 3
-    
-    print(f"Max records to fetch: {max_records}")
-
-    coords = SkyCoord(query_obj, frame=ICRS, unit=(u.hourangle, u.deg))
-    radius_hour = u.hourangle *     0
-    radius_min =  u.arcmin *        40
-    radius_sec =  u.arcsec *        20
-    radius = radius_hour + radius_min + radius_sec
-
-    pipeline_metadata = {
-        'query_coords': coords,
-        'query_radius': radius,
-    }
-
-    name = "p8"
     
     dataset_cart_sdss = FITS_Image_Morphometry_Photometry_Dataset(
-        dataset_dir="./data/sdss-2",
-        labels_init_file="./sdss_morph_types_info.csv",
+        dataset_dir=os.path.join(dataset_dir, dataset_name),
+        labels_init_file=label_def_file,
         N_bands=5, 
-        N_features=4, 
+        N_photometric_features=4,
         transform=transformCartesian,
         photometric_transform=MorphometryFeatures()
     )
 
+    print()
+    print(dataset_cart_sdss)
+
+    sdss_pipeline = PipelineClassification(
+        name=pipeline_name,
+        metadata=pipeline_metadata,
+        max_records=max_records,
+        dataset=dataset_cart_sdss,
+        minor_version=None,
+    )
+
+    print()
+    print(sdss_pipeline)
+
     pipelines = [
-        PipelineDummy(
-            name="dummy_pipeline",
-        ),
-        PipelineClassification(
-            name=name,
-            metadata=pipeline_metadata,
-            max_records=max_records,
-            dataset=dataset_cart_sdss,
-            minor_version=None,
-        ),
+        PipelineDummy(name="dummy_pipeline"),
+        sdss_pipeline,
     ]
 
     pipelines[0].add_stages([

@@ -10,11 +10,8 @@ import pandas as pd
 from PIL import Image
 
 # astroquery
-from astroquery.ipac.ned import Ned
 from astroquery.simbad import Simbad
 from astroquery.sdss import SDSS
-from astroquery.fermi import FermiLAT
-from astroquery.skyview import SkyView
 
 rsp_mode = False
 try:
@@ -45,10 +42,18 @@ import importlib
 
 from astroos_pipelines.morphometry import simple_segmentation, measure_morfometry, morfomytry
 from astroos_pipelines.tap_clients import PyvoTAPClient
+from utils.sdss_utils import decode_sdss_objid
 
 importlib.reload(sys.modules['astroos_pipelines.morphometry'])
 importlib.reload(sys.modules['astroos_pipelines.tap_clients'])
 
+import sys
+import importlib
+from logger.logger import setup_logging
+importlib.reload(sys.modules['logger.logger'])
+import logging
+setup_logging()
+log = logging.getLogger(__name__)
 
 # ============================================================
 # AstroosQuery Abstract Base Class
@@ -80,7 +85,9 @@ class AstroosQuery(ABC):
 # AstroosQuery LSST
 # ============================================================
 class AstroosQueryLSST(AstroosQuery):
-    """Astroquery LSST Client"""
+    """
+    AstroosQuery LSST Client
+    """
 
     def __init__(self, root_dir=None, credentials_file=None, max_records=None):
         super().__init__(
@@ -99,7 +106,7 @@ class AstroosQueryLSST(AstroosQuery):
         # print("LSST TAP Query Result:")
         # print(result)
 
-        print("Initialized LSST Query Client.")
+        log.info("Initialized LSST Query Client.")
 
     def __repr__(self):
         return f"<AstroosQueryLSST(root_dir={self.root_dir}, timeout={self.timeout})>"
@@ -118,17 +125,17 @@ class AstroosQueryLSST(AstroosQuery):
         result : table astropy.table.Table
             The query result
         """
-        print(f"Querying LSST ADQL with query:\n{query}")
+        log.debug(f"Querying LSST ADQL with query:\n{query}")
 
         res = self.tap_service.search(query)
         table = Table(res.to_table())
 
         if res is None:
-            print("No results found.")
+            log.debug("No results found.")
             return Table()
         
-        print("LSST Query Result:")
-        print(res)
+        log.debug("LSST Query Result:")
+        log.debug(res)
 
         return table
 
@@ -146,13 +153,13 @@ class AstroosQueryLSST(AstroosQuery):
         result : table
             The query result
         """
-        print(f"Async Querying LSST ADQL with query:\n{query}")
+        log.info(f"Async Querying LSST ADQL with query:\n{query}")
 
         job = self.tap_service.async_submit(query)
         self.tap_service.async_wait(job)
         res = self.tap_service.async_result(job)
-        print(f"Async LSST Query Result:")
-        print(res)
+        log.debug(f"Async LSST Query Result:")
+        log.debug(res)
         table = Table(res.to_table())
 
         return table
@@ -175,8 +182,8 @@ class AstroosQuerySDSS(AstroosQuery):
         )
         self.sdss_base_url = "https://skyserver.sdss.org/dr17/SkyServerWS/SearchTools/SqlSearch"
 
-        print("Initialized SDSS Client")
-        SDSS.timeout = self.timeout
+        log.info("Initialized SDSS Client")
+        SDSS.timeout = 120
 
     def __repr__(self):
         return f"<AstroQuerySDSSClient(root_dir={self.root_dir}, timeout={self.timeout})>"
@@ -197,22 +204,22 @@ class AstroosQuerySDSS(AstroosQuery):
         result : astropy.table.Table
             The query result as an Astropy Table.
         """
-        # print(f"Querying SDSS ADQL with query:\n{query}")
+        # log.debug(f"Querying SDSS ADQL with query:\n{query}")
         request_url = \
             f"{self.sdss_base_url}?cmd={requests.utils.quote(query)}&format={format}"
 
-        print(f"Request URL: {request_url}")
+        log.debug(f"Request URL: {request_url}")
 
         res = None
         # res = requests.get(request_url)
         res = requests.get(request_url, timeout=self.timeout)
                            
         if res is None:
-            print("No results found.")
+            log.info("No results found.")
             return Table()
         
-        print(res.status_code)
-        print(res.text)
+        log.debug(res.status_code)
+        log.debug(res.text)
         res = Table.read(StringIO(res.text), format=format)
         return res
     
@@ -394,7 +401,7 @@ class AstroosQuerySDSS(AstroosQuery):
             )
             queries.append((ra_lo, ra_hi, query_formatted))
 
-        print(f'Total queries: {len(queries)}')
+        log.debug(f'Total queries: {len(queries)}')
         # print(queries)
 
         query_index = 0
@@ -409,7 +416,7 @@ class AstroosQuerySDSS(AstroosQuery):
 
             # first check cache
             if os.path.exists(f"{self.root_dir}/{query_info}.csv"):
-                print(f"File {self.root_dir}/{query_info}.csv already exists. Skipping...")
+                log.info(f"File {self.root_dir}/{query_info}.csv already exists. Skipping...")
                 query_index += 1
                 if query_index >= max_queries:
                     break
@@ -460,7 +467,7 @@ class AstroosQuerySDSS(AstroosQuery):
 
                         row_data = header + "\n" + data
                         df = pd.read_csv(StringIO(row_data))
-                        print(f"objID: {df['objID']}")
+                        log.debug(f"objID: {df['objID']}")
                         objID = df['objID'].iloc[0]
 
                         decoded = decode_sdss_objid(objID)
@@ -476,8 +483,8 @@ class AstroosQuerySDSS(AstroosQuery):
                 res['field'] = field_list
                 res['id'] = id_list
 
-                # print(res)
-                print(f"Querying {queries[query_index][0]} to {queries[query_index][1]}: {len(res)} records found")
+                # log.debug(res)
+                log.debug(f"Querying {queries[query_index][0]} to {queries[query_index][1]}: {len(res)} records found")
 
                 total_records += len(res)
 
@@ -485,7 +492,7 @@ class AstroosQuerySDSS(AstroosQuery):
                 df.to_csv(f"{self.root_dir}/{query_info}.csv", index=False)
 
             except Exception as e:
-                print(f"Error querying {queries[query_index][0]} to {queries[query_index][1]}: {e}")
+                log.error(f"Error querying {queries[query_index][0]} to {queries[query_index][1]}: {e}")
                 raise e
 
             sleep(1.2)
@@ -536,7 +543,7 @@ class AstroosQuerySDSS(AstroosQuery):
         ]
         test_set = test_set[:limit] if limit is not None else test_set
 
-        print(f"Scanning RA {ra_min} to {ra_max}, Dec {dec_min} to {dec_max}")
+        log.debug(f"Scanning RA {ra_min} to {ra_max}, Dec {dec_min} to {dec_max}")
 
         query = \
         """
@@ -608,9 +615,9 @@ class AstroosQuerySDSS(AstroosQuery):
                 limit_str=f"TOP {limit}" if limit is not None else ""
             )
             queries.append((ra_lo, ra_hi, query_formatted))
-            print(f"query: {query_formatted}")
+            log.debug(f"query: {query_formatted}")
 
-        print(f'Total queries: {len(queries)}')
+        log.debug(f'Total queries: {len(queries)}')
         # print(queries)
 
         query_index = 0
@@ -636,7 +643,7 @@ class AstroosQuerySDSS(AstroosQuery):
                 """
 
                 # print(res)
-                print(f"Querying {queries[query_index][0]} to {queries[query_index][1]}: {len(res)} records found")
+                log.debug(f"Querying {queries[query_index][0]} to {queries[query_index][1]}: {len(res)} records found")
 
                 positions = []
                 coords_ra = []
@@ -665,7 +672,7 @@ class AstroosQuerySDSS(AstroosQuery):
                     # print(sdss_data.text)
 
                     if len(sdss_data.text.split("\n")) <= 2:
-                        print(f"No SDSS data found for {row['main_id']}. Skipping...")
+                        log.info(f"No SDSS data found for {row['main_id']}. Skipping...")
                         continue
                     else:
 
@@ -673,14 +680,14 @@ class AstroosQuerySDSS(AstroosQuery):
                         data = sdss_data.text.split("\n")[2]
 
                         if str(data).strip() == "":
-                            print(f"No SDSS data found for {row['main_id']}. Skipping...")
+                            log.info(f"No SDSS data found for {row['main_id']}. Skipping...")
                             continue
 
                         morph_type = str(row['morph_type'])
                         
                         label_index = label_definitions._get_label_index(morph_type)
 
-                        print(f"Found morph_type: {morph_type} for {row['main_id']} with label index {label_index}")
+                        log.debug(f"Found morph_type: {morph_type} for {row['main_id']} with label index {label_index}")
 
                         coords_ra.append(row['ra'])
                         coords_dec.append(row['dec'])
@@ -719,7 +726,7 @@ class AstroosQuerySDSS(AstroosQuery):
                             band_image_components[f"{band}_field04d"].append(field04d)
 
                 total_records += len(coords_ra)
-                print(f"Accumulated total records: {total_records + len(coords_ra)}")
+                log.info(f"Accumulated total records: {total_records + len(coords_ra)}")
                 
                 df = pd.DataFrame({
                     "ra": coords_ra,
@@ -749,7 +756,7 @@ class AstroosQuerySDSS(AstroosQuery):
                 # result = result, image_url_format_string
 
             except Exception as e:
-                print(f"Error querying {queries[query_index][0]} to {queries[query_index][1]}: {e}")
+                log.error(f"Error querying {queries[query_index][0]} to {queries[query_index][1]}: {e}")
                 raise e
 
             sleep(1.2)

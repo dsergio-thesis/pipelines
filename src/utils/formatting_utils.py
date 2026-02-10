@@ -13,7 +13,7 @@ def ascii_kv_table(
 
     lines = [
         sep,
-        f"| {'Field'.ljust(key_w)} | {'Value'.ljust(val_w)} |",
+        f"| {'Key'.ljust(key_w)} | {'Val'.ljust(val_w)} |",
         sep,
     ]
 
@@ -25,6 +25,6 @@ def ascii_kv_table(
     lines.append(sep)
 
     if title:
-        lines.append(title)
+        lines.append(title + "\n")
 
     return "\n".join(lines)

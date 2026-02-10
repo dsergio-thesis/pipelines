@@ -3,12 +3,26 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import os
 
+import sys
+import importlib
+from logger.logger import setup_logging
+importlib.reload(sys.modules['logger.logger'])
+import logging
+setup_logging()
+log = logging.getLogger(__name__)
+
 class Labels:
     """
     Class to handle loading and managing classification labels from a CSV file.
     """
     
-    def __init__(self, labels_dir, labels_init_file, required_columns=None, unknown_label_index=31):
+    def __init__(self, 
+                 labels_dir, 
+                 labels_init_file, 
+                 required_columns=None, 
+                 unknown_label_index=31):
+        
+        log.info(f"Initializing Labels with directory: {labels_dir} and init file: {labels_init_file}")
         self.labels_dir = labels_dir
         os.makedirs(self.labels_dir, exist_ok=True)
         self.required_columns = required_columns or ['label_index', 'short_name']
@@ -19,6 +33,7 @@ class Labels:
         else:
             self.labels_init_file = labels_init_file
             if not os.path.exists(self.labels_init_file):
+                log.error(f"Labels initialization file not found: {self.labels_init_file}")
                 raise FileNotFoundError(f"Labels initialization file not found: {self.labels_init_file}")
             self._initialize_labels()
 
@@ -28,6 +43,7 @@ class Labels:
             self.labels = pd.read_csv(labels_file)
             self._validate_labels()
         else:
+            log.error(f"Labels file not found: {labels_file}")
             raise FileNotFoundError(f"Labels file not found: {labels_file}")
 
     def _validate_labels(self):
@@ -45,7 +61,7 @@ class Labels:
 
     def _initialize_labels(self):
 
-        print(f"Initializing labels from file: {self.labels_init_file}")
+        log.info(f"Initializing labels from file: {self.labels_init_file}")
         labels = pd.read_csv(self.labels_init_file)
 
         # add column in the beginning, which is an index
@@ -61,7 +77,7 @@ class Labels:
 
     def _save_labels(self):
         self.labels.to_csv(f"{self.labels_dir}/labels.csv", index=True)
-        print(f"Saved labels to {self.labels_dir}/labels.csv")
+        log.info(f"Saved labels to {self.labels_dir}/labels.csv")
 
     def _add_label(self, label):
         if label not in self.labels.index:

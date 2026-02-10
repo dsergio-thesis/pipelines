@@ -1,40 +1,9 @@
 
-# LSST RSP mode
-# if running in RSP mode, import LSST RSP dependencies
 import sys
-
-
-def init_rsp():
-
-    rsp_mode = False
-    try:
-    
-        from lsst.rsp import get_tap_service
-        from lsst.rsp.utils import get_pyvo_auth
-        from lsst.rsp.service import get_siav2_service
-        from lsst.rsp.utils import get_pyvo_auth
-        import lsst.geom as geom
-
-
-        # other LSST dependencies
-        from pyvo.dal.adhoc import DatalinkResults
-        from astropy.time import Time
-        from pyvo.dal.adhoc import DatalinkResults, SodaQuery
-
-
-        rsp_mode = True
-        print("LSST RSP mode enabled.")
-    except ModuleNotFoundError as e:
-        print(f"LSST RSP mode disabled. Error: {e}")
-
-    return rsp_mode
-
-
 import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
-from lsst.rsp.service import get_siav2_service
-from lsst.rsp.utils import get_pyvo_auth
+
 from pyvo.dal.adhoc import DatalinkResults
 
 import numpy as np
@@ -46,22 +15,31 @@ from astropy.wcs import WCS
 from astropy.coordinates import SkyCoord
 import astropy.units as u
 
-from photutils.aperture import SkyEllipticalAperture
+# other LSST dependencies
+from pyvo.dal.adhoc import DatalinkResults
+from astropy.time import Time
+from pyvo.dal.adhoc import DatalinkResults, SodaQuery
 
-import galsim as gs
 
+
+rsp_mode = False
 try:
     from lsst.gauss2d import Ellipse, EllipseMajor, Covariance
     import lsst.geom as geom
     from lsst.rsp import get_tap_service
     from lsst.rsp.utils import get_pyvo_auth
     from lsst.rsp.service import get_siav2_service
+    from lsst.rsp.service import get_siav2_service
+    from lsst.rsp.utils import get_pyvo_auth
     import lsst.afw.display as afwDisplay
     from lsst.afw.image import ExposureF
     from lsst.afw.fits import MemFileManager
     import lsst.afw.geom.ellipses as ellipses
-except:
-    print("RSP not supported")
+    from photutils.aperture import SkyEllipticalAperture
+    import galsim as gs
+    rsp_mode = True
+except ImportError as e:
+    pass
 
 def pad_exposure_ml(exp, target=200, fill_value=0.0):
     h, w = exp.image.array.shape

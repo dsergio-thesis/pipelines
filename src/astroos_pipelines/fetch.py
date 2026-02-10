@@ -15,12 +15,14 @@ from astropy.coordinates import SkyCoord
 from astropy.nddata import Cutout2D
 from tqdm import tqdm
 import pandas as pd
-
 import matplotlib.pyplot as plt
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astroquery.sdss import SDSS
+from astropy.io.votable import parse_single_table
+from astropy.wcs.utils import proj_plane_pixel_scales
+from astropy.wcs.utils import pixel_to_skycoord
 
 from abc import ABC, abstractmethod
 
@@ -28,14 +30,15 @@ import requests
 from astropy.io import fits
 from io import BytesIO
 
-from astropy.io.votable import parse_single_table
-from io import BytesIO
-
-from astropy.wcs.utils import proj_plane_pixel_scales
 from scipy.ndimage import rotate
 
-from astropy.wcs.utils import pixel_to_skycoord
-
+import sys
+import importlib
+from logger.logger import setup_logging
+importlib.reload(sys.modules['logger.logger'])
+import logging
+setup_logging()
+log = logging.getLogger(__name__)
 
 class AstroosFetch(ABC):
     """
@@ -240,7 +243,7 @@ class AstroosFetchSDSSManualCutout(AstroosFetch):
                         run06d=run06d,
                         field04d=field04d
                     )
-                    # print(f"Fetching image for RA: {ra}, Dec: {dec}, Label: {label} - Band: {band} from URL: {image_url}")
+                    log.debug(f"Fetching image for RA: {ra}, Dec: {dec}, Label: {label} - Band: {band} from URL: {image_url}")
 
                     filepath = f"{self.dir}/{ra}_{dec}_{band}.bz2"
                     try:
@@ -253,7 +256,7 @@ class AstroosFetchSDSSManualCutout(AstroosFetch):
                         # with open(filepath, "wb") as f:
                         #     f.write(resp.content)
                     except Exception as e:
-                        print(f"[ERROR] Failed to download {image_url}: {e}")
+                        log.error(f"Failed to download {image_url}: {e}")
                         continue
 
                     # with open(filepath, "rb") as f:
@@ -346,7 +349,7 @@ class AstroosFetchSDSSManualCutout(AstroosFetch):
 
                     cutout[i, dy1:dy2, dx1:dx2] = image_rot
 
-                    print(f"Band {band} bounds - RA: [{ra_min}, {ra_max}], Dec: [{dec_bottom}, {dec_top}]")
+                    log.debug(f"Band {band} bounds - RA: [{ra_min}, {ra_max}], Dec: [{dec_bottom}, {dec_top}]")
                     band_bounds[i] = np.array([ra_min, ra_max, dec_bottom, dec_top])
 
                 # print(f"df_i: {df_i}, ra: {ra}, dec: {dec}, label: {label}")
@@ -357,7 +360,7 @@ class AstroosFetchSDSSManualCutout(AstroosFetch):
                 df_i += 1
     
         # output_images = np.array(output_images)
-        print(output_images.shape)
+        log.info(f"Output images shape: {output_images.shape}")
 
         return output_images, df['label'].values, output_band_bounds
 
@@ -389,7 +392,7 @@ class AstroosFetchManualFitsCutout(AstroosFetch):
 
             image_cutouts = np.zeros((len(df), 5, n, n), dtype=float)
 
-            progress_bar = tqdm(df.itertuples(), total=len(df), desc="Constructing Dataset...\nProgress ")
+            progress_bar = tqdm(df.itertuples(), total=len(df), desc="Constructing Dataset...")
 
             for row in progress_bar:
 
@@ -398,12 +401,11 @@ class AstroosFetchManualFitsCutout(AstroosFetch):
                 coord = SkyCoord(ra, dec, unit='deg')
 
                 if dataset._contains(row.main_id):
-                    progress_bar.set_description(f"({ra}, {dec}) Label: {row.label}. Skipping.\nProgress: ")
+                    log.debug(f"({ra}, {dec}) Label: {row.label}. Skipping ")
                     df_i += 1
                     continue
                 else:
-                    progress_bar.set_description(f"Downloading ({ra}, {dec}) Label: {row.label}\nProgress ")
-
+                    log.info(f"Downloading ({ra}, {dec}) Label: {row.label}")
                 label = row.label
                 band_hdu_cutouts = []
                 wcs = None
@@ -426,7 +428,7 @@ class AstroosFetchManualFitsCutout(AstroosFetch):
                         run06d=run06d,
                         field04d=field04d
                     )
-                    print(f"Fetching image for RA: {ra}, Dec: {dec}, Label: {label} - Band: {band} from URL: {image_url}")
+                    log.debug(f"Fetching image for RA: {ra}, Dec: {dec}, Label: {label} - Band: {band} from URL: {image_url}")
 
                     try:
                         time.sleep(1) # be nice to SDSS
@@ -436,7 +438,7 @@ class AstroosFetchManualFitsCutout(AstroosFetch):
                         image_data = io.BytesIO(response.content)
 
                     except Exception as e:
-                        print(f"[ERROR] Failed to download {image_url}: {e}")
+                        log.error(f"Failed to download {image_url}: {e}")
                         continue
 
                     with image_data as f:
@@ -461,7 +463,8 @@ class AstroosFetchManualFitsCutout(AstroosFetch):
 
                 bounds = AstroosFetchManualFitsCutout.get_cutout_bounds(band_hdu_cutouts[0])
 
-                hdu = fits.PrimaryHDU(data=image_cutouts[df_i], header=wcs.to_header())
+                hdul = fits.HDUList([fits.PrimaryHDU()])
+                hdu = fits.ImageHDU(data=image_cutouts[df_i], header=wcs.to_header(), name="CUTOUTS")
 
                 # 'main_id', 'rvz_redshift', 'galdim_majaxis', 'galdim_minaxis', 'galdim_angle
                 hdu.header['label'] = label
@@ -482,7 +485,8 @@ class AstroosFetchManualFitsCutout(AstroosFetch):
 
                 output_band_bounds[df_i] = bounds
 
-                dataset.append(hdu)
+                hdul.append(hdu)
+                dataset.append(hdul)
 
                 df_i += 1
 

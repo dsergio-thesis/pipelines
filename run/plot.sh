@@ -1,5 +1,4 @@
 
-
 # if env.sh does not exist, tell user to create it using env.sh.template
 if [ ! -f env.sh ]; then
     echo "env.sh not found. Please create it using env.sh.template"
@@ -9,4 +8,4 @@ fi
 source env.sh
 export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
 
-python -m client.lsst "$@"
+python -m clients.plot "$@" --max-records 2 --dataset-name sdss-2

@@ -13,6 +13,7 @@ import importlib
 from utils.formatting_utils import ascii_kv_table
 importlib.reload(sys.modules['utils.formatting_utils'])
 
+
 CoordFormat = Literal["hmsdms", "deg"]
 
 
