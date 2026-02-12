@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from time import sleep
 import requests
-from io import StringIO
+from io import StringIO, BytesIO
 import pandas as pd
 
 # astroquery
@@ -50,12 +50,13 @@ class AstroosQuerySDSS(AstroosQuery):
         self.sdss_base_url = "https://skyserver.sdss.org/dr17/SkyServerWS/SearchTools/SqlSearch"
 
         log.info("Initialized SDSS Client")
+        self.timeout = 120
         SDSS.timeout = 120
 
     def __repr__(self):
         return f"<AstroQuerySDSSClient(root_dir={self.root_dir}, timeout={self.timeout})>"
     
-    def query_adql(self, query, format='csv'):
+    def query_skyserver(self, query, format='csv'):
         """
         Query SDSS using ADQL.
 
@@ -71,7 +72,7 @@ class AstroosQuerySDSS(AstroosQuery):
         result : astropy.table.Table
             The query result as an Astropy Table.
         """
-        # log.debug(f"Querying SDSS ADQL with query:\n{query}")
+        log.debug(f"Querying SDSS ADQL with query:\n{query}")
         request_url = \
             f"{self.sdss_base_url}?cmd={requests.utils.quote(query)}&format={format}"
 
@@ -87,7 +88,9 @@ class AstroosQuerySDSS(AstroosQuery):
         
         log.debug(res.status_code)
         log.debug(res.text)
-        res = Table.read(StringIO(res.text), format=format)
+        bytes_res = BytesIO(res.content) 
+        from astropy.io import ascii
+        res = ascii.read(bytes_res, format=format, comment = "#")
         return res
     
     def query_TAP(self, query):

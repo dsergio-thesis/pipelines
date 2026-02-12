@@ -66,7 +66,14 @@ class AstroosConfig:
             coord = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, **kwargs)
 
         return coord, spec.radius_arcmin * u.arcmin
-
+    
+    @classmethod
+    def clean_path(cls, value: str) -> Path:
+        return Path(value.strip().strip('"').strip("'"))
+    @classmethod
+    def clean_str(cls, value: str) -> str:
+        return value.strip().strip('"').strip("'")
+    
     # -------- env wiring --------
     @classmethod
     def from_env(cls) -> "PipelineConfig":
@@ -77,12 +84,12 @@ class AstroosConfig:
             return v
 
         return cls(
-            dataset_dir=Path(env("PIPELINE_DATASET_DIR")).expanduser(),
-            dataset_name=env("PIPELINE_DATASET_NAME"),
+            dataset_dir=cls.clean_path(env("PIPELINE_DATASET_DIR")).expanduser(),
+            dataset_name=cls.clean_str(env("PIPELINE_DATASET_NAME")),
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
             pipeline_name=env("PIPELINE_NAME"),
             pipeline_minor_version=int(env("PIPELINE_MINOR_VERSION")),
-            label_def_file=env("PIPELINE_LABEL_DEF_CSV"),
+            label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
             frame=os.getenv("PIPELINE_FRAME", "icrs"),
             obstime=os.getenv("PIPELINE_OBSTIME"),
             equinox=os.getenv("PIPELINE_EQUINOX"),
@@ -94,6 +101,9 @@ class AstroosConfig:
             description="Run the astronomy pipeline",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
+
+        # pytest query file (optional)
+        p.add_argument("-q", type=Path, help="pytest query file")
 
         # core paths / identity
         p.add_argument("--dataset-dir", type=Path, help="Dataset root directory")

@@ -140,48 +140,10 @@ class StageCatalogLSST(DataPipelineStage):
         # convert table to pandas dataframe
         df = table.to_pandas()
 
-        # add label from Simbad crossmatch if available
-        for i, row in df.iterrows():
+        client.cross_match_labels_hst(df, "catalogs/hst/hst.fits")
 
-            query = \
-            """
-            SELECT TOP 1 * 
-            FROM basic b JOIN otypedef o ON b.otype = o.otype 
-            -- WHERE main_id LIKE 'SDSS%' AND
-            WHERE 
-            ra >= {ra_min}
-            AND ra < {ra_max} 
-            AND dec >= {dec_min} 
-            AND dec <= {dec_max} 
-            AND (o.otype_longname = 'Galaxy' OR o.otype_longname = 'Star')
-            -- b.rvz_redshift < 0.05 AND
-            -- (b.morph_type IS NOT NULL)
-
-            ;
-            """
-            query = query.format(
-                ra_min=row['coord_ra'] - 0.01, 
-                ra_max=row['coord_ra'] + 0.01, 
-                dec_min=row['coord_dec'] - 0.01, 
-                dec_max=row['coord_dec'] + 0.01,
-            )
-            res = Simbad.query_tap(query)
-            # print(f"Query: {query}, number of results: {len(res) if res is not None else 0}")
-
-            label_index = -1  # default to -1 for unknown
-            for match_data in res:
-                pass
-                #for i in match_data.colnames:
-                    #print(f"{i}, {match_data[i]}")
-                morph_type = str(match_data['morph_type'])
-                print(f"Simbad data found for {match_data['main_id']}. Type: {match_data['otype_longname']}, Morphological type: [{morph_type}]")
-
-
-                label_index = self.pipeline.dataset.labels._get_label_index(morph_type)
-            
-            # print("Simbad: ")
-            # print(res)
-            df.at[i, 'label'] = label_index
+        print("pipeline labels match: ")
+        print(df['label'].value_counts())
 
         # convert back to table
         table = Table.from_pandas(df)

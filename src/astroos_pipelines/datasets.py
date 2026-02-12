@@ -1,5 +1,4 @@
 
-from cProfile import label
 import numpy as np
 import sys
 import torch
@@ -9,6 +8,7 @@ import csv
 import numpy as np
 import torch
 from astropy.io import fits
+from pathlib import Path
 
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
@@ -18,7 +18,6 @@ importlib.reload(sys.modules['astroos_pipelines.labels'])
 
 from utils.formatting_utils import ascii_kv_table
 importlib.reload(sys.modules['utils.formatting_utils'])
-
 
 from logger.logger import setup_logging
 importlib.reload(sys.modules['logger.logger'])
@@ -36,7 +35,9 @@ class DataSetBase(Dataset):
         Directory where the dataset is stored.
     """
 
-    def __init__(self, dataset_dir):
+    dataset_dir: Path
+
+    def __init__(self, dataset_dir: Path):
         super().__init__()
         self.dataset_dir = dataset_dir
         # create directory if not exists
@@ -53,6 +54,7 @@ class DataSetBase(Dataset):
 class DataLoaderFITS(DataLoader):
     """
     DataLoader for FITS datasets.
+
     Parameters
     ----------
     dataset : Dataset
@@ -68,6 +70,8 @@ class DataLoaderFITS(DataLoader):
     pin_memory : bool, optional
         If True, the data loader will copy Tensors into CUDA pinned memory before returning them (default is True).
     """
+
+    dateset: Dataset
 
     def __init__(self, 
                  dataset, 
@@ -87,7 +91,7 @@ class DataLoaderFITS(DataLoader):
             collate_fn=self.custom_collate)
 
     @staticmethod
-    def custom_collate(batch):
+    def custom_collate(batch: list) -> tuple:
         """ 
         Custom collate function to handle FITS data.
         Expects each item in batch to be a tuple of (image, label, morph_features, phot_features, header).
@@ -294,3 +298,5 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
             ("photometric_transform", ""),
         ]
         return ascii_kv_table(info, title="FITS_Image_Morphometry_Photometry_Dataset")
+
+
