@@ -11,7 +11,7 @@ import importlib
 from utils.formatting_utils import ascii_kv_table
 importlib.reload(sys.modules['utils.formatting_utils'])
 
-from astroos_pipelines.query import AstroosQueryLSST
+from astroos_pipelines.lsst.query import AstroosQueryLSST
 
 from astroos_pipelines.pipelines import DataPipelineStage
 from utils.rsp_utils import get_cutout_bands
@@ -140,7 +140,7 @@ class StageCatalogLSST(DataPipelineStage):
         # convert table to pandas dataframe
         df = table.to_pandas()
 
-        client.cross_match_labels_hst(df, "catalogs/hst/hst.fits")
+        df = client.cross_match_labels_hst(df, "catalogs/hst/hst.fits")
 
         print("pipeline labels match: ")
         print(df['label'].value_counts())

@@ -2,6 +2,10 @@
 import sys
 from astropy.table import Table
 import importlib
+import pandas as pd
+import numpy as np
+from astropy.coordinates import SkyCoord
+import astropy.units as u
 
 rsp_mode = False
 try:
@@ -189,15 +193,16 @@ class AstroosQueryLSST(AstroosQuery):
             DataFrame with labeled data. 
         """
         log.info("Cross-matching LSST data.")
-        
-        hst = Table.read(hst_fits_path, hdu=1)
 
-        hst_dict = load_hst_and_make_labels(hst_fits_path)
 
-        df = attach_hst_labels_to_lsst(df, hst_dict)
+        hst_dict = AstroosQueryLSST.load_hst_and_make_labels(labels_fits_file)
+        # print(hst_dict)
+
+        df = AstroosQueryLSST.attach_hst_labels_to_lsst(df, hst_dict)
 
         return df
 
+    @staticmethod
     def load_hst_and_make_labels(hst_fits_path: str):
         hst = Table.read(hst_fits_path, hdu=1)
 
@@ -245,6 +250,7 @@ class AstroosQueryLSST(AstroosQuery):
             "Av": Av,
         }
 
+    @staticmethod
     def attach_hst_labels_to_lsst(df_lsst: pd.DataFrame, hst_dict, radius_arcsec=0.8):
         lsst_c = SkyCoord(df_lsst["coord_ra"].to_numpy()*u.deg,
                           df_lsst["coord_dec"].to_numpy()*u.deg)
@@ -260,7 +266,7 @@ class AstroosQueryLSST(AstroosQuery):
         hix = idx[m]
 
         out["hst_sep_arcsec"] = sep_arcsec[m]
-        out["sfq_label"] = hst_dict["label"][hix].astype(np.int64)   # 0=Q, 1=SF
+        out["label"] = hst_dict["label"][hix].astype(np.int64)   # 0=Q, 1=SF
         out["hst_phot_id"] = np.array(hst_dict["table"]["phot_id"][hix])
 
         # Optional extra “definitive” aux targets/features

@@ -198,7 +198,7 @@ class AstroosConfig:
             ("coords",                 f"{len(self.coords)} entries"),
             ("max_records",            self.max_records),
         ]
-        return ascii_kv_table(rows, title="PipelineConfig")
+        return ascii_kv_table(rows, title="AstroosConfig")
     
 
 
