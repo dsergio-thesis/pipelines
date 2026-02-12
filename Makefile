@@ -1,5 +1,5 @@
 
 
 clean:
-	rm -rf _pipelines/* data/*
+	rm -rf _pipelines/* data/* log/*
 

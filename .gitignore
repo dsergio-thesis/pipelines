@@ -213,3 +213,5 @@ _pipelines/
 
 **/.DS_Store
 env.sh
+
+log
