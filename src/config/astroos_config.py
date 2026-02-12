@@ -14,15 +14,6 @@ from utils.formatting_utils import ascii_kv_table
 importlib.reload(sys.modules['utils.formatting_utils'])
 
 
-CoordFormat = Literal["hmsdms", "deg"]
-
-
-@dataclass(frozen=True)
-class CoordSpec:
-    value: str
-    fmt: CoordFormat = "hmsdms"
-    radius_arcmin: float = 5.0
-
 
 @dataclass(frozen=True)
 class AstroosConfig:
@@ -33,16 +24,16 @@ class AstroosConfig:
     pipeline_minor_version: int
     label_def_file: str
 
-    frame: str = "icrs"
-    obstime: Optional[str] = None
-    equinox: Optional[str] = None
 
-    coords: Dict[str, CoordSpec] = field(default_factory=lambda: {
-        "virgo_cluster": CoordSpec("12 30 49.423 +12 23 28.04", "hmsdms", 30.0),
-        "obj_3c273":     CoordSpec("12 29 06.699 +02 03 08.60", "hmsdms", 2.0),
-        "someother":     CoordSpec("14 35 42.8685615528 +40 18 02.133470196", "hmsdms", 3.0),
-        "CDF_South":     CoordSpec("53.161 -27.791", "deg", 10.0),
+    # default targets in SkyCoord:
+    coords: Dict[str, SkyCoord] = field(default_factory=lambda: {
+        "virgo_cluster": SkyCoord("12 30 49.423 +12 23 28.04", unit=(u.hourangle, u.deg), frame="icrs"),
+        "obj_3c273":     SkyCoord("12 29 06.699 +02 03 08.60", unit=(u.hourangle, u.deg), frame="icrs"),
+        "someother":     SkyCoord("14 35 42.8685615528 +40 18 02.133470196", unit=(u.hourangle, u.deg), frame="icrs"),
+        "CDF_South":     SkyCoord("53.161 -27.791", unit=u.deg, frame="icrs"),
     })
+
+    radius_arcmin: u.Quantity = 5.0 * u.arcmin
 
     max_records: int = 3
 
@@ -50,23 +41,6 @@ class AstroosConfig:
         p = Path(self.label_csv).expanduser()
         return p if p.is_absolute() else self.dataset_dir / p
 
-    def get_target(self, key: str) -> Tuple[SkyCoord, u.Quantity]:
-        spec = self.coords[key]
-
-        kwargs = {"frame": self.frame}
-        if self.obstime:
-            kwargs["obstime"] = self.obstime
-        if self.equinox:
-            kwargs["equinox"] = self.equinox
-
-        if spec.fmt == "hmsdms":
-            coord = SkyCoord(spec.value, unit=(u.hourangle, u.deg), **kwargs)
-        else:
-            ra, dec = map(float, spec.value.split())
-            coord = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, **kwargs)
-
-        return coord, spec.radius_arcmin * u.arcmin
-    
     @classmethod
     def clean_path(cls, value: str) -> Path:
         return Path(value.strip().strip('"').strip("'"))
@@ -91,15 +65,12 @@ class AstroosConfig:
             pipeline_name=env("PIPELINE_NAME"),
             pipeline_minor_version=int(env("PIPELINE_MINOR_VERSION")),
             label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
-            frame=os.getenv("PIPELINE_FRAME", "icrs"),
-            obstime=os.getenv("PIPELINE_OBSTIME"),
-            equinox=os.getenv("PIPELINE_EQUINOX"),
         )
 
     @classmethod
     def build_arg_parser(cls) -> argparse.ArgumentParser:
         p = argparse.ArgumentParser(
-            description="Run the astronomy pipeline",
+            description="Astroos Configuration",
             formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         )
 
@@ -114,11 +85,6 @@ class AstroosConfig:
         p.add_argument("--pipeline-minor-version", type=int, help="Minor version")
         p.add_argument("--label-def-file", type=str, help="Label definition CSV file")
         p.add_argument("--max-records", type=int, default=3, help="Max records to fetch from query")
-
-        # astro metadata
-        p.add_argument("--frame", type=str, default=None)
-        p.add_argument("--obstime", type=str, default=None)
-        p.add_argument("--equinox", type=str, default=None)
 
         # runtime overrides
         p.add_argument(
@@ -154,9 +120,6 @@ class AstroosConfig:
                 else base.pipeline_minor_version
             ),
             label_def_file=args.label_def_file or base.label_def_file,
-            frame=args.frame or base.frame,
-            obstime=args.obstime or base.obstime,
-            equinox=args.equinox or base.equinox,
             coords=base.coords,  # unchanged for now
             max_records=args.max_records if args.max_records is not None else base.max_records,
         )
@@ -193,9 +156,6 @@ class AstroosConfig:
             ("pipeline_name",          self.pipeline_name),
             ("pipeline_minor_version", self.pipeline_minor_version),
             ("label_def_file",         self.label_def_file),
-            ("frame",                  self.frame),
-            ("obstime",                self.obstime),
-            ("equinox",                self.equinox),
             ("coords",                 f"{len(self.coords)} entries"),
             ("max_records",            self.max_records),
         ]
