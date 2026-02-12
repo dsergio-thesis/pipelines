@@ -45,12 +45,19 @@ def main():
 
     dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
         dataset_dir=os.path.join(dataset_dir, dataset_name),
+        labels_init_file=os.path.join(dataset_dir, dataset_name, "labels.csv"),
         transform=transformCartesian,
         morphometric_transform=MorphometryFeatures()
     )
 
     print()
     print(dataset_cartesian)
+
+    labels = dataset_cartesian.get_labels()
+    print()
+    print("Labels:")
+    print(labels)
+
 
     plot_random_samples_from_dataset(
         dataset_cartesian, 
