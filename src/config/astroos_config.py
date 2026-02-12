@@ -70,13 +70,14 @@ class AstroosConfig:
     @classmethod
     def clean_path(cls, value: str) -> Path:
         return Path(value.strip().strip('"').strip("'"))
+
     @classmethod
     def clean_str(cls, value: str) -> str:
         return value.strip().strip('"').strip("'")
     
-    # -------- env wiring --------
+    # -------- Get config from env 
     @classmethod
-    def from_env(cls) -> "PipelineConfig":
+    def from_env(cls) -> "AstroosConfig":
         def env(key: str, default: Optional[str] = None) -> str:
             v = os.getenv(key, default)
             if v is None:
@@ -134,7 +135,7 @@ class AstroosConfig:
         return p
     
     @classmethod
-    def from_cli(cls, argv: Optional[list[str]] = None) -> "PipelineConfig":
+    def from_cli(cls, argv: Optional[list[str]] = None) -> "AstroosConfig":
         parser = cls.build_arg_parser()
         args = parser.parse_args(argv)
 
