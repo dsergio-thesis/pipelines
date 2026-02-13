@@ -131,6 +131,8 @@ class StageCatalogLSST(DataPipelineStage):
                 dec_max=dec_max
                 )
 
+        print("Query:")
+        print(query)
         # sync
         table = client.query(query)
 
@@ -140,7 +142,12 @@ class StageCatalogLSST(DataPipelineStage):
         # convert table to pandas dataframe
         df = table.to_pandas()
 
+        print(f"number of results: {len(df)}")
+        print(df)
+
         df = client.cross_match_labels_hst(df, "catalogs/hst/hst.fits")
+        print(f"after cross matching: {len(df)}")
+        print(df)
 
         print("pipeline labels match: ")
         print(df['label'].value_counts())

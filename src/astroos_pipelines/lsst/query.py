@@ -196,7 +196,8 @@ class AstroosQueryLSST(AstroosQuery):
 
 
         hst_dict = AstroosQueryLSST.load_hst_and_make_labels(labels_fits_file)
-        # print(hst_dict)
+        print("hst_dict")
+        print(hst_dict)
 
         df = AstroosQueryLSST.attach_hst_labels_to_lsst(df, hst_dict)
 
@@ -256,8 +257,13 @@ class AstroosQueryLSST(AstroosQuery):
                           df_lsst["coord_dec"].to_numpy()*u.deg)
         hst_c  = SkyCoord(hst_dict["ra"]*u.deg, hst_dict["dec"]*u.deg)
 
+
+        print("lsst_c: ", lsst_c)
+        print("hst_c: ", hst_c)
+
         idx, sep2d, _ = lsst_c.match_to_catalog_sky(hst_c)
         sep_arcsec = sep2d.to(u.arcsec).value
+        print(f"sep_arsec: {sep_arcsec}, radius: {radius_arcsec}")
 
         # Require a close match AND a confident label
         m = (sep_arcsec <= radius_arcsec) & (hst_dict["confident"][idx])

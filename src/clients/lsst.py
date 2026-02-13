@@ -47,6 +47,7 @@ def main():
     print(config)
 
     pipeline_metadata = {'query_coords': coord, 'query_radius': radius}
+    print(pipeline_metadata)
 
     transformPolar = transforms.Compose([
             # transforms.ToTensor(),
@@ -73,7 +74,7 @@ def main():
             dataset_dir=os.path.join(dataset_dir, dataset_name),
             labels_init_file=label_def_file,
             N_bands=5, 
-            N_morphometric_features=0,
+            N_morphometric_features=4,
             N_photometric_features=4,
             transform=transformCartesian,
             morphometric_transform=MorphometryFeatures(),
