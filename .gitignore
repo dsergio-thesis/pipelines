@@ -214,3 +214,5 @@ __marimo__/
 
 env.sh
 log
+
+**/*.fits

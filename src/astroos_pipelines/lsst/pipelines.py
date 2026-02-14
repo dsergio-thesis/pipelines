@@ -131,8 +131,8 @@ class StageCatalogLSST(DataPipelineStage):
                 dec_max=dec_max
                 )
 
-        print("Query:")
-        print(query)
+        # print("Query:")
+        # print(query)
         # sync
         table = client.query(query)
 
@@ -146,8 +146,8 @@ class StageCatalogLSST(DataPipelineStage):
         print(df)
 
         df = client.cross_match_labels_hst(df, "catalogs/hst/hst.fits")
-        print(f"after cross matching: {len(df)}")
-        print(df)
+        # print(f"after cross matching: {len(df)}")
+        # print(df)
 
         print("pipeline labels match: ")
         print(df['label'].value_counts())
@@ -274,12 +274,4 @@ class StageFetchLSSTSoda(DataPipelineStage):
 
             self.dataset.append(hdul)
 
-            
 
-        # print("nchw shape:", nchw.shape)
-        # torch.save(nchw, f"{self.pipeline.dataset.dir}/X_train.pt")
-        # print(f"Saved file: {self.pipeline.dataset.dir}/X_train.pt")
-        # # placeholder labels
-        # labels_tensor = torch.zeros((n,), dtype=torch.int64)
-        # torch.save(labels_tensor, f"{self.pipeline.dataset.dir}/y_train.pt")
-        # print(f"Saved file: {self.pipeline.dataset.dir}/y_train.pt")
