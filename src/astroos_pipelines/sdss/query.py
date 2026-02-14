@@ -19,14 +19,15 @@ import importlib
 
 from astroos_pipelines.query import AstroosQuery
 
-from utils.sdss_utils import decode_sdss_objid
+from astroos_pipelines.utils.sdss_utils import decode_sdss_objid
 
 importlib.reload(sys.modules['astroos_pipelines.query'])
+importlib.reload(sys.modules['astroos_pipelines.utils.sdss_utils'])
 
 import sys
 import importlib
-from logger.logger import setup_logging
-importlib.reload(sys.modules['logger.logger'])
+from astroos_pipelines.logger.logger import setup_logging
+importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
 import logging
 setup_logging()
 log = logging.getLogger(__name__)

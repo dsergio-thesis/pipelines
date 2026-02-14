@@ -4,8 +4,8 @@ from torchvision import transforms
 import cmcrameri.cm as cmc
 import importlib
 
-from config.astroos_config import AstroosConfig
-from utils.plot_utils import plot_random_samples_from_dataset
+from astroos_pipelines.config.astroos_config import AstroosConfig
+from astroos_pipelines.utils.plot_utils import plot_random_samples_from_dataset
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
@@ -16,8 +16,8 @@ from astroos_pipelines.transforms import AddGaussianNoise, \
 
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
-importlib.reload(sys.modules['config.astroos_config'])
-importlib.reload(sys.modules['utils.plot_utils'])
+importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
+importlib.reload(sys.modules['astroos_pipelines.utils.plot_utils'])
 
 def main():
 

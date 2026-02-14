@@ -2,8 +2,8 @@
 import importlib
 import sys
 import os
-from config.astroos_config import AstroosConfig
-importlib.reload(sys.modules['config.astroos_config'])
+from astroos_pipelines.config.astroos_config import AstroosConfig
+importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
 
 def test_config_defaults():
      

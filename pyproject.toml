@@ -1,8 +1,61 @@
 
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
 
 [project]
 name = "astroos-pipelines"
 version = "0.1.0"
+description = "LSST/SDSS/HST/PyTorch pipelines for astronomical data processing"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "David Sergio" }]
+
+
+dependencies = [
+  # astro
+  "astropy>=6",
+  "astroquery>=0.4",
+  "photutils>=1.9",
+  "pyvo>=1.4",
+
+  # numerics / data
+  "numpy==1.26.4",
+  "scipy>=1.10",
+  "pandas>=2.0",
+  "networkx>=3.0",
+
+  # plotting / images
+  "matplotlib>=3.7",
+  "pillow>=10",
+  "scikit-image>=0.21",
+  "cmcrameri>=1.7",
+
+  # simulation
+  "galsim>=2.5",
+
+  # utils
+  "requests>=2.31",
+  "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=7.4",
+  "pytest-cov>=4.1",
+  "ruff>=0.5",
+  "black>=24.0",
+]
+
+# Optional ML stack. Keep optional because CUDA installs are platform/index-specific.
+ml = [
+  "torch>=2.2",
+  "torchvision>=0.17",
+]
+[tool.ruff]
+line-length = 100
+
+[tool.black]
+line-length = 100
+
