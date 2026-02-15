@@ -74,17 +74,21 @@ def plot_random_samples_from_dataset(
     random_labels = [dataset[i][1] for i in random_indices]
     random_morph_features = [dataset[i][2] for i in random_indices]
     random_phot_features = [dataset[i][3] for i in random_indices]
-    random_image_bounds = [(dataset[i][4]['MIN_RA'], dataset[i][4]['MAX_RA'],
-                            dataset[i][4]['MIN_DEC'], dataset[i][4]['MAX_DEC'])
-                           for i in random_indices]
+
+    if random_cutouts[random_indices[0]] is not None:
+        random_image_bounds = [(dataset[i][4]['MIN_RA'], dataset[i][4]['MAX_RA'],
+                                dataset[i][4]['MIN_DEC'], dataset[i][4]['MAX_DEC'])
+                               for i in random_indices]
+
     random_main_ids = [dataset[i][4]['MAIN_ID'] for i in random_indices]
     random_ras = [dataset[i][4]['RA'] for i in random_indices]
     random_decs = [dataset[i][4]['DEC'] for i in random_indices]
-    random_rvz = [dataset[i][4]['rvz_redshift'] for i in random_indices]
 
-    for i in range(len(random_cutouts)):
-        print(random_cutouts[i].shape)
-        print("mean: ", random_cutouts[i].mean())
+    # random_rvz = [dataset[i][4]['rvz_redshift'] for i in random_indices]
+
+    # for i in range(len(random_cutouts)):
+        # print(random_cutouts[i].shape)
+        # print("mean: ", random_cutouts[i].mean())
 
     # labels = label_definitions("./sdss_morph_types_info.csv")
     # print(labels)
@@ -99,23 +103,23 @@ def plot_random_samples_from_dataset(
     #     # get only the rows corresponding to random_indices
     #     random_samples_info = random_samples_info.iloc[random_indices]
 
-    print("random_image_bounds:", random_image_bounds)
+    # print("random_image_bounds:", random_image_bounds)
 
     random_samples_info = pd.DataFrame()
 
     for i in range(len(random_main_ids)):
         row = pd.DataFrame([{
             'main_id': str(random_main_ids[i]),
-            'rvz_redshift': random_rvz[i],
+            # 'rvz_redshift': random_rvz[i],
             'ra': random_ras[i],
             'dec': random_decs[i],
         }])
         random_samples_info = pd.concat([random_samples_info, row], ignore_index=True)
 
 
-    for i in random_samples_info.index:
-        if random_samples_info.at[i, 'rvz_redshift'] == '--':
-            random_samples_info.at[i, 'rvz_redshift'] = 0.0 # do something else here
+    # for i in random_samples_info.index:
+        # if random_samples_info.at[i, 'rvz_redshift'] == '--':
+            # random_samples_info.at[i, 'rvz_redshift'] = 0.0 # do something else here
 
     summary = []
     for i in range(num_samples_to_display):
@@ -159,13 +163,14 @@ def plot_random_samples_from_dataset(
         label_classname = label_definitions.iloc[int(random_labels[i-1])]["long_name"] if label_definitions is not None else ""
         info = str(random_samples_info.iloc[i-1]['main_id']) if not random_samples_info.empty else ""
 
-        redshift = random_samples_info.iloc[i-1]['rvz_redshift']
+        # redshift = random_samples_info.iloc[i-1]['rvz_redshift']
+        redshift = None
         ax_info = fig.add_subplot(gs[plot_index, :])
 
         if simple_plot:
             label_full = f"{info}"
         else:
-            label_full = f"{label_classname} {info} (z={redshift})"
+            label_full = f"{label_classname} {info} (z={redshift if redshift is not None else 'N/A'})"
 
         ax_info.text(0.5, 0.0, label_full,
                     rotation=0, ha='center', va='center', fontsize=18)
@@ -186,15 +191,15 @@ def plot_random_samples_from_dataset(
 
             
             # plot the cutout
-            cutout = random_cutouts[i-1][j]
-            extent = random_image_bounds[i-1] if random_image_bounds is not None else None
-            # print(f"extent.shape: {extent.shape} extent: {extent} sample.shape: {sample.shape}" \
-            #       f" ra_diff: {extent[1]-extent[0]} dec_diff: {extent[3]-extent[2]}")
-            # ra_min, ra_max, dec_min, dec_max = extent
-            # ra_center = 0.5*(ra_min + ra_max)
-            # ra_diff = dec_max - dec_min  # make RA span = Dec span for plotting
-            # extent_plot = [ra_center - ra_diff/2, ra_center + ra_diff/2, dec_min, dec_max]
-            if cutout is not None:
+            if random_cutouts[i-1] is not None:
+                cutout = random_cutouts[i-1][j]
+                extent = random_image_bounds[i-1] if random_image_bounds is not None else None
+                # print(f"extent.shape: {extent.shape} extent: {extent} sample.shape: {sample.shape}" \
+                #       f" ra_diff: {extent[1]-extent[0]} dec_diff: {extent[3]-extent[2]}")
+                # ra_min, ra_max, dec_min, dec_max = extent
+                # ra_center = 0.5*(ra_min + ra_max)
+                # ra_diff = dec_max - dec_min  # make RA span = Dec span for plotting
+                # extent_plot = [ra_center - ra_diff/2, ra_center + ra_diff/2, dec_min, dec_max]
                 ax.imshow(cutout,
                         cmap=cmap,
                         extent=extent if extent is not None else None,
@@ -207,8 +212,8 @@ def plot_random_samples_from_dataset(
 
             # plot morphometry features 
             ax_cash = fig.add_subplot(gs[plot_index + 2, j])
-            features_morph = random_morph_features[i-1][j]
-            if features_morph is not None:
+            if random_morph_features[i-1] is not None:
+                features_morph = random_morph_features[i-1][j]
                 features_morph = np.array(features_morph, dtype=np.float32)
                 x = np.array([0, 1, 2, 3])
                 ax_cash.bar(x, features_morph, width=0.25, color='skyblue', edgecolor='black')
@@ -224,8 +229,8 @@ def plot_random_samples_from_dataset(
 
             # plot photometry features
             ax_phot = fig.add_subplot(gs[plot_index + 3, j])
-            features_phot = random_phot_features[i-1][j]
-            if features_phot is not None:
+            if random_phot_features[i-1] is not None:
+                features_phot = random_phot_features[i-1][j]
                 features_phot = np.array(features_phot, dtype=np.float32)
                 x = np.array([0, 1, 2, 3])
                 ax_phot.bar(x, features_phot, width=0.25, color='skyblue', edgecolor='black')

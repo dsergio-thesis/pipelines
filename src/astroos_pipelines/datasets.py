@@ -233,11 +233,12 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
                 image = None
             else:
                 image = np.array(img_hdu.data, dtype=np.float32)
+                # Endianness correction: native byte order 
+                if image.dtype.byteorder not in ("=", "|"):
+                    image = image.byteswap().newbyteorder()
 
-            # Endianness correction: native byte order 
-            if image.dtype.byteorder not in ("=", "|"):
-                image = image.byteswap().newbyteorder()
 
+            
             # Image Morphometry Transform
             if image is not None and self.morphometric_transform is not None:
                 morph = self.morphometric_transform(image).astype(np.float32)
