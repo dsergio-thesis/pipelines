@@ -71,7 +71,7 @@ def main():
             # SegmentationTransform(nsigma=0.2, min_area=40),
             ])
 
-    dataset_cart_lsst = FITS_Image_Morphometry_Photometry_Dataset(
+    dataset_cart_cutouts_morph = FITS_Image_Morphometry_Photometry_Dataset(
             dataset_dir=os.path.join(dataset_dir, dataset_name),
             labels_init_file=label_def_file,
             N_bands=5, 
@@ -79,6 +79,17 @@ def main():
             N_photometric_features=4,
             transform=transformCartesian,
             morphometric_transform=MorphometryFeatures(),
+            photometric_transform=None
+            )
+
+    dataset_cart_phot = FITS_Image_Morphometry_Photometry_Dataset(
+            dataset_dir=os.path.join(dataset_dir, dataset_name + "_phot"),
+            labels_init_file=label_def_file,
+            N_bands=5, 
+            N_morphometric_features=0,
+            N_photometric_features=4,
+            transform=None,
+            morphometric_transform=None,
             photometric_transform=None
             )
 
@@ -90,11 +101,19 @@ def main():
                 name=pipeline_name,
                 metadata=pipeline_metadata,
                 max_records=max_records,
-                dataset=dataset_cart_lsst,
+                dataset=dataset_cart_cutouts_morph,
                 minor_version=pipeline_minor_version,
-                )
+                ),
+            PipelineClassification(
+                name=pipeline_name+"_phot",
+                metadata=pipeline_metadata,
+                max_records=max_records,
+                dataset=dataset_cart_phot,
+                minor_version=pipeline_minor_version,
+                ),
             ]
 
+            
     pipelines[0].add_stages([])
 
     pipelines[1].add_stages([
@@ -104,7 +123,14 @@ def main():
         StageFetchLSSTSoda(),
         ])
 
-    pipelines[1].run_pipeline()
+    pipelines[2].add_stages([
+        StageCatalogLSST(),
+        StageMatchLSSTtoHST(),
+        StagePreprocessLSST(),
+        ])
+
+    # pipelines[1].run_pipeline()
+    pipelines[2].run_pipeline()
 
     # for p in pipelines:
     #     p.run_pipeline()
