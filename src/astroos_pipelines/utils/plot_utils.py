@@ -1,4 +1,5 @@
 
+from os import wait
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -80,7 +81,8 @@ def plot_random_samples_from_dataset(
                                 dataset[i][4]['MIN_DEC'], dataset[i][4]['MAX_DEC'])
                                for i in random_indices]
 
-    random_main_ids = [dataset[i][4]['MAIN_ID'] for i in random_indices]
+    
+    random_main_ids = [dataset[i][4]['OBJECTID'] for i in random_indices]
     random_ras = [dataset[i][4]['RA'] for i in random_indices]
     random_decs = [dataset[i][4]['DEC'] for i in random_indices]
 
@@ -109,7 +111,7 @@ def plot_random_samples_from_dataset(
 
     for i in range(len(random_main_ids)):
         row = pd.DataFrame([{
-            'main_id': str(random_main_ids[i]),
+            'objectId': str(random_main_ids[i]),
             # 'rvz_redshift': random_rvz[i],
             'ra': random_ras[i],
             'dec': random_decs[i],
@@ -161,7 +163,7 @@ def plot_random_samples_from_dataset(
         plot_index = i * 4 - 4
 
         label_classname = label_definitions.iloc[int(random_labels[i-1])]["long_name"] if label_definitions is not None else ""
-        info = str(random_samples_info.iloc[i-1]['main_id']) if not random_samples_info.empty else ""
+        info = str(random_samples_info.iloc[i-1]['objectId']) if not random_samples_info.empty else ""
 
         # redshift = random_samples_info.iloc[i-1]['rvz_redshift']
         redshift = None
@@ -177,7 +179,7 @@ def plot_random_samples_from_dataset(
         ax_info.axis('off')
 
         for j in range(num_cols):       # band column
-            print(f"Plotting sample {i-1}, band {bands[j]}, main_id: {random_samples_info.iloc[i-1]['main_id']}, ra: {random_samples_info.iloc[i-1]['ra']}, dec: {random_samples_info.iloc[i-1]['dec']}")
+            print(f"Plotting sample {i-1}, band {bands[j]}, objectId: {random_samples_info.iloc[i-1]['objectId']}, ra: {random_samples_info.iloc[i-1]['ra']}, dec: {random_samples_info.iloc[i-1]['dec']}")
 
             ax = fig.add_subplot(gs[plot_index + 1, j])
             ax.set_title(f"band: {bands[j]}", fontsize=14)

@@ -287,6 +287,8 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
             # Label Extraction
             if (img_hdu is not None and img_hdu.header is not None) and "label" in img_hdu.header:
                 label = int(img_hdu.header.get("label", 0))
+            elif (pho_hdu is not None and pho_hdu.header is not None) and "label" in pho_hdu.header:
+                label = int(pho_hdu.header.get("label", 0))
             else:
                 label = 0
 
