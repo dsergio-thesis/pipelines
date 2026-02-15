@@ -1,6 +1,7 @@
 
 import numpy as np
 import sys
+from pandas.core.base import NoNewAttributesMixin
 import torch
 import os
 import importlib
@@ -214,49 +215,70 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         objectId = self.manifest_list[idx]
         hdul_filename = os.path.join(self.dataset_dir, f"{objectId}.fits")
 
-        # Always close FITS after reading
         with fits.open(hdul_filename, memmap=False) as hdul:
-            # Prefer EXTNAME if you can enforce it; otherwise keep [1]/[2]
-            img_hdu = hdul["CUTOUTS"] if "CUTOUTS" in hdul else hdul[1]
-            pho_hdu = hdul["PHOTO"]   if "PHOTO"   in hdul else (hdul[2] if len(hdul) > 2 else None)
 
-            image = np.array(img_hdu.data, dtype=np.float32)  # (B,H,W)
+            img_hdu = hdul["CUTOUTS"] if "CUTOUTS" in hdul else None
+            pho_hdu = hdul["PHOTO"] if "PHOTO" in hdul else None
 
-            # Endianness safety
+            header_dict = dict()
+
+            # Extract header from image HDU if available, otherwise from photometry HDU
+            if (img_hdu is not None):
+                header_dict = dict(img_hdu.header) if img_hdu.header is not None else {}
+            if (img_hdu is None and pho_hdu is not None):
+                header_dict = dict(pho_hdu.header) if pho_hdu.header is not None else {}
+
+            # Pixel Data
+            if img_hdu is None:
+                image = None
+            else:
+                image = np.array(img_hdu.data, dtype=np.float32)
+
+            # Endianness correction: native byte order 
             if image.dtype.byteorder not in ("=", "|"):
                 image = image.byteswap().newbyteorder()
 
-            # Morphometry
-            if self.morphometric_transform is not None:
+            # Image Morphometry Transform
+            if image is not None and self.morphometric_transform is not None:
                 morph = self.morphometric_transform(image).astype(np.float32)
             else:
-                morph = np.zeros((self.N_bands, self.N_morphometric_features), dtype=np.float32)
+                morph = None
+                # morph = np.zeros((self.N_bands, self.N_morphometric_features), dtype=np.float32)
 
-            # Photometry
+            # Photometry Data
             if pho_hdu is not None and pho_hdu.data is not None:
                 phot = np.array(pho_hdu.data, dtype=np.float32)
             else:
-                phot = np.zeros((self.N_bands, self.N_photometric_features), dtype=np.float32)
+                phot = None
+                # phot = np.zeros((self.N_bands, self.N_photometric_features), dtype=np.float32)
 
-            if self.photometric_transform is not None:
+            # Photometry Transform
+            if phot is not None and self.photometric_transform is not None:
                 phot = self.photometric_transform(phot).astype(np.float32)
 
-            label = int(img_hdu.header.get("label", 0))
+            # Label Extraction
+            if (img_hdu is not None and img_hdu.header is not None) and "label" in img_hdu.header:
+                label = int(img_hdu.header.get("label", 0))
+            else:
+                label = 0
 
-            # Image transform (torchvision usually expects CHW as torch tensor)
-            if self.transform is not None:
+            # Image Pixel Data
+            if image is not None and self.transform is not None:
                 # if your transform expects torch.Tensor, convert first
                 img_for_tf = torch.from_numpy(image)
                 img = self.transform(img_for_tf)
-            else:
+            elif image is not None:
                 img = torch.from_numpy(image)
+            else:
+                # img = torch.zeros((self.N_bands, 64, 64), dtype=torch.float32)  # default shape if no image
+                img = None
 
             return (
-                img.to(torch.float32),
+                img.to(torch.float32) if img is not None else None,
                 torch.tensor(label, dtype=torch.long),
-                torch.from_numpy(morph).to(torch.float32),
-                torch.from_numpy(phot).to(torch.float32),
-                dict(img_hdu.header)  # safer for DataLoader collation than Header object
+                torch.from_numpy(morph).to(torch.float32) if morph is not None else None,
+                torch.from_numpy(phot).to(torch.float32) if phot is not None else None,
+                header_dict
             )
 
     def append(self, hdul):
