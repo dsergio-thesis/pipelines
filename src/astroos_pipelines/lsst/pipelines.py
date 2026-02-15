@@ -135,11 +135,15 @@ class StageCatalogLSST(DataPipelineStage):
         # sync
         table = client.query(query)
 
+        col_names = table.colnames
+        col_types = [str(table[name].dtype) for name in col_names]
+        print("Query result columns and types:")
+
 
         # async
         # table = client.query_async(query)
 
-        self.output = table.to_pandas()
+        self.output = table
         self.cache_pipeline_output()
         print(f"number of results: {len(self.output)}")
         print(self.output)
@@ -168,9 +172,10 @@ class StageMatchLSSTtoHST(DataPipelineStage):
 
     def run(self):
 
-        # read the table from the previous stage df = self.prev_stage.output
+        # read the table from the previous stage 
+        table = self.prev_stage.output
 
-        self.output = AstroosQueryLSST.cross_match_labels_hst(df, "catalogs/hst/hst.fits")
+        self.output = Table.from_pandas(AstroosQueryLSST.cross_match_labels_hst(table.to_pandas(), "catalogs/hst/hst.fits"))
 
         print("pipeline labels match: ")
         print(self.output['label'].value_counts())
@@ -198,7 +203,7 @@ class StagePreprocessLSST(DataPipelineStage):
 
     def run(self):
 
-        df = self.prev_stage.output
+        df = self.prev_stage.output.to_pandas()
         n = len(df)
         print(f"Feature preprocesing for {n} objects...")
 
@@ -261,7 +266,7 @@ class StagePreprocessLSST(DataPipelineStage):
             else:
                 dataset.append(hdul)
 
-        self.output = df
+        self.output = Table.from_pandas(df)
 
 
 # ============================================================
@@ -332,6 +337,6 @@ class StageFetchLSSTSoda(DataPipelineStage):
             else:
                 dataset.append(hdul)
 
-        self.output = df
+        self.output = Table.from_pandas(df)
 
 

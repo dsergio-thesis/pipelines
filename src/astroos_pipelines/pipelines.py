@@ -222,23 +222,25 @@ class DataPipelineStage(ABC):
             f" - output={self.output}\n"
         return s
 
-
     def cache_pipeline_output(self):
-        table = Table.from_pandas(self.output)
+        table = self.output
         # first check cache
-        if os.path.exists(f"{self.stage_dir}/output.csv"):
-            log.info(f"File {self.sage_dir}/output.csv already exists. ")
+        if os.path.exists(f"{self.stage_dir}/output.fits"):
+            log.info(f"File {self.sage_dir}/output.fits already exists. ")
             # first read the table
-            existing_table = Table.read(f"{self.stage_dir}/output.csv", format="csv")
+            existing_table = Table.read(f"{self.stage_dir}/output.fits")
             existing_ids = set(existing_table['objectId'])
             mask = [oid not in existing_ids for oid in table['objectId']]
             new_rows = table[mask]
             existing_table = vstack([existing_table, new_rows])
-            self.output = existing_table.to_pandas()
-            existing_table.write(f"{self.stage_dir}/output.csv", format="csv", overwrite=True)
+            self.output = existing_table
+            existing_table.write(f"{self.stage_dir}/output.fits", format="fits", overwrite=True)
         else:
-            table.write(f"{self.stage_dir}/output.csv", format="csv", overwrite=True)
-            log.info(f"Saved query result to {self.stage_dir}/output.csv")
+            table.write(f"{self.stage_dir}/output.fits", format="fits", overwrite=True)
+            log.info(f"Saved query result to {self.stage_dir}/output.fits")
+
+        table.write(f"{self.stage_dir}/output.csv", format="csv", overwrite=True)
+        log.info(f"Saved query result to {self.stage_dir}/output.csv")
 
 class StageInfo(DataPipelineStage):
     """
