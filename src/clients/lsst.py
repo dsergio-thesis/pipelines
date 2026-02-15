@@ -18,16 +18,16 @@ from astroos_pipelines.transforms import AddGaussianNoise, \
         PolarTransform, \
         CropZeros, \
         CropAroundCentroid
-from config.astroos_config import AstroosConfig
+from astroos_pipelines.config.astroos_config import AstroosConfig
 
 importlib.reload(sys.modules['astroos_pipelines.lsst.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
-importlib.reload(sys.modules['config.astroos_config'])
+importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
 
-from logger.logger import setup_logging
-importlib.reload(sys.modules['logger.logger'])
+from astroos_pipelines.logger.logger import setup_logging
+importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
 import logging
 setup_logging()
 log = logging.getLogger(__name__)

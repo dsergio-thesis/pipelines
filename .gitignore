@@ -216,3 +216,5 @@ env.sh
 log
 
 **/*.fits
+
+data/**/*.csv

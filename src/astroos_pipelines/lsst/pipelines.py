@@ -8,15 +8,13 @@ from astropy import units as u
 
 import importlib
 
-from utils.formatting_utils import ascii_kv_table
-importlib.reload(sys.modules['utils.formatting_utils'])
-
+from astroos_pipelines.utils.formatting_utils import ascii_kv_table
 from astroos_pipelines.lsst.query import AstroosQueryLSST
-
 from astroos_pipelines.pipelines import DataPipelineStage
-from utils.rsp_utils import get_cutout_bands
+from astroos_pipelines.utils.rsp_utils import get_cutout_bands
 
-importlib.reload(sys.modules['utils.rsp_utils'])
+importlib.reload(sys.modules['astroos_pipelines.utils.formatting_utils'])
+importlib.reload(sys.modules['astroos_pipelines.utils.rsp_utils'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 
 from astropy.io import fits
@@ -43,8 +41,8 @@ try:
 except ImportError as e:
     pass
 
-from logger.logger import setup_logging
-importlib.reload(sys.modules['logger.logger'])
+from astroos_pipelines.logger.logger import setup_logging
+importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
 import logging
 setup_logging()
 log = logging.getLogger(__name__)
