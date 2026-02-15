@@ -231,12 +231,14 @@ class AstroosQueryLSST(AstroosQuery):
         valid &= (lssfr > -50) & (lssfr < 50)
 
         # Define labels: 1 = star-forming, 0 = quiescent, -1 = ambiguous
-        label = np.full(len(hst), -1, dtype=np.int64)
-        label[(valid) & (lssfr < -11.0)] = 0
-        label[(valid) & (lssfr > -10.0)] = 1
+        
+        # Define labels: 0 = ambiguous, 1 = star-forming, 2 = quiescent
+        label = np.full(len(hst), 0, dtype=np.int64)
+        label[(valid) & (lssfr > -10.0)] = 1 # star-forming
+        label[(valid) & (lssfr < -11.0)] = 2 # quiescent
 
         # High-confidence subset mask (drop ambiguous)
-        confident = (label >= -1)
+        confident = (label >= 0)
 
         return {
             "table": hst,
@@ -264,10 +266,11 @@ class AstroosQueryLSST(AstroosQuery):
 
         idx, sep2d, _ = lsst_c.match_to_catalog_sky(hst_c)
         sep_arcsec = sep2d.to(u.arcsec).value
-        # print(f"sep_arsec: {sep_arcsec}, radius: {radius_arcsec}")
+        print(f"sep_arsec: {sep_arcsec}, radius: {radius_arcsec}")
 
         # Require a close match AND a confident label
         m = (sep_arcsec <= radius_arcsec) & (hst_dict["confident"][idx])
+
 
         out = df_lsst.loc[m].copy()
         hix = idx[m]
