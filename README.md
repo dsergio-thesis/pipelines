@@ -63,7 +63,7 @@ Examples:
 
 ------------------------------------------------------------
 ## Project Structure
-
+```
 pipelines/
 ├── install.sh
 ├── pyproject.toml
@@ -72,7 +72,7 @@ pipelines/
 ├── src/
 │   ├── astroos_pipelines/
 │   └── test/
-
+```
 
 # INSTALLATION GUIDE
 
