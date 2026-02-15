@@ -129,7 +129,7 @@ def main():
         StagePreprocessLSST(),
         ])
 
-    # pipelines[1].run_pipeline()
+    pipelines[1].run_pipeline()
     pipelines[2].run_pipeline()
 
     # for p in pipelines:

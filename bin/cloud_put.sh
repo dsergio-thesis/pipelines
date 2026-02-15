@@ -49,9 +49,6 @@ rclone copyto "$TARBALL" "$DEST" \
   --retries 10 \
   --low-level-retries 20
 
-echo "Upload done. Verifying listing:"
-rclone lsl "gdrive:Thesis" | tail -n 5
-
 # remove local tarball after success
 rm -f "$TARBALL"
 echo "Done."
