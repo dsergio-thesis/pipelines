@@ -2,7 +2,6 @@
 from abc import abstractmethod
 import numpy as np
 import sys
-from pandas.core.base import NoNewAttributesMixin
 import torch
 import os
 import importlib
@@ -263,8 +262,6 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
                 # Endianness correction: native byte order 
                 if image.dtype.byteorder not in ("=", "|"):
                     image = image.byteswap().newbyteorder()
-
-
             
             # Image Morphometry Transform
             if image is not None and self.morphometric_transform is not None:
@@ -348,7 +345,6 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         with fits.open(os.path.join(self.dataset_dir, f"{objectId}.fits"), mode="update") as cur_hdul:
             cur_hdul.append(hdu)
             cur_hdul.flush()
-        
 
     def __repr__(self):
         info = [
