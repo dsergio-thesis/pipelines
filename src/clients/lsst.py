@@ -98,7 +98,9 @@ def main():
 
     pipelines[1].add_stages([
         StageCatalogLSST(),
-        StageFetchLSSTSoda(dataset_cart_lsst),
+        StageMatchLSSTtoHST(),
+        StagePreprocessLSST(),
+        StageFetchLSSTSoda(),
         ])
 
     pipelines[1].run_pipeline()

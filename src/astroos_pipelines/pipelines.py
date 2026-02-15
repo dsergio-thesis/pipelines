@@ -1,4 +1,5 @@
 
+from astropy.table import Table, vstack
 from abc import ABC, abstractmethod
 import sys
 import os
@@ -221,6 +222,23 @@ class DataPipelineStage(ABC):
             f" - output={self.output}\n"
         return s
 
+
+    def cache_pipeline_output(self):
+        table = Table.from_pandas(self.output)
+        # first check cache
+        if os.path.exists(f"{self.stage_dir}/output.csv"):
+            log.info(f"File {self.stage_dir}/output.csv already exists. ")
+            # first read the table
+            existing_table = Table.read(f"{self.stage_dir}/output.csv", format="csv")
+            existing_ids = set(existing_table['objectId'])
+            mask = [oid not in existing_ids for oid in table['objectId']]
+            new_rows = table[mask]
+            existing_table = vstack([existing_table, new_rows])
+            self.output = existing_table.to_pandas()
+            existing_table.write(f"{self.stage_dir}/output.csv", format="csv", overwrite=True)
+        else:
+            table.write(f"{self.stage_dir}/output.csv", format="csv", overwrite=True)
+            log.info(f"Saved query result to {self.stage_dir}/output.csv")
 
 class StageInfo(DataPipelineStage):
     """

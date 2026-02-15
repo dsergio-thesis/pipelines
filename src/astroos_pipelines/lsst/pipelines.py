@@ -1,4 +1,5 @@
 
+from os import wait
 import sys
 import numpy as np
 from tqdm import tqdm
@@ -129,75 +130,76 @@ class StageCatalogLSST(DataPipelineStage):
                 dec_max=dec_max
                 )
 
-        # print("Query:")
-        # print(query)
+        # print(f"Query: {query}")
+        
         # sync
         table = client.query(query)
 
         # async
         # table = client.query_async(query)
 
-        # convert table to pandas dataframe
-        df = table.to_pandas()
-
+        self.output = table.to_pandas()
+        self.cache_pipeline_output()
         print(f"number of results: {len(df)}")
-        print(df)
-
-        df = client.cross_match_labels_hst(df, "catalogs/hst/hst.fits")
-        # print(f"after cross matching: {len(df)}")
-        # print(df)
-
-        print("pipeline labels match: ")
-        print(df['label'].value_counts())
-
-        # convert back to table
-        table = Table.from_pandas(df)
-
-        self.output = df
-
-        query_info = f"lsst_tap__limit{self.pipeline.max_records}__ra{ra_min:.4f}_{ra_max:.4f}__dec{dec_min:.4f}_{dec_max:.4f}"
-
-        # first check cache
-        # do this later
-        # if os.path.exists(f"{self.stage_dir}/{query_info}.csv"):
-            # log.info(f"File {self.stage_dir}/{query_info}.csv already exists. ")
-            # # first read the table
-            # existing_table = Table.read(f"{self.stage_dir}/{query_info}.csv", format="csv")
-            # existing_ids = set(existing_table['objectId'])
-            # mask = [oid not in existing_ids for oid in table['objectId']]
-            # new_rows = table[mask]
-            # existing_table = vstack([existing_table, new_rows])
-
-            # self.output = existing_table.to_pandas()
-
-            # existing_table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
-
-        # else:
-        table.write(f"{self.stage_dir}/{query_info}.csv", format="csv", overwrite=True)
-        log.info(f"Saved query result to {self.stage_dir}/{query_info}.csv")
-
+        print(self.output)
 
 
 # ============================================================
-# StageFetchLSSTSoda
+# StageMatchLSSTtoHST 
 # ============================================================
-class StageFetchLSSTSoda(DataPipelineStage):
+class StageMatchLSSTtoHST(DataPipelineStage): 
     """
-    Data pipeline stage for fetching LSST data via SIA and SODA.
+    Data pipeline stage for cross-matching LSST catalog with HST labels.
     """
-    def __init__(self, dataset):
-        super().__init__(stage_name="fetch", requires_stage_dir=True)
-        self.dataset = dataset
+    def __init__(self):
+        super().__init__(stage_name="match", requires_stage_dir=True)
 
     def _validate_prev_stage(self):
-        return rsp_mode
+        if not rsp_mode:
+            log.error("RSP mode is not available. Cannot run StageMatchLSSTtoHST.")
+            return False
+
+        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
+        if not all(col in self.prev_stage.output.columns for col in required_columns):
+            log.error(f"Previous stage output is missing required columns: {required_columns}")
+            return False
+        return True
 
     def run(self):
 
-        # read the positions from the previous stage
+        # read the table from the previous stage df = self.prev_stage.output
+
+        self.output = AstroosQueryLSST.cross_match_labels_hst(df, "catalogs/hst/hst.fits")
+
+        print("pipeline labels match: ")
+        print(self.output['label'].value_counts())
+
+        cache_pipeline_output()
+
+# ============================================================
+# StagePreprocessLSST
+# ============================================================
+class StagePreprocessLSST(DataPipelineStage):
+    """
+    Data pipeline stage for preprocessing LSST catalog features.
+    """
+    def __init__(self):
+        super().__init__(stage_name="preprocess", requires_stage_dir=True)
+    def _validate_prev_stage(self):
+        if not rsp_mode:
+            log.error("RSP mode is not available. Cannot run StagePreprocessLSST.")
+            return False
+        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
+        if not all(col in self.prev_stage.output.columns for col in required_columns):
+            log.error(f"Previous stage output is missing required columns: {required_columns}")
+            return False
+        return True
+
+    def run(self):
+
         df = self.prev_stage.output
         n = len(df)
-        print(f"Fetching LSST SODA cutout images for {n} objects...")
+        print(f"Feature preprocesing for {n} objects...")
 
         bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
         num_bands = len(bands)
@@ -240,6 +242,62 @@ class StageFetchLSSTSoda(DataPipelineStage):
 
                 photometric_features[bi] = (x1, x2, x3, bad)
 
+            hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
+            hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
+            hdu_phot.header['ra'] = float(target_ra)
+            hdu_phot.header['dec'] = float(target_dec)
+            hdu_phot.header['main_id'] = int(row.objectId)
+
+            hdul.append(hdu_phot)
+
+            dataset = self.pipeline.dataset
+
+            if (dataset.contains(row.objectId)):
+                # update existing entry
+                existing_hdul = dataset.get(row.objectId)
+                existing_hdul["PHOTO"].data = photometric_features 
+                dataset.update(row.objectId, existing_hdul)
+            else:
+                dataset.append(hdul)
+
+        self.output = df
+
+
+# ============================================================
+# StageFetchLSSTSoda
+# ============================================================
+class StageFetchLSSTSoda(DataPipelineStage):
+    """
+    Data pipeline stage for fetching LSST data via SIA and SODA.
+    """
+    def __init__(self):
+        super().__init__(stage_name="fetch", requires_stage_dir=True)
+
+    def _validate_prev_stage(self):
+        if not rsp_mode:
+            log.error("RSP mode is not available. Cannot run StageFetchLSSTSoda.")
+            return False
+
+        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
+        if not all(col in self.prev_stage.output.columns for col in required_columns):
+            log.error(f"Previous stage output is missing required columns: {required_columns}")
+            return False
+        return True
+
+    def run(self):
+
+        # read the positions from the previous stage
+        df = self.prev_stage.output
+        n = len(df)
+        print(f"Fetching LSST SODA cutout images for {n} objects...")
+
+        bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
+        num_bands = len(bands)
+
+        for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
+            target_ra = row.coord_ra
+            target_dec = row.coord_dec
+
             # Get cutouts (num_bands, 200, 200)
             band_images = get_cutout_bands(
                 target_ra=target_ra,
@@ -261,15 +319,18 @@ class StageFetchLSSTSoda(DataPipelineStage):
             hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
             hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
 
-            hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
-            hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
-            hdu_phot.header['ra'] = float(target_ra)
-            hdu_phot.header['dec'] = float(target_dec)
-            hdu_phot.header['main_id'] = int(row.objectId)
-
             hdul.append(hdu_img)
-            hdul.append(hdu_phot)
 
-            self.dataset.append(hdul)
+            dataset = self.pipeline.dataset
+
+            if (dataset.contains(row.objectId)):
+                # update existing entry
+                existing_hdul = dataset.get(row.objectId)
+                existing_hdul["CUTOUTS"].data = band_images
+                dataset.update(row.objectId, existing_hdul)
+            else:
+                dataset.append(hdul)
+
+        self.output = df
 
 

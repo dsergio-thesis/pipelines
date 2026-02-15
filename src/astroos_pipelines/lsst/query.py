@@ -176,7 +176,8 @@ class AstroosQueryLSST(AstroosQuery):
             df.at[i, 'label'] = label_index
         return df
 
-    def cross_match_labels_hst(self, df, labels_fits_file):
+    @staticmethod
+    def cross_match_labels_hst(df, labels_fits_file):
         """
         Cross-match 
 
