@@ -1,13 +1,10 @@
 
-============================================================
-ASTROOS PIPELINES
-Astronomy + Machine Learning Pipelines
+# Astroos LSST/SDSS/HSST Machine Learning PyTorch Pipelines 
+
+## Overview
 ============================================================
 
-Overview
-============================================================
-
-AstroOS Pipelines provides astronomy + ML workflows for:
+### AstroOS Pipelines provides astronomy + ML workflows for:
 
 - LSST
 - SDSS
@@ -15,7 +12,7 @@ AstroOS Pipelines provides astronomy + ML workflows for:
 - ML-ready dataset generation
 - GPU-accelerated training (optional)
 
-The project uses:
+### The project uses:
 
 - Python 3.11
 - Conda / Mamba environments
@@ -27,7 +24,7 @@ The project uses:
 
 ------------------------------------------------------------
 
-Quick Start
+## Quick Start
 ============================================================
 
 Clone:
@@ -49,7 +46,7 @@ Run tests:
 
 
 ------------------------------------------------------------
-CLI Usage
+## CLI Usage
 ============================================================
 
 The installer creates a CLI command:
@@ -68,7 +65,7 @@ Examples:
 
 
 ------------------------------------------------------------
-Project Structure
+## Project Structure
 ============================================================
 
 pipelines/
@@ -82,10 +79,10 @@ pipelines/
 
 
 ============================================================
-INSTALLATION GUIDE
+# INSTALLATION GUIDE
 ============================================================
 
-Requirements
+## Requirements
 ------------------------------------------------------------
 
 You must install one of:
@@ -280,12 +277,3 @@ This project requires:
 The installer creates the correct version automatically.
 
 
-============================================================
-License
-============================================================
-
-MIT (or your chosen license)
-
-============================================================
-End of Document
-============================================================
