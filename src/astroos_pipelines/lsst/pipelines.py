@@ -177,10 +177,10 @@ class StageMatchLSSTtoHST(DataPipelineStage):
 
         self.output = Table.from_pandas(AstroosQueryLSST.cross_match_labels_hst(table.to_pandas(), "catalogs/hst/hst.fits"))
 
-        print("pipeline labels match: ")
-        print(self.output['label'].value_counts())
+        # print("pipeline labels match: ")
+        # print(self.output['label'].value_counts())
 
-        cache_pipeline_output()
+        self.cache_pipeline_output()
 
 # ============================================================
 # StagePreprocessLSST
@@ -254,11 +254,13 @@ class StagePreprocessLSST(DataPipelineStage):
             hdu_phot.header['dec'] = float(target_dec)
             hdu_phot.header['main_id'] = int(row.objectId)
 
+
+            hdul = fits.HDUList([fits.PrimaryHDU()])
             hdul.append(hdu_phot)
 
             dataset = self.pipeline.dataset
 
-            if (dataset.contains(row.objectId)):
+            if (dataset._contains(row.objectId)):
                 # update existing entry
                 existing_hdul = dataset.get(row.objectId)
                 existing_hdul["PHOTO"].data = photometric_features 
@@ -293,7 +295,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
     def run(self):
 
         # read the positions from the previous stage
-        df = self.prev_stage.output
+        df = self.prev_stage.output.to_pandas()
         n = len(df)
         print(f"Fetching LSST SODA cutout images for {n} objects...")
 
@@ -329,7 +331,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
 
             dataset = self.pipeline.dataset
 
-            if (dataset.contains(row.objectId)):
+            if (dataset._contains(row.objectId)):
                 # update existing entry
                 existing_hdul = dataset.get(row.objectId)
                 existing_hdul["CUTOUTS"].data = band_images

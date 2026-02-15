@@ -226,7 +226,7 @@ class DataPipelineStage(ABC):
         table = self.output
         # first check cache
         if os.path.exists(f"{self.stage_dir}/output.fits"):
-            log.info(f"File {self.sage_dir}/output.fits already exists. ")
+            log.info(f"File {self.stage_dir}/output.fits already exists. ")
             # first read the table
             existing_table = Table.read(f"{self.stage_dir}/output.fits")
             existing_ids = set(existing_table['objectId'])
