@@ -188,6 +188,7 @@ class StageMatchLSSTtoHST(DataPipelineStage):
 class StagePreprocessLSST(DataPipelineStage):
     """
     Data pipeline stage for preprocessing LSST catalog features.
+    Main purpose is to transform the raw fluxes and errors into a more ML-friendly format, and to store them in the dataset for later use.
     """
     def __init__(self):
         super().__init__(stage_name="preprocess", requires_stage_dir=True)
@@ -252,21 +253,14 @@ class StagePreprocessLSST(DataPipelineStage):
             hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
             hdu_phot.header['ra'] = float(target_ra)
             hdu_phot.header['dec'] = float(target_dec)
-            hdu_phot.header['main_id'] = int(row.objectId)
-
-
-            hdul = fits.HDUList([fits.PrimaryHDU()])
-            hdul.append(hdu_phot)
+            hdu_phot.header['objectId'] = int(row.objectId)
 
             dataset = self.pipeline.dataset
 
             if (dataset._contains(row.objectId)):
-                # update existing entry
-                existing_hdul = dataset.get(row.objectId)
-                existing_hdul["PHOTO"].data = photometric_features 
-                dataset.update(row.objectId, existing_hdul)
+                dataset.update(row.objectId, hdu_phot)
             else:
-                dataset.append(hdul)
+                dataset.append(hdu_phot)
 
         self.output = Table.from_pandas(df)
 
@@ -313,31 +307,23 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 bands=bands
             )
 
-            # Build FITS container
-            hdul = fits.HDUList([fits.PrimaryHDU()])
-
             hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
             hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
             hdu_img.header['ra'] = float(target_ra)
             hdu_img.header['dec'] = float(target_dec)
-            hdu_img.header['main_id'] = int(row.objectId)
+            hdu_img.header['objectId'] = int(row.objectId)
             hdu_img.header['rvz_redshift'] = -999
             hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
             hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
             hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
             hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
 
-            hdul.append(hdu_img)
-
             dataset = self.pipeline.dataset
 
-            if (dataset._contains(row.objectId)):
-                # update existing entry
-                existing_hdul = dataset.get(row.objectId)
-                existing_hdul["CUTOUTS"].data = band_images
-                dataset.update(row.objectId, existing_hdul)
+            if (dataset.contains(row.objectId)):
+                dataset.update(row.objectId, hdu_img)
             else:
-                dataset.append(hdul)
+                dataset.append(hdu)
 
         self.output = Table.from_pandas(df)
 

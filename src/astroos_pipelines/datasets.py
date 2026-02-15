@@ -1,4 +1,5 @@
 
+from abc import abstractmethod
 import numpy as np
 import sys
 from pandas.core.base import NoNewAttributesMixin
@@ -45,11 +46,37 @@ class DataSetBase(Dataset):
         os.makedirs(self.dataset_dir, exist_ok=True)
         log.info(f"Dataset directory set to: {self.dataset_dir}")
 
+    @astractmethod
     def __len__(self):
         raise NotImplementedError("Must implement __len__ method.")
 
+    @abstractmethod
     def __getitem__(self, idx):
         raise NotImplementedError("Must implement __getitem__ method.")
+
+    @abstractmethod
+    def append(self, data):
+        raise NotImplementedError("Must implement append method to add new data to the dataset.")
+
+    @abstractmethod
+    def num_classes(self):
+        raise NotImplementedError("Must implement num_classes method to return the number of classes in the dataset.")
+
+    @abstractmethod
+    def get_labels(self):
+        raise NotImplementedError("Must implement get_labels method to return the labels for the dataset.")
+
+    @abstractmethod
+    def __repr__(self):
+        raise NotImplementedError("Must implement __repr__ method for dataset representation.")
+
+    @abstractmethod
+    def contains(self, objectId):
+        raise NotImplementedError("Must implement _contains method to check if a main_id is already in the dataset.")
+
+    @abstractmethod
+    def update(self, objectId, hdu):
+        raise NotImplementedError("Must implement update method to update existing data in the dataset.")
 
 
 class DataLoaderFITS(DataLoader):
@@ -282,20 +309,17 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
                 header_dict
             )
 
-    def append(self, hdul):
+    def append(self, hdu):
         """
-        Save one object HDUList to disk and register in manifest.
-        Expects:
-          hdul[1] = CUTOUTS image HDU (or named 'CUTOUTS')
-          hdul[2] = PHOTO image HDU (or named 'PHOTO')
+        Append HDU to dataset as a new FITS file. The HDU must contain an 'objectId' in its header which will be used as the main_id and filename for the new entry. The HDU will be saved as a new FITS file in the dataset directory, and the manifest will be updated with the new objectId. If the objectId already exists in the dataset, a ValueError will be raised to prevent duplicate entries.
         """
-        # Get main_id as string for filenames + CSV
-        img_hdu = hdul["CUTOUTS"] if "CUTOUTS" in hdul else hdul[1]
-        main_id = str(img_hdu.header["main_id"])
+        hdul = fits.HDUList([fits.PrimaryHDU()])
+        hdul.append(hdu)
 
-        # Skip if already present
-        if main_id in self.manifest_set:
-            return
+        objectId  = str(img_hdu.header["objectId"])
+
+        if objectId in self.manifest_set:
+            raise ValueError(f"objectId '{objectId}' already exists in dataset, cannot append duplicate entry.")
 
         out_path = os.path.join(self.dataset_dir, f"{main_id}.fits")
         hdul.writeto(out_path, overwrite=True)
@@ -305,8 +329,19 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         self.manifest_list.append(main_id)
         self._append_to_manifest_file(main_id)
     
-    def _contains(self, main_id):
-        return main_id in self.manifest_set
+    def contains(self, objectId):
+        """ Check if objectId is already in the dataset """
+        return objectId in self.manifest_set
+
+    def update(self, objectId, hdu):
+        """ Update existing FITS file for objectId, adding new HDU """
+        if objectId not in self.manifest_set:
+            raise ValueError(f"objectId '{objectId}' not found in dataset, cannot update non-existent entry.")
+
+        with fits.open(os.path.join(self.dataset_dir, f"{objectId}.fits"), mode="update")) as cur_hdul:
+            cur_hdul.append(hdu)
+            cur_hdul.flush()
+        
 
     def __repr__(self):
         info = [

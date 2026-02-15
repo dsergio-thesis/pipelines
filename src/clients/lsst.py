@@ -105,7 +105,7 @@ def main():
                 minor_version=pipeline_minor_version,
                 ),
             PipelineClassification(
-                name=pipeline_name+"_phot",
+                name=pipeline_name + "_phot",
                 metadata=pipeline_metadata,
                 max_records=max_records,
                 dataset=dataset_cart_phot,
