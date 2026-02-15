@@ -215,7 +215,7 @@ class StagePreprocessLSST(DataPipelineStage):
         flux_scale = self.median_r_psfFlux if getattr(self, "median_r_psfFlux", 0) and self.median_r_psfFlux > 0 else 1.0
         err_scale  = self.median_r_psfFluxErr if getattr(self, "median_r_psfFluxErr", 0) and self.median_r_psfFluxErr > 0 else 1.0
 
-        for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
+        for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"):
             target_ra = row.coord_ra
             target_dec = row.coord_dec
 
@@ -257,7 +257,7 @@ class StagePreprocessLSST(DataPipelineStage):
 
             dataset = self.pipeline.dataset
 
-            if (dataset._contains(row.objectId)):
+            if (dataset.contains(row.objectId)):
                 dataset.update(row.objectId, hdu_phot)
             else:
                 dataset.append(hdu_phot)
@@ -321,9 +321,11 @@ class StageFetchLSSTSoda(DataPipelineStage):
             dataset = self.pipeline.dataset
 
             if (dataset.contains(row.objectId)):
+                print(f"dataset contains {row.objectId}")
                 dataset.update(row.objectId, hdu_img)
             else:
-                dataset.append(hdu)
+                print(f"dataset DOES NOT contain {row.objectId}")
+                dataset.append(hdu_img)
 
         self.output = Table.from_pandas(df)
 
