@@ -10,7 +10,8 @@ from astropy.coordinates import ICRS, Galactic, FK4, FK5
 from astropy import units as u
 
 from astroos_pipelines.pipelines import PipelineClassification, PipelineDummy
-from astroos_pipelines.lsst.pipelines import StageCatalogLSST,  StageFetchLSSTSoda
+from astroos_pipelines.lsst.pipelines import StageCatalogLSST,  StageFetchLSSTSoda, \
+        StageMatchLSSTtoHST, StagePreprocessLSST
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.transforms import AddGaussianNoise, \
         MorphometryFeatures, \

@@ -135,12 +135,13 @@ class StageCatalogLSST(DataPipelineStage):
         # sync
         table = client.query(query)
 
+
         # async
         # table = client.query_async(query)
 
         self.output = table.to_pandas()
         self.cache_pipeline_output()
-        print(f"number of results: {len(df)}")
+        print(f"number of results: {len(self.output)}")
         print(self.output)
 
 

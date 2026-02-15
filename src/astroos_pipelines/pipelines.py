@@ -227,7 +227,7 @@ class DataPipelineStage(ABC):
         table = Table.from_pandas(self.output)
         # first check cache
         if os.path.exists(f"{self.stage_dir}/output.csv"):
-            log.info(f"File {self.stage_dir}/output.csv already exists. ")
+            log.info(f"File {self.sage_dir}/output.csv already exists. ")
             # first read the table
             existing_table = Table.read(f"{self.stage_dir}/output.csv", format="csv")
             existing_ids = set(existing_table['objectId'])
