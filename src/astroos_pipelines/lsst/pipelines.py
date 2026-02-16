@@ -321,10 +321,10 @@ class StageFetchLSSTSoda(DataPipelineStage):
             dataset = self.pipeline.dataset
 
             if (dataset.contains(row.objectId)):
-                print(f"dataset contains {row.objectId}")
+                # print(f"dataset contains {row.objectId}")
                 dataset.update(row.objectId, hdu_img)
             else:
-                print(f"dataset DOES NOT contain {row.objectId}")
+                # print(f"dataset DOES NOT contain {row.objectId}")
                 dataset.append(hdu_img)
 
         self.output = Table.from_pandas(df)

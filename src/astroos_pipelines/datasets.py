@@ -334,7 +334,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         """ Check if objectId is already in the dataset """
 
         objectId = str(objectId)
-        print(f"checking if {objectId} is in self.manifest_set: {self.manifest_set}: {objectId in self.manifest_set}")
+        # print(f"checking if {objectId} is in self.manifest_set: {self.manifest_set}: {objectId in self.manifest_set}")
         return objectId in self.manifest_set
 
     def update(self, objectId, hdu):
