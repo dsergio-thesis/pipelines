@@ -10,13 +10,13 @@ if [ $# -lt 1 ]; then
   echo "Usage: astroos <command> [args...]"
   echo ""
   echo "Available commands:"
-  ls -1 "$ASTROOS_ROOT/bin" 2>/dev/null | sed 's/\.sh$//' | grep -vE '^(astroos|install\.sh)$' || true
+  ls -1 "$ASTROOS_ROOT/scripts" 2>/dev/null | sed 's/\.sh$//' || true
   exit 1
 fi
 
 CMD="$1"; shift
-TARGET="$ASTROOS_ROOT/bin/$CMD"
-TARGET_SH="$ASTROOS_ROOT/bin/$CMD.sh"
+TARGET="$ASTROOS_ROOT/scripts/$CMD"
+TARGET_SH="$ASTROOS_ROOT/scripts/$CMD.sh"
 
 if [ -x "$TARGET" ]; then
   exec "$TARGET" "$@"

@@ -1,30 +1,17 @@
-from networkx import radius
-from torchvision import transforms
+
 import sys
 import os
 import importlib
-
-# astropy
-from astropy.coordinates import SkyCoord
-from astropy.coordinates import ICRS, Galactic, FK4, FK5
-from astropy import units as u
 
 from astroos_pipelines.pipelines import PipelineClassification, PipelineDummy
 from astroos_pipelines.lsst.pipelines import StageCatalogLSST,  StageFetchLSSTSoda, \
         StageMatchLSSTtoHST, StagePreprocessLSST
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
-from astroos_pipelines.transforms import AddGaussianNoise, \
-        MorphometryFeatures, \
-        SegmentationTransform, \
-        PolarTransform, \
-        CropZeros, \
-        CropAroundCentroid
 from astroos_pipelines.config.astroos_config import AstroosConfig
 
 importlib.reload(sys.modules['astroos_pipelines.lsst.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
-importlib.reload(sys.modules['astroos_pipelines.transforms'])
 importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
 
 from astroos_pipelines.logger.logger import setup_logging
@@ -50,26 +37,6 @@ def main():
     pipeline_metadata = {'query_coords': coord, 'query_radius': radius}
     print(pipeline_metadata)
 
-    transformPolar = transforms.Compose([
-            # transforms.ToTensor(),
-            # AddGaussianNoise(mean=0., std=0.3),
-            transforms.CenterCrop(80),
-            CropAroundCentroid(crop_size=(100, 100)),
-            SegmentationTransform(nsigma=0.5, min_area=40),
-            PolarTransform(output_size=(20, 20)),
-            # CropZeros(),
-            ])
-    
-    transformCartesian = transforms.Compose([
-            # transforms.ToTensor(),
-            # AddGaussianNoise(mean=0., std=0.3),
-            # transforms.CenterCrop(80),
-            # CropAroundCentroid(crop_size=(100, 100)),
-            # SegmentationTransform(nsigma=0.2, min_area=40),
-            # CropAroundCentroid(crop_size=(30, 30)),
-            # CropAroundCentroid(crop_size=(20, 20)),
-            # SegmentationTransform(nsigma=0.2, min_area=40),
-            ])
 
     dataset_cart_cutouts_morph = FITS_Image_Morphometry_Photometry_Dataset(
             dataset_dir=os.path.join(dataset_dir, dataset_name),
@@ -77,9 +44,6 @@ def main():
             N_bands=5, 
             N_morphometric_features=4,
             N_photometric_features=4,
-            transform=transformCartesian,
-            morphometric_transform=MorphometryFeatures(),
-            photometric_transform=None
             )
 
     dataset_cart_phot = FITS_Image_Morphometry_Photometry_Dataset(
@@ -88,9 +52,6 @@ def main():
             N_bands=5, 
             N_morphometric_features=0,
             N_photometric_features=4,
-            transform=None,
-            morphometric_transform=None,
-            photometric_transform=None
             )
 
     pipelines = [

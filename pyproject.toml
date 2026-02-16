@@ -38,6 +38,9 @@ dependencies = [
   # utils
   "requests>=2.31",
   "tqdm>=4.66",
+
+  "torch>=2.2",
+  "torchvision>=0.17",
 ]
 
 [project.optional-dependencies]
@@ -48,11 +51,6 @@ dev = [
   "black>=24.0",
 ]
 
-# Optional ML stack. Keep optional because CUDA installs are platform/index-specific.
-ml = [
-  "torch>=2.2",
-  "torchvision>=0.17",
-]
 [tool.ruff]
 line-length = 100
 
