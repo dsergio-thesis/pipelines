@@ -12,6 +12,14 @@ if [ "$(basename "$PWD")" != "pipelines" ]; then
   exit 1
 fi
 
+# if env.sh doesn't exist, stop with error
+if [ ! -f "env.sh" ]; then
+  echo "Error: env.sh not found. Please run this script from the root of the repo."
+  exit 1
+fi
+
+source "env.sh"
+
 REPO_ROOT="$PWD"
 BIN_DIR="$REPO_ROOT/bin"
 
