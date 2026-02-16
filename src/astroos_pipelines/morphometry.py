@@ -92,7 +92,8 @@ def simple_segmentation(
 
     thresh = bkg_mean + nsigma * bkg_std
     bw = image > thresh
-    bw = morphology.remove_small_objects(ar=bw, min_size=min_area, connectivity=1)
+    # bw = morphology.remove_small_objects(ar=bw, min_size=min_area, connectivity=1)
+    bw = morphology.remove_small_objects(ar=bw, max_size=min_area, connectivity=1)
 
     # Label and pick largest component
     lbl = label(bw)

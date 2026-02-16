@@ -5,7 +5,8 @@ import cmcrameri.cm as cmc
 import importlib
 
 from astroos_pipelines.config.astroos_config import AstroosConfig
-from astroos_pipelines.utils.plot_utils import plot_random_samples_from_dataset
+from astroos_pipelines.utils.plots.as_image import plot_random_samples_as_image
+from astroos_pipelines.utils.plots.as_html import plot_random_samples_as_html
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.transforms import AddGaussianNoise, \
     MorphometryFeatures, \
@@ -17,7 +18,8 @@ from astroos_pipelines.transforms import AddGaussianNoise, \
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
 importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
-importlib.reload(sys.modules['astroos_pipelines.utils.plot_utils'])
+importlib.reload(sys.modules['astroos_pipelines.utils.plots.as_image'])
+importlib.reload(sys.modules['astroos_pipelines.utils.plots.as_html'])
 
 def main():
 
@@ -59,15 +61,22 @@ def main():
     print(labels)
 
 
-    plot_random_samples_from_dataset(
+    # plot_random_samples_as_image(
+        # dataset_cartesian, 
+        # num_samples_to_display=max_records,
+        # seed=random_seed, 
+        # label_definitions=dataset_cartesian.get_labels(), 
+        # cmap=cmap,
+        # plot_title="LSST Cartesian Samples",
+        # plot_show=True,
+    # )
+    plot_random_samples_as_html(
         dataset_cartesian, 
         num_samples_to_display=max_records,
         seed=random_seed, 
         label_definitions=dataset_cartesian.get_labels(), 
         cmap=cmap,
         plot_title="LSST Cartesian Samples",
-        plot_filename="lsst_cart.png",
-        simple_plot=False,
     )
 
 if __name__ == "__main__":

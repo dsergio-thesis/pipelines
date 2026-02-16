@@ -17,8 +17,8 @@ from torch.utils.data import DataLoader
 from astroos_pipelines.labels import Labels
 importlib.reload(sys.modules['astroos_pipelines.labels'])
 
-from astroos_pipelines.utils.formatting_utils import ascii_kv_table
-importlib.reload(sys.modules['astroos_pipelines.utils.formatting_utils'])
+from astroos_pipelines.utils.formatting import ascii_kv_table
+importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
 from astroos_pipelines.logger.logger import setup_logging
 importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
@@ -44,6 +44,9 @@ class DataSetBase(Dataset):
         # create directory if not exists
         os.makedirs(self.dataset_dir, exist_ok=True)
         log.info(f"Dataset directory set to: {self.dataset_dir}")
+
+    def get_dataset_dir(self):
+        return self.dataset_dir
 
     @abstractmethod
     def __len__(self):
