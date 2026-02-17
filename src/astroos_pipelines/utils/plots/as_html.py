@@ -23,6 +23,10 @@ def plot_random_samples_as_html(
     dataset[i] should return:
         (image, label, morph_features, phot_features, metadata)
     """
+    import plotly
+    print("Using Plotly version:")
+    print(plotly.__version__)
+
 
     if num_samples_to_display is None:
         num_samples_to_display = min(5, len(dataset))
@@ -72,13 +76,13 @@ def plot_random_samples_as_html(
     }
     colorscale = _cmap_map.get(str(cmap).lower(), "Viridis")
 
-    total_rows = num_rows * 4
-    base = np.array([0.25, 3.0, 1.0, 1.0], dtype=float)
+    total_rows = num_rows * 3 
+    base = np.array([3.0, 1.0, 1.0], dtype=float)
     row_heights = np.tile(base / base.sum(), num_rows).tolist()
 
     specs = []
     for _ in range(num_rows):
-        specs.append([{"colspan": num_cols}] + [None] * (num_cols - 1))  # info row spans
+        # specs.append([{"colspan": num_cols}] + [None] * (num_cols - 1))  # info row spans
         specs.append([{} for _ in range(num_cols)])  # image row
         specs.append([{} for _ in range(num_cols)])  # morph row
         specs.append([{} for _ in range(num_cols)])  # phot row
@@ -118,11 +122,11 @@ def plot_random_samples_as_html(
         )
 
     for i in range(num_rows):
-        base_row = i * 4
-        info_row = base_row + 1
-        img_row = base_row + 2
-        morph_row = base_row + 3
-        phot_row = base_row + 4
+        base_row = i * 3 
+        # info_row = base_row + 1
+        img_row = base_row + 1 
+        morph_row = base_row + 2  
+        phot_row = base_row + 3
 
         label_id = int(random_labels[i]) if random_labels[i] is not None else -1
         label_classname = (
@@ -134,18 +138,18 @@ def plot_random_samples_as_html(
         label_full = f"Label [{label_classname}] objectId [{objid}]"
 
         # info row annotation spanning all columns
-        fig.add_annotation(
-            x=0.5, y=0.5,
-            xref="x domain",
-            yref="y domain",
-            text=label_full,
-            showarrow=False,
-            font={"size": 18},
-            row=info_row, col=1,
-        )
-        for c in range(1, num_cols + 1):
-            fig.update_xaxes(visible=False, row=info_row, col=c)
-            fig.update_yaxes(visible=False, row=info_row, col=c)
+        # fig.add_annotation(
+            # x=0.5, y=0.5,
+            # xref="x domain",
+            # yref="y domain",
+            # text=label_full,
+            # showarrow=False,
+            # font={"size": 18},
+            # row=info_row, col=1,
+        # )
+        # for c in range(1, num_cols + 1):
+            # fig.update_xaxes(visible=False, row=info_row, col=c)
+            # fig.update_yaxes(visible=False, row=info_row, col=c)
 
         for j in range(num_cols):
             print(
@@ -156,6 +160,7 @@ def plot_random_samples_as_html(
             # ---- image (raw pixels, batlow, RA/Dec extent, y reversed) ----
             if random_cutouts[i] is not None:
                 cutout = np.asarray(random_cutouts[i][j], dtype=np.float32)
+
 
                 # extent should be (min_ra, max_ra, min_dec, max_dec)
                 extent = (
@@ -183,13 +188,33 @@ def plot_random_samples_as_html(
                         )
                 fig.add_trace(hm, row=img_row, col=j + 1)
 
-                fig.update_xaxes(title_text="RA °", row=img_row, col=j + 1, nticks=2)
+                fig.update_xaxes(
+                        # title_text="RA °", 
+                        row=img_row, 
+                        col=j + 1, 
+                        nticks=1,
+                        # autorange="reversed" 
+                        )
+                fig.update_xaxes(
+                        title_text="RA °", 
+                        row=img_row, 
+                        col=1, 
+                        nticks=3,
+                        # autorange="reversed" 
+                        )
+                fig.update_yaxes(
+                        # title_text="Dec °",
+                        row=img_row,
+                        col=j + 1,
+                        nticks=1,
+                        # autorange="reversed",
+                        )
                 fig.update_yaxes(
                         title_text="Dec °",
                         row=img_row,
-                        col=j + 1,
-                        nticks=2,
-                        autorange="reversed",  # IMPORTANT: image-like orientation
+                        col=1,
+                        nticks=3,
+                        # autorange="reversed",
                         )
 
                 # subplot title per band
@@ -201,7 +226,7 @@ def plot_random_samples_as_html(
                         text=f"band: {bands[j]}",
                         showarrow=False,
                         font={"size": 14},
-                        row=img_row,
+                        row=1,
                         col=j + 1,
                         )
             else:
@@ -216,8 +241,8 @@ def plot_random_samples_as_html(
                     go.Bar(x=["C", "A", "S", "H"], y=features_morph, marker_color="skyblue", showlegend=False),
                     row=morph_row, col=j + 1,
                 )
-                fig.update_yaxes(range=[0.0, 1.0], row=morph_row, col=j + 1, title_text="Norm")
-                fig.update_xaxes(row=morph_row, col=j + 1, title_text="Morphometry")
+                fig.update_yaxes(range=[0.0, 1.0], row=morph_row, col=1, title_text="Norm")
+                fig.update_xaxes(row=morph_row, col=1, title_text="Morphometry")
             else:
                 _grey_box(morph_row, j + 1, "(no data)")
                 fig.update_xaxes(visible=False, row=morph_row, col=j + 1)
@@ -232,8 +257,8 @@ def plot_random_samples_as_html(
                     go.Bar(x=["x1", "x2", "x3", "x4"], y=features_phot, marker_color="skyblue", showlegend=False),
                     row=phot_row, col=j + 1,
                 )
-                fig.update_yaxes(range=[lower, upper], row=phot_row, col=j + 1, title_text="Value")
-                fig.update_xaxes(row=phot_row, col=j + 1, title_text="Photometry")
+                fig.update_yaxes(range=[lower, upper], row=phot_row, col=1, title_text="Value")
+                fig.update_xaxes(row=phot_row, col=1, title_text="Photometry")
             else:
                 _grey_box(phot_row, j + 1, "(no data)")
                 fig.update_xaxes(visible=False, row=phot_row, col=j + 1)
