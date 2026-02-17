@@ -13,7 +13,6 @@ importlib.reload(sys.modules['astroos_pipelines.lsst.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.pipelines'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
-
 from astroos_pipelines.logger.logger import setup_logging
 importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
 import logging

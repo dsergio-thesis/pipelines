@@ -1,28 +1,22 @@
 
-from os import wait
 import sys
 import numpy as np
 from tqdm import tqdm
-from astropy.coordinates import SkyCoord
-from astropy.table import Table, vstack
+from astropy.table import Table
 from astropy import units as u
 
 import importlib
 
-from astroos_pipelines.utils.formatting_utils import ascii_kv_table
 from astroos_pipelines.lsst.query import AstroosQueryLSST
 from astroos_pipelines.pipelines import DataPipelineStage
-from astroos_pipelines.utils.rsp_utils import get_cutout_bands
+from astroos_pipelines.utils.rsp import get_cutout_bands
 
-importlib.reload(sys.modules['astroos_pipelines.utils.formatting_utils'])
-importlib.reload(sys.modules['astroos_pipelines.utils.rsp_utils'])
+importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
+importlib.reload(sys.modules['astroos_pipelines.utils.rsp'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 
 from astropy.io import fits
-from astropy.wcs import WCS
-
-from astroquery.simbad import Simbad
-from astroquery.sdss import SDSS
+# do wcs next
 
 rsp_mode = False
 try:

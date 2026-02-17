@@ -6,8 +6,8 @@ import os
 
 import importlib
 
-from astroos_pipelines.utils.formatting_utils import ascii_kv_table
-importlib.reload(sys.modules['astroos_pipelines.utils.formatting_utils'])
+from astroos_pipelines.utils.formatting import ascii_kv_table
+importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
 from astroos_pipelines.logger.logger import setup_logging
 importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
