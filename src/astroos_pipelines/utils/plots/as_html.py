@@ -15,6 +15,7 @@ def plot_random_samples_as_html(
     cmap="gist_ncar",
     plot_title="",
     plot_filename=None,
+    metadata_filename=None,
     origin="lower",  # "lower" to mimic imshow(origin="lower")
 ):
     """
@@ -59,6 +60,17 @@ def plot_random_samples_as_html(
             for m in random_metadata
         ]
     )
+    random_samples_info["label"] = random_labels
+
+    # generate summary in html table format
+    info_table_html = random_samples_info.to_html(index=False, float_format="{:.6f}".format)
+
+    if (metadata_filename is None):
+        metadata_filename = f"{dataset.get_dataset_dir()}/plots/random_samples_metadata_{num_samples_to_display}.html"
+    os.makedirs(os.path.dirname(metadata_filename), exist_ok=True)
+    os.write(metadata_filename, info_table_html)
+    print(f"Metadata table saved to {metadata_filename}")
+
 
     bands = ["u", "g", "r", "i", "z"]
     num_rows = num_samples_to_display
