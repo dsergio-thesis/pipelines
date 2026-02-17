@@ -73,9 +73,7 @@ def pad_exposure_ml(exp, target=200, fill_value=0.0):
 
 def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
 
-
     service = get_siav2_service("dp1")
-
     
     spherePoint = geom.SpherePoint(target_ra*geom.degrees, target_dec*geom.degrees)
 
@@ -107,6 +105,7 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
         sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
                      spherePoint.getDec().asDegrees() * u.deg,
                      (search_radius * 2) * u.deg)
+
         cutout_bytes = sq.execute_stream().read()
         mem = MemFileManager(len(cutout_bytes))
         mem.setData(cutout_bytes, len(cutout_bytes))
@@ -116,12 +115,5 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
         image = cutout.getImage().getArray()
 
         band_images[i] = image
-
-        # save as grayscale image
-        # plt.imsave(f"images/cutout_{r}_{band}.png", image, cmap='gray')
-        # print(f"cutout image shape: {cutout.getImage().getDimensions()}")
-        # print(f"cutout type: {type(cutout)}")
-        # print(f"cutout metadata: {cutout.getMetadata()}")
-        # print(f"Retrieved {band}-band cutout image. nans: {np.sum(np.isnan(image))}, inf: {np.sum(np.isinf(image))}")
 
     return band_images

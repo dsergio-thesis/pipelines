@@ -290,37 +290,84 @@ class StageFetchLSSTSoda(DataPipelineStage):
         bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
         num_bands = len(bands)
 
-        for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
+        # for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
+            # target_ra = row.coord_ra
+            # target_dec = row.coord_dec
+
+            # # Get cutouts (num_bands, 200, 200)
+            # band_images = get_cutout_bands(
+                # target_ra=target_ra,
+                # target_dec=target_dec,
+                # bands=bands
+            # )
+
+            # hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
+            # hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
+            # hdu_img.header['ra'] = float(target_ra)
+            # hdu_img.header['dec'] = float(target_dec)
+            # hdu_img.header['objectId'] = int(row.objectId)
+            # hdu_img.header['rvz_redshift'] = -999
+            # hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
+            # hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
+            # hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
+            # hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
+
+            # dataset = self.pipeline.dataset
+
+            # if (dataset.contains(row.objectId)):
+                # # print(f"dataset contains {row.objectId}")
+                # dataset.update(row.objectId, hdu_img)
+            # else:
+                # # print(f"dataset DOES NOT contain {row.objectId}")
+                # dataset.append(hdu_img)
+
+        # self.output = Table.from_pandas(df)
+
+
+
+
+        from concurrent.futures import ThreadPoolExecutor, as_completed
+
+        def process_row(row):
             target_ra = row.coord_ra
             target_dec = row.coord_dec
 
-            # Get cutouts (num_bands, 200, 200)
             band_images = get_cutout_bands(
                 target_ra=target_ra,
                 target_dec=target_dec,
                 bands=bands
             )
 
-            hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
-            hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
-            hdu_img.header['ra'] = float(target_ra)
-            hdu_img.header['dec'] = float(target_dec)
-            hdu_img.header['objectId'] = int(row.objectId)
-            hdu_img.header['rvz_redshift'] = -999
-            hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
-            hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
-            hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
-            hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
+            return row, band_images
 
-            dataset = self.pipeline.dataset
+        with ThreadPoolExecutor(max_workers=8) as executor:
+            futures = [executor.submit(process_row, row)
+                       for row in df.itertuples()]
 
-            if (dataset.contains(row.objectId)):
-                # print(f"dataset contains {row.objectId}")
-                dataset.update(row.objectId, hdu_img)
-            else:
-                # print(f"dataset DOES NOT contain {row.objectId}")
-                dataset.append(hdu_img)
+            for future in tqdm(as_completed(futures), total=len(futures)):
+                row, band_images = future.result()
+                # build HDU here
 
+                target_ra = row.coord_ra
+                target_dec = row.coord_dec
+
+                hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
+                hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
+                hdu_img.header['ra'] = float(target_ra)
+                hdu_img.header['dec'] = float(target_dec)
+                hdu_img.header['objectId'] = int(row.objectId)
+                hdu_img.header['rvz_redshift'] = -999
+                hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
+                hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
+                hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
+                hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
+
+                dataset = self.pipeline.dataset
+
+                if (dataset.contains(row.objectId)):
+                    # print(f"dataset contains {row.objectId}")
+                    dataset.update(row.objectId, hdu_img)
+                else:
+                    # print(f"dataset DOES NOT contain {row.objectId}")
+                    dataset.append(hdu_img)
         self.output = Table.from_pandas(df)
-
-
