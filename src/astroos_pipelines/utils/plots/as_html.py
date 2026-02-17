@@ -15,7 +15,6 @@ def plot_random_samples_as_html(
     cmap="gist_ncar",
     plot_title="",
     plot_filename=None,
-    metadata_filename=None,
     origin="lower",  # "lower" to mimic imshow(origin="lower")
 ):
     """
@@ -60,16 +59,8 @@ def plot_random_samples_as_html(
             for m in random_metadata
         ]
     )
-    random_samples_info["label"] = random_labels
+    random_samples_info["label"] = label_definitions["long_name"].iloc[random_labels].values if label_definitions is not None else random_labels 
 
-    # generate summary in html table format
-    info_table_html = random_samples_info.to_html(index=False, float_format="{:.6f}".format)
-
-    if (metadata_filename is None):
-        metadata_filename = f"{dataset.get_dataset_dir()}/plots/random_samples_metadata_{num_samples_to_display}.html"
-    os.makedirs(os.path.dirname(metadata_filename), exist_ok=True)
-    os.write(metadata_filename, info_table_html)
-    print(f"Metadata table saved to {metadata_filename}")
 
 
     bands = ["u", "g", "r", "i", "z"]
@@ -277,8 +268,9 @@ def plot_random_samples_as_html(
                 fig.update_yaxes(visible=False, row=phot_row, col=j + 1)
 
     fig.update_layout(
+        autosize=True,
         height=int(250 * num_rows * 4),
-        width=1400,
+        # width=1400,
         margin=dict(l=20, r=20, t=60, b=20),
     )
 
@@ -292,6 +284,58 @@ def plot_random_samples_as_html(
         print(f"Using provided plot filename: {plot_filename}")
 
     fig.write_html(plot_filename, include_plotlyjs="cdn")
+    plot_html = fig.to_html(full_html=False, include_plotlyjs="cdn")
+
+
+    # generate summary in html table format
+    info_table_html = random_samples_info.to_html(
+        index=False,
+        float_format="{:.6f}".format,
+        classes="table table-striped table-bordered table-hover",
+        border=0,
+        justify="center",
+    )
+    # write HTML to file
+    with open(plot_filename, "w", encoding="utf-8") as f:
+        f.write(
+            "<!doctype html><html><head><meta charset='utf-8'>"
+            "<link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css' rel='stylesheet'>"
+            "<title>Random Samples</title></head>"
+            "<body class='bg-light'>"
+            "<div class='container-fluid py-4'>"
+            "<div class='row'>"
+            
+
+            "<div class='col-lg-12 mb-4'>"
+            "<div class='card shadow-sm'>"
+            "<div class='card-body'>"
+            "<h5 class='card-title'>Metadata</h5>"
+            "<div class='table-responsive'>"
+            f"{info_table_html}"
+            "</div>"
+            "</div>"
+            "</div>"
+            "</div>"
+
+
+            "</div>"
+            "<div class='row'>"
+
+
+            "<div class='col-lg-12 mb-4'>"
+            "<div class='card shadow-sm'>"
+            "<div class='card-body'>"
+            f"{plot_html}"
+            "</div>"
+            "</div>"
+            "</div>"
+
+            "</div>"
+
+            "</div>"
+            "</body></html>"
+        )
+
     print(f"Plot saved to {plot_filename}")
 
     return plot_filename, num_samples_to_display
