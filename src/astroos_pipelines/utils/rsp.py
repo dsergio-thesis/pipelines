@@ -71,9 +71,24 @@ def pad_exposure_ml(exp, target=200, fill_value=0.0):
     return new_exp
 
 
+_SIAV2 = None
+_PYVO_SESSION = None
+
+def get_siav2():
+    global _SIAV2
+    if _SIAV2 is None:
+        _SIAV2 = get_siav2_service("dp1")
+    return _SIAV2
+
+def get_pyvo_session():
+    global _PYVO_SESSION
+    if _PYVO_SESSION is None:
+        _PYVO_SESSION = get_pyvo_auth()
+    return _PYVO_SESSION
+
 def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
 
-    service = get_siav2_service("dp1")
+    service = get_siav2()
     
     spherePoint = geom.SpherePoint(target_ra*geom.degrees, target_dec*geom.degrees)
 
@@ -100,7 +115,7 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
 
         sq = SodaQuery.from_resource(dl,
                                      dl.get_adhocservice_by_id("cutout-sync-exposure"),
-                                     session=get_pyvo_auth())
+                                     session=get_pyvo_session)
 
         sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
                      spherePoint.getDec().asDegrees() * u.deg,
