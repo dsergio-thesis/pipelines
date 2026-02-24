@@ -61,23 +61,23 @@ def main():
     print(labels)
 
 
-    # plot_random_samples_as_image(
-        # dataset_cartesian, 
-        # num_samples_to_display=max_records,
-        # seed=random_seed, 
-        # label_definitions=dataset_cartesian.get_labels(), 
-        # cmap=cmap,
-        # plot_title="LSST Cartesian Samples",
-        # plot_show=True,
-    # )
-    plot_random_samples_as_html(
+    plot_random_samples_as_image(
         dataset_cartesian, 
         num_samples_to_display=max_records,
         seed=random_seed, 
         label_definitions=dataset_cartesian.get_labels(), 
         cmap=cmap,
         plot_title="LSST Cartesian Samples",
+        plot_show=True,
     )
+    # plot_random_samples_as_html(
+        # dataset_cartesian, 
+        # num_samples_to_display=max_records,
+        # seed=random_seed, 
+        # label_definitions=dataset_cartesian.get_labels(), 
+        # cmap=cmap,
+        # plot_title="LSST Cartesian Samples",
+    # )
 
 if __name__ == "__main__":
     main()
