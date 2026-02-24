@@ -62,7 +62,7 @@ def main():
                 metadata=pipeline_metadata,
                 max_records=max_records,
                 dataset=dataset_cart_cutouts_morph,
-                minor_version=pipeline_minor_version,
+                minor_version=None,
                 ),
             PipelineClassification(
                 name=pipeline_name + "_phot",

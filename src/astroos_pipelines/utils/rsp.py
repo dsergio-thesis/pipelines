@@ -115,11 +115,11 @@ def get_cutout_bands(target_ra, target_dec, bands = ['u','g','r','i','z','y']):
 
         sq = SodaQuery.from_resource(dl,
                                      dl.get_adhocservice_by_id("cutout-sync-exposure"),
-                                     session=get_pyvo_session)
+                                     session=get_pyvo_session())
 
         sq.circle = (spherePoint.getRa().asDegrees() * u.deg,
                      spherePoint.getDec().asDegrees() * u.deg,
-                     (search_radius * 2) * u.deg)
+                     (search_radius ) * u.deg)
 
         cutout_bytes = sq.execute_stream().read()
         mem = MemFileManager(len(cutout_bytes))
