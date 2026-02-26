@@ -7,7 +7,7 @@ import numpy as np
 from tqdm import tqdm
 from astropy.table import Table
 from astropy import units as u
-
+import pandas as pd
 import importlib
 
 from astroos_pipelines.lsst.query import AstroosQueryLSST
@@ -407,8 +407,6 @@ class StageButlerFetchLSST(DataPipelineStage):
         print(f"Fetching LSST data via Butler for {n} objects...")
 
         objects = self.prev_stage.output
-        
-        import pandas as pd
 
         rsp_mode = False
         try:
@@ -418,10 +416,11 @@ class StageButlerFetchLSST(DataPipelineStage):
         except ImportError:
             pass
 
-
-
-
-        tasks = build_groups(objects, self.pipeline.dataset)
+        tasks = build_groups(
+                objects, 
+                self.pipeline.dataset.get_dataset_dir(),
+                self.pipeline.dataset.get_labels().get_labels_file()
+                )
 
         with ProcessPoolExecutor(max_workers=8) as ex:
             for _ in ex.map(worker_patch, tasks):
@@ -440,7 +439,15 @@ def worker_patch(args):
     STAMP_W = 100
     STAMP_H = 100
 
-    tract, patch, object_rows, dataset = args
+    tract, patch, object_rows, dataset_dir, dataset_labels = args
+
+    dataset = FITS_Image_Morphometry_Photometry_Dataset(
+            dataset_dir=dataset_dir,
+            labels_init_file=dataset_labels,
+            N_bands=5, 
+            N_morphometric_features=4,
+            N_photometric_features=4,
+            )
 
     from lsst.daf.butler import Butler
     butler = Butler("dp1", collections="LSSTComCam/DP1")
@@ -507,8 +514,8 @@ def worker_patch(args):
 
     return len(object_rows)
 
-def build_groups(objects, dataset):
+def build_groups(objects, dataset_name):
     groups = defaultdict(list)
     for row in objects:
         groups[(int(row["tract"]), int(row["patch"]))].append(row)
-    return [(t, p, rows, dataset) for (t, p), rows in groups.items()]
+    return [(t, p, rows, dataset_dir, dataset_labels) for (t, p), rows in groups.items()]

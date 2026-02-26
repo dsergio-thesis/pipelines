@@ -37,6 +37,9 @@ class Labels:
                 raise FileNotFoundError(f"Labels initialization file not found: {self.labels_init_file}")
             self._initialize_labels()
 
+    def get_labels_file(self):
+        return self.labels_init_file
+
     def _load_labels(self):
         labels_file = os.path.join(self.labels_dir, "labels.csv")
         if os.path.exists(labels_file):
