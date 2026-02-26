@@ -329,6 +329,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         hdul.append(hdu)
         
         out_path = os.path.join(self.dataset_dir, f"{objectId}.fits")
+        print(f"writing item to {out_path}")
         hdul.writeto(out_path, overwrite=True)
 
         # Update in-memory + on-disk manifest

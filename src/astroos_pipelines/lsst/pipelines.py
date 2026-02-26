@@ -13,10 +13,12 @@ import importlib
 from astroos_pipelines.lsst.query import AstroosQueryLSST
 from astroos_pipelines.pipelines import DataPipelineStage
 from astroos_pipelines.utils.rsp import get_cutout_bands
+from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 importlib.reload(sys.modules['astroos_pipelines.utils.rsp'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
+importlib.reload(sys.modules['astroos_pipelines.datasets'])
 
 from astropy.io import fits
 # do wcs next
@@ -210,6 +212,8 @@ class StagePreprocessLSST(DataPipelineStage):
         print(f"Feature preprocesing for {n} objects...")
 
         bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
+        bands = ['u', 'g', 'r', 'i', 'z', 'y']
+
         num_bands = len(bands)
 
         # precompute safe scales (dataset-level)
@@ -295,6 +299,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
         print(f"Fetching LSST SODA cutout images for {n} objects...")
 
         bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
+        bands = ['u', 'g', 'r', 'i', 'z', 'y']
         num_bands = len(bands)
 
         # for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
@@ -402,19 +407,9 @@ class StageButlerFetchLSST(DataPipelineStage):
     def run(self):
 
         # read the positions from the previous stage
-        df = self.prev_stage.output.to_pandas()
-        n = len(df)
-        print(f"Fetching LSST data via Butler for {n} objects...")
-
         objects = self.prev_stage.output
 
-        rsp_mode = False
-        try:
-            from lsst.rsp import get_tap_service
-            import lsst.geom as geom
-            rsp_mode = True
-        except ImportError:
-            pass
+        print(f"Fetching LSST data via Butler for {len(objects)} objects...")
 
         tasks = build_groups(
                 objects, 
@@ -428,13 +423,11 @@ class StageButlerFetchLSST(DataPipelineStage):
 
 
 
-
-
-
 def worker_patch(args):
 
-    BANDS = ["g", "r", "i", "z", "y"]
-    BANDS = ["g", "r", "i", "z"]
+    BANDS = ["u", "g", "r", "i", "z"]
+    BANDS = ["u", "g", "r", "i", "z", "y"]
+
     # cutout stamp size (pixels)
     STAMP_W = 100
     STAMP_H = 100
@@ -444,7 +437,7 @@ def worker_patch(args):
     dataset = FITS_Image_Morphometry_Photometry_Dataset(
             dataset_dir=dataset_dir,
             labels_init_file=dataset_labels,
-            N_bands=5, 
+            N_bands=len(BANDS), 
             N_morphometric_features=4,
             N_photometric_features=4,
             )
@@ -464,9 +457,6 @@ def worker_patch(args):
     for row in object_rows:
         ra_deg = float(row["coord_ra"])
         dec_deg = float(row["coord_dec"])
-
-        # cross-match with HST
-
 
         # SpherePoint expects (lon, lat) as Angles.
         # Use degrees explicitly.
@@ -492,6 +482,8 @@ def worker_patch(args):
         target_ra = ra_deg 
         target_dec = dec_deg
 
+        print(f"band_images shape: {band_images.shape}")
+
         hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
         hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
         hdu_img.header['ra'] = float(target_ra)
@@ -503,19 +495,18 @@ def worker_patch(args):
         hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
         hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
 
-        # dataset = self.pipeline.dataset
 
-        if (dataset.contains(row.objectId)):
-            # print(f"dataset contains {row.objectId}")
-            dataset.update(row.objectId, hdu_img)
+        if (dataset.contains(row['objectId'])):
+            print(f"dataset contains {row['objectId']}")
+            dataset.update(row['objectId'], hdu_img)
         else:
-            # print(f"dataset DOES NOT contain {row.objectId}")
+            print(f"dataset DOES NOT contain {row['objectId']}")
             dataset.append(hdu_img)
 
     return len(object_rows)
 
-def build_groups(objects, dataset_name):
+def build_groups(objects, dataset_dir, labels_init_file):
     groups = defaultdict(list)
     for row in objects:
         groups[(int(row["tract"]), int(row["patch"]))].append(row)
-    return [(t, p, rows, dataset_dir, dataset_labels) for (t, p), rows in groups.items()]
+    return [(t, p, rows, dataset_dir, labels_init_file) for (t, p), rows in groups.items()]

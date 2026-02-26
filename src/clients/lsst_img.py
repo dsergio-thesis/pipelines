@@ -90,21 +90,21 @@ def main():
             
     pipelines[0].add_stages([])
 
-    pipelines[1].add_stages([
+    pipelines[1].add_stages([ # Soda
         StageCatalogLSST(),
         StageMatchLSSTtoHST(),
         StagePreprocessLSST(),
         StageFetchLSSTSoda(),
         ])
 
-    pipelines[2].add_stages([
+    pipelines[2].add_stages([ # Phot
         StageCatalogLSST(),
         StageMatchLSSTtoHST(),
         StagePreprocessLSST(),
         ])
-    pipelines[3].add_stages([
+    pipelines[3].add_stages([ # Butler
         StageCatalogLSST(),
-        # StageMatchLSSTtoHST(),
+        StageMatchLSSTtoHST(),
         StagePreprocessLSST(),
         StageButlerFetchLSST(),
         ])
