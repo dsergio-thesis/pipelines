@@ -1,3 +1,5 @@
+import pandas as pd
+
 rsp_mode = False
 try:
     from lsst.rsp import get_tap_service
@@ -24,6 +26,8 @@ BANDS = ["g","r","i","z","y"]
 def worker_patch(args):
     tract, patch, object_rows = args
 
+    # print(f"starting work with {args}")
+
     # Create Butler inside process
     from lsst.daf.butler import Butler
     butler = Butler("dp1", collections="LSSTComCam/DP1")  # common DP1 collection
@@ -42,7 +46,10 @@ def worker_patch(args):
     #   append_to_zarr_or_memmap(stamp_stack, row.objectId, ...)
     
     for band in BANDS:
-        cutout = coadds[band].getCutout(geom.SpherePoint(0, 0), 100)  # example cutout
+        lat = geom.Angle(0.1)
+        long = geom.Angle(0.1)
+        ext = geom.Extent2I(100, 100)
+        cutout = coadds[band].getCutout(geom.SpherePoint(lat, long), ext)
         with open(f"cutout_{tract}_{patch}_{band}.fits", "wb") as f:
             cutout.writeFits(f)
 
@@ -50,24 +57,42 @@ def worker_patch(args):
 
 def build_groups(objects):
     groups = defaultdict(list)
+    print(f"objects: {objects} type: {type(objects)}")
     for row in objects:
-        groups[(row.tract, row.patch)].append(row)
+        # print(f"row: {row}, type: {type(row)}")
+        groups[(row['tract'], row['patch'])].append(row)
     return [(t, p, rows) for (t, p), rows in groups.items()]
 
-# objects should already be preselected (TAP recommended) with tract/patch + coords + objectId
+query = \
+"""
+SELECT TOP {max_records}
+objectId,
+tract,
+patch,
+coord_ra,
+coord_dec,
+refExtendedness
+
+FROM dp1.Object
+
+WHERE coord_ra BETWEEN {ra_min} AND {ra_max}
+    AND coord_dec BETWEEN {dec_min} AND {dec_max}
+
+"""
+
+# Extended Chandra Deep Field South (ECDFS)
+query = query.format(
+        max_records=10,
+        ra_min=52,
+        ra_max=53,
+        dec_min=-28,
+        dec_max=-27,
+        )
+print(f"query: \n {query}")
 tap_service = get_tap_service("tap")
-query = 
-"""
-SELECT objectId, tract, patch
-FROM dp1.object
-WHERE 1=1
--- AND extendedness > 0.5
-AND coord_ra IS BETWEEN 52 AND 53
-AND coord_dec IS BETWEEN -28 AND -27
-LIMIT 10
-"""
-res = self.tap_service.search(query)
+res = tap_service.search(query)
 objects = res.to_table()
+print(f"{len(objects)} returned")
 
 tasks = build_groups(objects)
 
