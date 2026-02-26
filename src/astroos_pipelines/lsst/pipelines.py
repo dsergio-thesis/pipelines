@@ -373,3 +373,132 @@ class StageFetchLSSTSoda(DataPipelineStage):
                     # print(f"dataset DOES NOT contain {row.objectId}")
                     dataset.append(hdu_img)
         self.output = Table.from_pandas(df)
+
+
+
+class StageButlerFetchLSST(DataPipelineStage):
+    """
+    Data pipeline stage for fetching LSST data via the Butler.
+    """
+    def __init__(self):
+        super().__init__(stage_name="fetch_butler", requires_stage_dir=True)
+
+    def _validate_prev_stage(self):
+        if not rsp_mode:
+            log.error("RSP mode is not available. Cannot run StageButlerFetchLSST.")
+            return False
+
+        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
+        if not all(col in self.prev_stage.output.columns for col in required_columns):
+            log.error(f"Previous stage output is missing required columns: {required_columns}")
+            return False
+        return True
+
+    def run(self):
+
+        # read the positions from the previous stage
+        df = self.prev_stage.output.to_pandas()
+        n = len(df)
+        print(f"Fetching LSST data via Butler for {n} objects...")
+
+        objects = self.prev_stage.output
+        
+        import pandas as pd
+
+        rsp_mode = False
+        try:
+            from lsst.rsp import get_tap_service
+            import lsst.geom as geom
+            rsp_mode = True
+        except ImportError:
+            pass
+
+        from concurrent.futures import ProcessPoolExecutor
+        from collections import defaultdict
+
+        BANDS = ["g", "r", "i", "z", "y"]
+
+        # cutout stamp size (pixels)
+        STAMP_W = 100
+        STAMP_H = 100
+
+        def worker_patch(args):
+            tract, patch, object_rows = args
+
+            from lsst.daf.butler import Butler
+            butler = Butler("dp1", collections="LSSTComCam/DP1")
+
+            # Load each band ONCE per patch
+            coadds = {
+                b: butler.get("deep_coadd", tract=tract, patch=patch, band=b)
+                for b in BANDS
+            }
+
+            ext = geom.Extent2I(STAMP_W, STAMP_H)
+            band_images = np.zeros((len(BANDS), STAMP_H, STAMP_W), dtype=np.float32)
+
+            for row in object_rows:
+                ra_deg = float(row["coord_ra"])
+                dec_deg = float(row["coord_dec"])
+
+                # cross-match with HST
+
+
+                # SpherePoint expects (lon, lat) as Angles.
+                # Use degrees explicitly.
+                sky = geom.SpherePoint(ra_deg * geom.degrees, dec_deg * geom.degrees)
+
+                for band, exp in coadds.items():
+                    wcs = exp.getWcs()
+                    if wcs is None:
+                        # Shouldn't happen for coadds, but guard anyway
+                        continue
+
+                    # Convert sky coordinate to pixel coordinate in this exposure
+                    pix = wcs.skyToPixel(sky)  # returns lsst.geom.Point2D
+
+                    # Optional: skip objects whose pixel center is off-image
+                    bbox = exp.getBBox()
+                    if not bbox.contains(geom.Point2I(int(round(pix.getX())), int(round(pix.getY())))):
+                        continue
+
+                    cutout = exp.getCutout(pix, ext)
+                    band_images[BANDS.index(band)] = cutout.getImage().getArray()
+
+                target_ra = ra_deg 
+                target_dec = dec_deg
+
+                hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
+                hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
+                hdu_img.header['ra'] = float(target_ra)
+                hdu_img.header['dec'] = float(target_dec)
+                hdu_img.header['objectId'] = int(row.objectId)
+                hdu_img.header['rvz_redshift'] = -999
+                hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
+                hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
+                hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
+                hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
+
+                dataset = self.pipeline.dataset
+
+                if (dataset.contains(row.objectId)):
+                    # print(f"dataset contains {row.objectId}")
+                    dataset.update(row.objectId, hdu_img)
+                else:
+                    # print(f"dataset DOES NOT contain {row.objectId}")
+                    dataset.append(hdu_img)
+
+            return len(object_rows)
+
+        def build_groups(objects):
+            groups = defaultdict(list)
+            for row in objects:
+                groups[(int(row["tract"]), int(row["patch"]))].append(row)
+            return [(t, p, rows) for (t, p), rows in groups.items()]
+
+
+        tasks = build_groups(objects)
+
+        with ProcessPoolExecutor(max_workers=8) as ex:
+            for _ in ex.map(worker_patch, tasks):
+                pass
