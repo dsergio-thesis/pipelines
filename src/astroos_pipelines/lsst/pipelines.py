@@ -34,6 +34,7 @@ try:
     rsp_mode = True
 
 except ImportError as e:
+    print(f"LSST RSP dependencies not found. RSP mode will be disabled. Please install the required packages: {e}")
     pass
 
 from astroos_pipelines.logger.logger import setup_logging
