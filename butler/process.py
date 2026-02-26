@@ -35,6 +35,9 @@ def worker_patch(args):
         ra_deg = float(row["coord_ra"])
         dec_deg = float(row["coord_dec"])
 
+        # cross-match with HST
+
+
         # SpherePoint expects (lon, lat) as Angles.
         # Use degrees explicitly.
         sky = geom.SpherePoint(ra_deg * geom.degrees, dec_deg * geom.degrees)
