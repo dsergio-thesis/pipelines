@@ -114,6 +114,7 @@ class StageCatalogLSST(DataPipelineStage):
         WHERE coord_ra BETWEEN {ra_min} AND {ra_max}
             AND coord_dec BETWEEN {dec_min} AND {dec_max}
 
+        -- AND objectId = 611255072642319851
         """
 
         query = query.format(

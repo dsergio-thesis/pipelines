@@ -9,4 +9,4 @@ fi
 source env.sh
 export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
 
-python -m clients.lsst "$@"
+python -m clients.lsst_phot "$@"

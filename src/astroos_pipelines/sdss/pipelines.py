@@ -21,8 +21,8 @@ from io import BytesIO
 import warnings
 import importlib
 
-from utils.formatting_utils import ascii_kv_table
-importlib.reload(sys.modules['utils.formatting_utils'])
+from astroos_pipelines.utils.formatting import ascii_kv_table
+importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
 from astroos_pipelines.pipelines import DataPipelineStage
 from astroos_pipelines.sdss.query import AstroosQuerySDSS

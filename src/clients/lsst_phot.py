@@ -69,7 +69,7 @@ def main():
                 metadata=pipeline_metadata,
                 max_records=max_records,
                 dataset=dataset_cart_phot,
-                minor_version=pipeline_minor_version,
+                minor_version=None,
                 ),
             ]
 
@@ -90,7 +90,7 @@ def main():
         ])
 
     # pipelines[1].run_pipeline()
-    pipelines[1].run_pipeline()
+    pipelines[2].run_pipeline()
 
     # for p in pipelines:
     #     p.run_pipeline()

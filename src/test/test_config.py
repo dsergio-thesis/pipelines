@@ -27,7 +27,7 @@ def test_config_defaults():
     assert pipeline_name is not None 
     assert pipeline_minor_version == 1 
     assert max_records == 3
-    assert os.path.isfile(os.path.join(dataset_dir, dataset_name, label_def_file)), f"Label definition file {os.path.join(dataset_dir, dataset_name, label_def_file)} does not exist." 
+    assert os.path.isfile(os.path.join(label_def_file)), f"Label definition file {os.path.join(dataset_dir, dataset_name, label_def_file)} does not exist." 
     
 
 

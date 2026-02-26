@@ -19,10 +19,10 @@ import importlib
 
 from astroos_pipelines.query import AstroosQuery
 
-from astroos_pipelines.utils.sdss_utils import decode_sdss_objid
+from astroos_pipelines.utils.sdss import decode_sdss_objid
 
 importlib.reload(sys.modules['astroos_pipelines.query'])
-importlib.reload(sys.modules['astroos_pipelines.utils.sdss_utils'])
+importlib.reload(sys.modules['astroos_pipelines.utils.sdss'])
 
 import sys
 import importlib

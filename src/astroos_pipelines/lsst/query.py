@@ -208,10 +208,11 @@ class AstroosQueryLSST(AstroosQuery):
     def load_hst_and_make_labels(hst_fits_path: str):
         hst = Table.read(hst_fits_path, hdu=1)
 
+        print(f"length of hst: {len(hst)}")
+
         ra  = np.array(hst["ra"], dtype=float)
         dec = np.array(hst["dec"], dtype=float)
 
-        # Core physical columns (may contain sentinel values)
         z_best = np.array(hst["z_best"], dtype=float) if "z_best" in hst.colnames else None
         z_spec = np.array(hst["z_spec"], dtype=float) if "z_spec" in hst.colnames else None
         lmass  = np.array(hst["lmass"], dtype=float)  if "lmass" in hst.colnames else None
@@ -219,15 +220,13 @@ class AstroosQueryLSST(AstroosQuery):
         lssfr  = np.array(hst["lssfr"], dtype=float)  if "lssfr" in hst.colnames else None
         Av     = np.array(hst["Av"], dtype=float)     if "Av" in hst.colnames else None
 
-        # Basic validity mask
+        # validity mask
         valid = np.isfinite(ra) & np.isfinite(dec)
         if lssfr is None:
             raise ValueError("hst.fits is missing required column 'lssfr'.")
 
         valid &= np.isfinite(lssfr)
 
-        # Optional: avoid obvious garbage values if present
-        # (catalogs sometimes use -99, 0, etc. for missing)
         valid &= (lssfr > -50) & (lssfr < 50)
 
         # Define labels: 1 = star-forming, 0 = quiescent, -1 = ambiguous
@@ -266,7 +265,8 @@ class AstroosQueryLSST(AstroosQuery):
 
         idx, sep2d, _ = lsst_c.match_to_catalog_sky(hst_c)
         sep_arcsec = sep2d.to(u.arcsec).value
-        print(f"sep_arsec: {sep_arcsec}, radius: {radius_arcsec}")
+        # print(f"sep_arsec: {sep_arcsec}, radius: {radius_arcsec}")
+        # print(f"item: {hst_c[idx]}")
 
         # Require a close match AND a confident label
         m = (sep_arcsec <= radius_arcsec) & (hst_dict["confident"][idx])
@@ -292,5 +292,7 @@ class AstroosQueryLSST(AstroosQuery):
             out["lssfr"] = hst_dict["lssfr"][hix]
         if hst_dict["Av"] is not None:
             out["Av"] = hst_dict["Av"][hix]
+
+        print(f"number of matches: {len(out)}")
 
         return out

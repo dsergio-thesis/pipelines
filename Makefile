@@ -7,7 +7,7 @@ clean-rsp-env:
 	mamba env remove -p $(ENV_PREFIX) -y || true
 
 clean:
-	rm -rf _pipelines/* data/* log/* /tmp/pipelines_exports/
+	rm -rf _pipelines/* log/* /tmp/pipelines_exports/
 
 
 
