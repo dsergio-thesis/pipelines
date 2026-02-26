@@ -5,7 +5,7 @@ import importlib
 
 from astroos_pipelines.pipelines import PipelineClassification, PipelineDummy
 from astroos_pipelines.lsst.pipelines import StageCatalogLSST,  StageFetchLSSTSoda, \
-        StageMatchLSSTtoHST, StagePreprocessLSST
+        StageMatchLSSTtoHST, StagePreprocessLSST, StageButlerFetchLSST 
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.config.astroos_config import AstroosConfig
 
@@ -71,6 +71,13 @@ def main():
                 dataset=dataset_cart_phot,
                 minor_version=None,
                 ),
+            PipelineClassification(
+                name=pipeline_name + "_butler",
+                metadata=pipeline_metadata,
+                max_records=max_records,
+                dataset=dataset_cart_phot,
+                minor_version=None,
+                ),
             ]
 
             
@@ -88,9 +95,16 @@ def main():
         StageMatchLSSTtoHST(),
         StagePreprocessLSST(),
         ])
+    pipelines[3].add_stages([
+        StageCatalogLSST(),
+        # StageMatchLSSTtoHST(),
+        StagePreprocessLSST(),
+        StageButlerFetchLSST(),
+        ])
+
 
     # pipelines[1].run_pipeline()
-    pipelines[1].run_pipeline()
+    pipelines[3].run_pipeline()
 
     # for p in pipelines:
     #     p.run_pipeline()

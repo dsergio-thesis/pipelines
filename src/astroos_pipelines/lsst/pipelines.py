@@ -1,4 +1,7 @@
 
+from concurrent.futures import ProcessPoolExecutor
+from collections import defaultdict
+
 import sys
 import numpy as np
 from tqdm import tqdm
@@ -77,6 +80,8 @@ class StageCatalogLSST(DataPipelineStage):
         """
         SELECT TOP {max_records}
         objectId,
+        tract,
+        patch,
         coord_ra,
         coord_dec,
 
@@ -413,92 +418,97 @@ class StageButlerFetchLSST(DataPipelineStage):
         except ImportError:
             pass
 
-        from concurrent.futures import ProcessPoolExecutor
-        from collections import defaultdict
-
-        BANDS = ["g", "r", "i", "z", "y"]
-
-        # cutout stamp size (pixels)
-        STAMP_W = 100
-        STAMP_H = 100
-
-        def worker_patch(args):
-            tract, patch, object_rows = args
-
-            from lsst.daf.butler import Butler
-            butler = Butler("dp1", collections="LSSTComCam/DP1")
-
-            # Load each band ONCE per patch
-            coadds = {
-                b: butler.get("deep_coadd", tract=tract, patch=patch, band=b)
-                for b in BANDS
-            }
-
-            ext = geom.Extent2I(STAMP_W, STAMP_H)
-            band_images = np.zeros((len(BANDS), STAMP_H, STAMP_W), dtype=np.float32)
-
-            for row in object_rows:
-                ra_deg = float(row["coord_ra"])
-                dec_deg = float(row["coord_dec"])
-
-                # cross-match with HST
 
 
-                # SpherePoint expects (lon, lat) as Angles.
-                # Use degrees explicitly.
-                sky = geom.SpherePoint(ra_deg * geom.degrees, dec_deg * geom.degrees)
 
-                for band, exp in coadds.items():
-                    wcs = exp.getWcs()
-                    if wcs is None:
-                        # Shouldn't happen for coadds, but guard anyway
-                        continue
-
-                    # Convert sky coordinate to pixel coordinate in this exposure
-                    pix = wcs.skyToPixel(sky)  # returns lsst.geom.Point2D
-
-                    # Optional: skip objects whose pixel center is off-image
-                    bbox = exp.getBBox()
-                    if not bbox.contains(geom.Point2I(int(round(pix.getX())), int(round(pix.getY())))):
-                        continue
-
-                    cutout = exp.getCutout(pix, ext)
-                    band_images[BANDS.index(band)] = cutout.getImage().getArray()
-
-                target_ra = ra_deg 
-                target_dec = dec_deg
-
-                hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
-                hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
-                hdu_img.header['ra'] = float(target_ra)
-                hdu_img.header['dec'] = float(target_dec)
-                hdu_img.header['objectId'] = int(row.objectId)
-                hdu_img.header['rvz_redshift'] = -999
-                hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
-                hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
-                hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
-                hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
-
-                dataset = self.pipeline.dataset
-
-                if (dataset.contains(row.objectId)):
-                    # print(f"dataset contains {row.objectId}")
-                    dataset.update(row.objectId, hdu_img)
-                else:
-                    # print(f"dataset DOES NOT contain {row.objectId}")
-                    dataset.append(hdu_img)
-
-            return len(object_rows)
-
-        def build_groups(objects):
-            groups = defaultdict(list)
-            for row in objects:
-                groups[(int(row["tract"]), int(row["patch"]))].append(row)
-            return [(t, p, rows) for (t, p), rows in groups.items()]
-
-
-        tasks = build_groups(objects)
+        tasks = build_groups(objects, self.pipeline.dataset)
 
         with ProcessPoolExecutor(max_workers=8) as ex:
             for _ in ex.map(worker_patch, tasks):
                 pass
+
+
+
+
+
+
+def worker_patch(args):
+
+    BANDS = ["g", "r", "i", "z", "y"]
+    BANDS = ["g", "r", "i", "z"]
+    # cutout stamp size (pixels)
+    STAMP_W = 100
+    STAMP_H = 100
+
+    tract, patch, object_rows, dataset = args
+
+    from lsst.daf.butler import Butler
+    butler = Butler("dp1", collections="LSSTComCam/DP1")
+
+    # Load each band ONCE per patch
+    coadds = {
+        b: butler.get("deep_coadd", tract=tract, patch=patch, band=b)
+        for b in BANDS
+    }
+
+    ext = geom.Extent2I(STAMP_W, STAMP_H)
+    band_images = np.zeros((len(BANDS), STAMP_H, STAMP_W), dtype=np.float32)
+
+    for row in object_rows:
+        ra_deg = float(row["coord_ra"])
+        dec_deg = float(row["coord_dec"])
+
+        # cross-match with HST
+
+
+        # SpherePoint expects (lon, lat) as Angles.
+        # Use degrees explicitly.
+        sky = geom.SpherePoint(ra_deg * geom.degrees, dec_deg * geom.degrees)
+
+        for band, exp in coadds.items():
+            wcs = exp.getWcs()
+            if wcs is None:
+                # Shouldn't happen for coadds, but guard anyway
+                continue
+
+            # Convert sky coordinate to pixel coordinate in this exposure
+            pix = wcs.skyToPixel(sky)  # returns lsst.geom.Point2D
+
+            # Optional: skip objects whose pixel center is off-image
+            bbox = exp.getBBox()
+            if not bbox.contains(geom.Point2I(int(round(pix.getX())), int(round(pix.getY())))):
+                continue
+
+            cutout = exp.getCutout(pix, ext)
+            band_images[BANDS.index(band)] = cutout.getImage().getArray()
+
+        target_ra = ra_deg 
+        target_dec = dec_deg
+
+        hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
+        hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
+        hdu_img.header['ra'] = float(target_ra)
+        hdu_img.header['dec'] = float(target_dec)
+        hdu_img.header['objectId'] = int(row['objectId'])
+        hdu_img.header['rvz_redshift'] = -999
+        hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
+        hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
+        hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
+        hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
+
+        # dataset = self.pipeline.dataset
+
+        if (dataset.contains(row.objectId)):
+            # print(f"dataset contains {row.objectId}")
+            dataset.update(row.objectId, hdu_img)
+        else:
+            # print(f"dataset DOES NOT contain {row.objectId}")
+            dataset.append(hdu_img)
+
+    return len(object_rows)
+
+def build_groups(objects, dataset):
+    groups = defaultdict(list)
+    for row in objects:
+        groups[(int(row["tract"]), int(row["patch"]))].append(row)
+    return [(t, p, rows, dataset) for (t, p), rows in groups.items()]
