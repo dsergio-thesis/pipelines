@@ -240,6 +240,11 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
             return None
         return self.labels.get_labels()
 
+    def get_labels_file(self):
+        if self.labels is None:
+            return None
+        return self.labels.get_labels_file()
+
     def __getitem__(self, idx):
         objectId = self.manifest_list[idx]
         hdul_filename = os.path.join(self.dataset_dir, f"{objectId}.fits")

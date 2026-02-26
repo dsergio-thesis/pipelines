@@ -419,7 +419,7 @@ class StageButlerFetchLSST(DataPipelineStage):
         tasks = build_groups(
                 objects, 
                 self.pipeline.dataset.get_dataset_dir(),
-                self.pipeline.dataset.get_labels().get_labels_file()
+                self.pipeline.dataset.get_labels_file()
                 )
 
         with ProcessPoolExecutor(max_workers=8) as ex:
