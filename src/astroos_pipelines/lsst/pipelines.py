@@ -489,6 +489,10 @@ def worker_patch(args):
             # get minimal WCS info for the cutout
             wcs_cutout = cutout.getWcs()
 
+            print("cutout bbox:", cutout.getBBox())  # should show a small region
+            print("cutout dims:", cutout.getDimensions())  # width/height
+            print("cutout WCS:", wcs_cutout)  # should be a valid WCS object
+
             if (band == "r"):
                 wcs_header = wcs_cutout.getFitsMetadata()
 
