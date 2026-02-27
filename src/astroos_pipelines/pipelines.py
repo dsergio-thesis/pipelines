@@ -89,6 +89,8 @@ class Pipeline(ABC):
             if stage.requires_stage_dir is True:
                 stage.stage_dir = os.path.join(stage.pipeline.pipeline_dir, stage.stage_name)
                 os.makedirs(stage.stage_dir, exist_ok=True)
+
+            stage.manifest["run_id"] = self.pipeline_name
             
             log.debug(f"Adding stage:\n{stage}")
             self.stages.append(stage)
@@ -119,8 +121,9 @@ class Pipeline(ABC):
                 raise RuntimeError(f"Validation failed for {self.pipeline_name} stage {stage.stage_name}. (_validate_prev_stage returned False)")
             stage.run()
 
-            with open(f"{stage.stage_dir}/manifest.json", "w") as f:
-                json.dump(stage.manifest, f, indent=4)
+            if stage.stage_dir is not None:
+                with open(f"{stage.stage_dir}/manifest.json", "w") as f:
+                    json.dump(stage.manifest, f, indent=4)
             
             log.info(f"Completed stage: {stage.stage_name}")
         print("Pipeline completed.")
@@ -213,7 +216,7 @@ class DataPipelineStage(ABC):
         self.output = None
         self.manifest = \
         {
-            "node_id": None,
+            "node_id": f"{self.__class__.__module__}.{self.__class__.__qualname__}",
             "run_id": None,
             "code": {
                 "repo": "thesis-org/pipelines",
@@ -235,7 +238,7 @@ class DataPipelineStage(ABC):
         pass
 
     def _validate_prev_stage_manifest(self):
-        if self.prev_stage is None:
+        if self.prev_stage is None or self.prev_stage.stage_index == 0:
             return True
         if self.prev_stage.manifest is None:
             log.error(f"Previous stage {self.prev_stage.stage_name} has no manifest.")
@@ -244,7 +247,7 @@ class DataPipelineStage(ABC):
         required_fields = ["node_id", "run_id"]
         for field in required_fields:
             if field not in self.prev_stage.manifest or self.prev_stage.manifest[field] is None:
-                log.error(f"Previous stage {self.prev_stage.stage_name} manifest is missing required field: {field}")
+                print(f"Previous stage {self.prev_stage.stage_name} manifest is missing required field: {field}")
                 return False
         return True
 
