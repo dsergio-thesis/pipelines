@@ -464,6 +464,13 @@ def worker_patch(args):
         # Use degrees explicitly.
         sky = geom.SpherePoint(ra_deg * geom.degrees, dec_deg * geom.degrees)
 
+        wcs_header = Fits.Header()
+        
+        min_ra = ra_deg - 0.0138889
+        max_ra = ra_deg + 0.0138889
+        min_dec = dec_deg - 0.0138889
+        max_dec = dec_deg + 0.0138889
+
         for band, exp in coadds.items():
             wcs = exp.getWcs()
             if wcs is None:
@@ -479,10 +486,22 @@ def worker_patch(args):
                 continue
 
             cutout = exp.getCutout(pix, ext)
+            # get minimal WCS info for the cutout
+            wcs_cutout = cutout.getWcs()
+
+            if (band == "r"):
+                wcs_header = wcs_cutout.getFitsMetadata().getFitsHeader()
+
+                min_ra, max_ra = wcs_cutout.getSkyBBox().getMin().getX(), wcs_cutout.getSkyBBox().getMax().getX()
+                min_dec, max_dec = wcs_cutout.getSkyBBox().getMin().getY(), wcs_cutout.getSkyBBox().getMax().getY()
+            
             band_images[BANDS.index(band)] = cutout.getImage().getArray()
 
         target_ra = ra_deg 
         target_dec = dec_deg
+
+        
+        
 
         print(f"band_images shape: {band_images.shape}")
 
@@ -492,11 +511,13 @@ def worker_patch(args):
         hdu_img.header['dec'] = float(target_dec)
         hdu_img.header['objectId'] = int(row['objectId'])
         hdu_img.header['rvz_redshift'] = -999
-        hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
-        hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
-        hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
-        hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
+        hdu_img.header['min_ra'] = min_ra
+        hdu_img.header['max_ra'] = max_ra
+        hdu_img.header['min_dec'] = min_dec
+        hdu_img.header['max_dec'] = max_dec
 
+        for k, v in wcs_header.items():
+            hdu_img.header[k] = v
 
         if (dataset.contains(row['objectId'])):
             print(f"dataset contains {row['objectId']}")
@@ -512,3 +533,7 @@ def build_groups(objects, dataset_dir, labels_init_file):
     for row in objects:
         groups[(int(row["tract"]), int(row["patch"]))].append(row)
     return [(t, p, rows, dataset_dir, labels_init_file) for (t, p), rows in groups.items()]
+
+
+
+

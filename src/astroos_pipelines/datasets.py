@@ -9,6 +9,7 @@ import csv
 import numpy as np
 import torch
 from astropy.io import fits
+from astropy.wcs import WCS
 from pathlib import Path
 
 from torch.utils.data import Dataset
@@ -270,6 +271,9 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
                 # Endianness correction: native byte order 
                 if image.dtype.byteorder not in ("=", "|"):
                     image = image.byteswap().newbyteorder()
+
+                wcs = WCS(img_hdu.header)
+                header_dict["wcs"] = wcs
             
             # Image Morphometry Transform
             if image is not None and self.morphometric_transform is not None:
