@@ -464,7 +464,7 @@ def worker_patch(args):
         # Use degrees explicitly.
         sky = geom.SpherePoint(ra_deg * geom.degrees, dec_deg * geom.degrees)
 
-        wcs_header = Fits.Header()
+        wcs_header = fits.Header()
         
         min_ra = ra_deg - 0.0138889
         max_ra = ra_deg + 0.0138889
@@ -490,10 +490,11 @@ def worker_patch(args):
             wcs_cutout = cutout.getWcs()
 
             if (band == "r"):
-                wcs_header = wcs_cutout.getFitsMetadata().getFitsHeader()
+                wcs_header = wcs_cutout.getFitsMetadata()
 
-                min_ra, max_ra = wcs_cutout.getSkyBBox().getMin().getX(), wcs_cutout.getSkyBBox().getMax().getX()
-                min_dec, max_dec = wcs_cutout.getSkyBBox().getMin().getY(), wcs_cutout.getSkyBBox().getMax().getY()
+                # min_ra, max_ra = wcs_cutout.getSkyBBox().getMin().getX(), wcs_cutout.getSkyBBox().getMax().getX()
+                # min_dec, max_dec = wcs_cutout.getSkyBBox().getMin().getY(), wcs_cutout.getSkyBBox().getMax().getY()
+                min_ra, max_ra, min_dec, max_dec = wcs_bounds_radec(wcs_cutout, STAMP_W, STAMP_H)
             
             band_images[BANDS.index(band)] = cutout.getImage().getArray()
 
@@ -518,6 +519,7 @@ def worker_patch(args):
 
         for k, v in wcs_header.items():
             hdu_img.header[k] = v
+            print(f"wcs header: {k}: {v}")
 
         if (dataset.contains(row['objectId'])):
             print(f"dataset contains {row['objectId']}")
@@ -536,4 +538,46 @@ def build_groups(objects, dataset_dir, labels_init_file):
 
 
 
+import numpy as np
+import lsst.geom as geom
 
+def wcs_bounds_radec(skywcs, width: int, height: int):
+    """
+    Return (ra_min_deg, ra_max_deg, dec_min_deg, dec_max_deg) for an image
+    with given width/height in pixels using an LSST SkyWcs.
+
+    Handles RA wrap-around (e.g., near 0/360).
+    """
+    # LSST pixel coords are (x, y). Use edge pixels.
+    corners_pix = [
+        geom.Point2D(0, 0),
+        geom.Point2D(width - 1, 0),
+        geom.Point2D(0, height - 1),
+        geom.Point2D(width - 1, height - 1),
+    ]
+
+    ras = []
+    decs = []
+    for p in corners_pix:
+        sp = skywcs.pixelToSky(p)  # returns lsst.geom.SpherePoint
+        ras.append(sp.getRa().asDegrees())
+        decs.append(sp.getDec().asDegrees())
+
+    ras = np.array(ras, dtype=float)
+    decs = np.array(decs, dtype=float)
+
+    # Fix RA wrap: if corners straddle 0°, unwrap so min/max make sense
+    ras_rad = np.deg2rad(ras)
+    ras_unwrapped_deg = np.rad2deg(np.unwrap(ras_rad))
+
+    ra_min = float(ras_unwrapped_deg.min())
+    ra_max = float(ras_unwrapped_deg.max())
+
+    # put back into [0, 360)
+    ra_min = ra_min % 360.0
+    ra_max = ra_max % 360.0
+
+    dec_min = float(decs.min())
+    dec_max = float(decs.max())
+
+    return ra_min, ra_max, dec_min, dec_max
