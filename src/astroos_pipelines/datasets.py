@@ -273,6 +273,12 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
                     image = image.byteswap().newbyteorder()
 
                 wcs = WCS(img_hdu.header)
+                print("__getitem__ wcs type:", type(wcs))
+                if wcs is not None:
+                    print("pixel_n_dim:", getattr(wcs, "pixel_n_dim", None))
+                    print("world_n_dim:", getattr(wcs, "world_n_dim", None))
+                    if hasattr(wcs, "wcs"):
+                        print("CTYPE:", wcs.wcs.ctype)
                 header_dict["wcs"] = wcs
             
             # Image Morphometry Transform

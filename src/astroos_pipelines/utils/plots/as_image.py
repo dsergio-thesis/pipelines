@@ -72,6 +72,7 @@ def plot_random_samples_as_image(
                 "objectId": str(m.get("OBJECTID", "")),
                 "ra": m.get("RA", np.nan),
                 "dec": m.get("DEC", np.nan),
+                "wcs": m.get("wcs", None),
             }
             for m in random_metadata
         ]
@@ -126,6 +127,24 @@ def plot_random_samples_as_image(
             if random_cutouts[i-1] is not None:
                 cutout = random_cutouts[i-1][j]
                 extent = random_image_bounds[i-1] if random_image_bounds is not None else None
+
+                wcs = random_metadata[i-1].get("wcs", None)
+                print("wcs type:", type(wcs))
+                if wcs is not None:
+                    print("pixel_n_dim:", getattr(wcs, "pixel_n_dim", None))
+                    print("world_n_dim:", getattr(wcs, "world_n_dim", None))
+                    if hasattr(wcs, "wcs"):
+                        print("CTYPE:", wcs.wcs.ctype)
+                    # pix = wcs.world_to_pixel_values(random_samples_info.iloc[i-1]['ra'], random_samples_info.iloc[i-1]['dec'])
+                    w2 = wcs.celestial  # drops non-celestial axis/axes
+                    x, y = w2.world_to_pixel_values(
+                    random_samples_info.iloc[i-1]["ra"],
+                        random_samples_info.iloc[i-1]["dec"],
+                    )
+
+                    ax.plot(x, y, marker='x', color='red', markersize=10, label='Object Position')
+                    ax.legend(loc='upper right', fontsize=8)
+
                 ax.set_title(f"band: {bands[j]}", fontsize=14)
                 ax.set_xlabel("RA °", fontdict={'fontsize': 18}, labelpad=14)
                 ax.set_ylabel("Dec °", fontdict={'fontsize': 18}, labelpad=14)
