@@ -33,8 +33,8 @@ def main():
     transformCartesian = transforms.Compose([
         # transforms.ToTensor(),
         # AddGaussianNoise(mean=0., std=0.3),
-        # transforms.CenterCrop(30),
-        CropAroundCentroid(crop_size=(30, 30)),
+        transforms.CenterCrop(50),
+        # CropAroundCentroid(crop_size=(50, 50)),
         # SegmentationTransform(nsigma=0.2, min_area=40),
         # CropAroundCentroid(crop_size=(30, 30)),
         # CropAroundCentroid(crop_size=(20, 20)),
@@ -42,6 +42,7 @@ def main():
     ])
 
     random_seed = 1
+    random_seed = None
     cmap = 'gist_ncar'
     # cmap = cmc.batlow
 

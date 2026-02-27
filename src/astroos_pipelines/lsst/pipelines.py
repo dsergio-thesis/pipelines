@@ -56,6 +56,8 @@ class StageCatalogLSST(DataPipelineStage):
 
     def __init__(self):
         super().__init__(stage_name="catalog", requires_stage_dir=True)
+        self.manifest["node_id"] = "astroos_pipelines.pipelines.lsst.StageCatalogLSST"
+        self.manifest["run_id"] = self.pipeline.pipeline_name
 
     def _validate_prev_stage(self):
         return rsp_mode

@@ -6,6 +6,8 @@ import os
 
 import importlib
 
+import json
+
 from astroos_pipelines.utils.formatting import ascii_kv_table
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
@@ -111,9 +113,15 @@ class Pipeline(ABC):
         log.info(f"running pipeline at directory: {self.pipeline_dir}...")
         for stage in self.stages:
             log.info(f"{stage.stage_index} Running stage: {stage.stage_name}")
+            if not stage._validate_prev_stage_manifest():
+                raise RuntimeError(f"Validation failed for {self.pipeline_name} stage {stage.stage_name}. (_validate_prev_stage_manifest returned False)")
             if not stage._validate_prev_stage():
                 raise RuntimeError(f"Validation failed for {self.pipeline_name} stage {stage.stage_name}. (_validate_prev_stage returned False)")
             stage.run()
+
+            with open(f"{stage.stage_dir}/manifest.json", "w") as f:
+                json.dump(stage.manifest, f, indent=4)
+            
             log.info(f"Completed stage: {stage.stage_name}")
         print("Pipeline completed.")
 
@@ -203,10 +211,42 @@ class DataPipelineStage(ABC):
         self.prev_stage = None
         self.prev_stage_dir = None
         self.output = None
+        self.manifest = \
+        {
+            "node_id": None,
+            "run_id": None,
+            "code": {
+                "repo": "thesis-org/pipelines",
+                "commit": None,
+            },
+            "environment": {
+                "python_version": sys.version,
+            },
+            "inputs": [],
+            "outputs": [],
+            "parameters": {},
+            "lineage": {
+                "parents": [],
+            },
+        }
 
     @abstractmethod
     def run(self):
         pass
+
+    def _validate_prev_stage_manifest(self):
+        if self.prev_stage is None:
+            return True
+        if self.prev_stage.manifest is None:
+            log.error(f"Previous stage {self.prev_stage.stage_name} has no manifest.")
+            return False
+        # check that prev stage manifest has required fields
+        required_fields = ["node_id", "run_id"]
+        for field in required_fields:
+            if field not in self.prev_stage.manifest or self.prev_stage.manifest[field] is None:
+                log.error(f"Previous stage {self.prev_stage.stage_name} manifest is missing required field: {field}")
+                return False
+        return True
 
     @abstractmethod
     def _validate_prev_stage(self):

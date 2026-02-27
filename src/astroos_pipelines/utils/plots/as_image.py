@@ -86,7 +86,7 @@ def plot_random_samples_as_image(
             # ))
 
     bands = ['u', 'g', 'r', 'i', 'z']
-    # bands = ['u', 'g']
+    bands = ['u', 'g', 'r', 'i', 'z', 'y']
     num_rows = num_samples_to_display
     num_info_per_row = 4  # info, image, morph features, phot features
     num_cols = len(bands) 
