@@ -465,6 +465,7 @@ def worker_patch(args):
         sky = geom.SpherePoint(ra_deg * geom.degrees, dec_deg * geom.degrees)
 
         wcs_header = fits.Header()
+        hdr = fits.Header()
         
         min_ra = ra_deg - 0.0138889
         max_ra = ra_deg + 0.0138889
@@ -488,6 +489,13 @@ def worker_patch(args):
             cutout = exp.getCutout(pix, ext)
             # get minimal WCS info for the cutout
             wcs_cutout = cutout.getWcs()
+
+
+            bbox = cutout.getBBox()
+            # hdr = fits_header_from_lsst_cutout_wcs(cutout.getWcs(), bbox)
+            hdr = make_cutout_header3(cutout)
+            print(f"hdr: {hdr}")
+
 
             print("cutout bbox:", cutout.getBBox())  # should show a small region
             print("cutout dims:", cutout.getDimensions())  # width/height
@@ -521,7 +529,7 @@ def worker_patch(args):
         hdu_img.header['min_dec'] = min_dec
         hdu_img.header['max_dec'] = max_dec
 
-        for k, v in wcs_header.items():
+        for k, v in hdr.items():
             hdu_img.header[k] = v
             print(f"wcs header: {k}: {v}")
 
@@ -585,3 +593,115 @@ def wcs_bounds_radec(skywcs, width: int, height: int):
     dec_max = float(decs.max())
 
     return ra_min, ra_max, dec_min, dec_max
+
+
+from astropy.io import fits
+
+def fits_header_from_lsst_cutout_wcs(wcs_cutout, bbox):
+    """
+    Convert an LSST SkyWcs for a cutout into a FITS header whose pixel
+    coordinates are LOCAL to the cutout array (0..W-1, 0..H-1).
+
+    bbox is the LSST Box2I for the cutout in PARENT pixel coordinates.
+    """
+    md = wcs_cutout.getFitsMetadata()     # lsst.daf.base.PropertyList-like
+    hdr = fits.Header()
+
+    # Copy LSST WCS metadata into FITS header
+    for k, v in md.toDict().items():
+        hdr[k] = v
+
+    # Shift CRPIX so that the WCS is referenced to the cutout array origin.
+    # FITS WCS math is 1-based, but this shift is still exactly "-minPixel".
+    x0 = bbox.getMinX()
+    y0 = bbox.getMinY()
+    print(f"x0={x0}, y0={y0}")
+
+    if "CRPIX1" in hdr:
+        hdr["CRPIX1"] = hdr["CRPIX1"] - x0
+    if "CRPIX2" in hdr:
+        hdr["CRPIX2"] = hdr["CRPIX2"] - y0
+
+    # Force this to be a 2D celestial WCS even if the data is a 3D cube
+    hdr["WCSAXES"] = 2
+
+    return hdr
+
+from astropy.io import fits
+
+def make_cutout_header(cutout):
+    wcs = cutout.getWcs()
+    bbox = cutout.getBBox()
+
+    # LSST -> dict -> FITS header
+    hdr = fits.Header(wcs.getFitsMetadata().toDict())
+
+    # Shift reference pixel into cutout-local coordinates
+    x0 = bbox.getMinX()
+    y0 = bbox.getMinY()
+    print(f"x0={x0}, y0={y0}")
+
+    if "CRPIX1" in hdr: 
+        print(f"before hdr[CRPIX1] = {hdr['CRPIX1']}")
+        hdr["CRPIX1"] = hdr["CRPIX1"] - x0
+        print(f"hdr[CRPIX1] = {hdr['CRPIX1']}")
+    if "CRPIX2" in hdr: 
+        hdr["CRPIX2"] = hdr["CRPIX2"] - y0
+
+    # Ensure WCS is treated as 2D even if the data is 3D (bands,y,x)
+    hdr["WCSAXES"] = 2
+
+    return hdr
+
+from astropy.io import fits
+
+def make_cutout_header2(cutout):
+    wcs = cutout.getWcs()
+    md = wcs.getFitsMetadata()
+    hdr = fits.Header(md.toDict())
+
+    # This is the cutout's origin offset in parent coords
+    xy0 = cutout.getXY0()          # lsst.geom.Point2I
+    x0, y0 = xy0.getX(), xy0.getY()
+    print(f"x0={x0}, y0={y0}")
+
+    # Rebase CRPIX into cutout-local pixel coords
+    if "CRPIX1" in hdr: 
+        print(f".before hdr[CRPIX1] = {hdr['CRPIX1']}")
+        hdr["CRPIX1"] -= x0
+        print(f"hdr[CRPIX1] = {hdr['CRPIX1']}")
+
+    if "CRPIX2" in hdr: 
+        hdr["CRPIX2"] -= y0
+
+    hdr["WCSAXES"] = 2
+    return hdr
+
+
+import lsst.geom as geom
+from astropy.io import fits
+
+def make_cutout_header3(cutout):
+    wcs = cutout.getWcs()
+
+    # Start from LSST's FITS WCS keywords
+    hdr = fits.Header(wcs.getFitsMetadata().toDict())
+    hdr["WCSAXES"] = 2
+
+    # Choose a nice reference pixel in CUTOUT coordinates
+    width, height = cutout.getDimensions()  # (W, H)
+    x_ref = (width - 1) / 2.0
+    y_ref = (height - 1) / 2.0
+
+    # Find the sky coord at that cutout pixel
+    sp = wcs.pixelToSky(geom.Point2D(x_ref, y_ref))
+    ra_ref = sp.getRa().asDegrees()
+    dec_ref = sp.getDec().asDegrees()
+
+    # FITS uses 1-based pixel coordinates for CRPIX
+    hdr["CRPIX1"] = x_ref + 1.0
+    hdr["CRPIX2"] = y_ref + 1.0
+    hdr["CRVAL1"] = ra_ref
+    hdr["CRVAL2"] = dec_ref
+
+    return hdr
