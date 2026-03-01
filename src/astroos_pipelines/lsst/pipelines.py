@@ -497,16 +497,16 @@ def worker_patch(args):
             print(f"hdr: {hdr}")
 
 
-            print("cutout bbox:", cutout.getBBox())  # should show a small region
-            print("cutout dims:", cutout.getDimensions())  # width/height
-            print("cutout WCS:", wcs_cutout)  # should be a valid WCS object
+            # print("cutout bbox:", cutout.getBBox())  # should show a small region
+            # print("cutout dims:", cutout.getDimensions())  # width/height
+            # print("cutout WCS:", wcs_cutout)  # should be a valid WCS object
 
             if (band == "r"):
                 wcs_header = wcs_cutout.getFitsMetadata()
 
                 # min_ra, max_ra = wcs_cutout.getSkyBBox().getMin().getX(), wcs_cutout.getSkyBBox().getMax().getX()
                 # min_dec, max_dec = wcs_cutout.getSkyBBox().getMin().getY(), wcs_cutout.getSkyBBox().getMax().getY()
-                min_ra, max_ra, min_dec, max_dec = wcs_bounds_radec(wcs_cutout, STAMP_W, STAMP_H)
+                # min_ra, max_ra, min_dec, max_dec = wcs_bounds_radec(wcs_cutout, STAMP_W, STAMP_H)
             
             band_images[BANDS.index(band)] = cutout.getImage().getArray()
 
@@ -524,10 +524,10 @@ def worker_patch(args):
         hdu_img.header['dec'] = float(target_dec)
         hdu_img.header['objectId'] = int(row['objectId'])
         hdu_img.header['rvz_redshift'] = -999
-        hdu_img.header['min_ra'] = min_ra
-        hdu_img.header['max_ra'] = max_ra
-        hdu_img.header['min_dec'] = min_dec
-        hdu_img.header['max_dec'] = max_dec
+        # hdu_img.header['min_ra'] = min_ra
+        # hdu_img.header['max_ra'] = max_ra
+        # hdu_img.header['min_dec'] = min_dec
+        # hdu_img.header['max_dec'] = max_dec
 
         for k, v in hdr.items():
             hdu_img.header[k] = v
@@ -703,5 +703,11 @@ def make_cutout_header3(cutout):
     hdr["CRPIX2"] = y_ref + 1.0
     hdr["CRVAL1"] = ra_ref
     hdr["CRVAL2"] = dec_ref
+
+    ra_min, ra_max, dec_min, dec_max = wcs_bounds_radec(wcs, width, height)
+    hdr["min_ra"] = ra_min
+    hdr["max_ra"] = ra_max
+    hdr["dec_min"] = dec_min
+    hdr["dec_max"] = dec_max
 
     return hdr
