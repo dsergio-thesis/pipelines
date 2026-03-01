@@ -136,8 +136,8 @@ def plot_random_samples_as_image(
                     if hasattr(wcs, "wcs"):
                         print("CTYPE:", wcs.wcs.ctype)
                     # pix = wcs.world_to_pixel_values(random_samples_info.iloc[i-1]['ra'], random_samples_info.iloc[i-1]['dec'])
-                    w2 = wcs.celestial  # drops non-celestial axis/axes
-                    w2 = wcs.sub(['longitude', 'latitude'])
+                    # w2 = wcs.celestial  # drops non-celestial axis/axes
+                    # w2 = wcs.sub(['longitude', 'latitude'])
                     ra = random_samples_info.iloc[i-1]["ra"]
                     dec = random_samples_info.iloc[i-1]["dec"]
                     ra_min, ra_max, dec_min, dec_max = random_image_bounds[i-1]  # parent-image pixel bounds of the cutout
@@ -152,26 +152,30 @@ def plot_random_samples_as_image(
                     # )
 
                     # corners in world coords
-                    x1, y1 = w2.world_to_pixel_values(ra_min, dec_min)
-                    x2, y2 = w2.world_to_pixel_values(ra_min, dec_max)
-                    x3, y3 = w2.world_to_pixel_values(ra_max, dec_min)
-                    x4, y4 = w2.world_to_pixel_values(ra_max, dec_max)
+                    # x1, y1 = w2.world_to_pixel_values(ra_min, dec_min)
+                    # x2, y2 = w2.world_to_pixel_values(ra_min, dec_max)
+                    # x3, y3 = w2.world_to_pixel_values(ra_max, dec_min)
+                    # x4, y4 = w2.world_to_pixel_values(ra_max, dec_max)
 
-                    xs = [x1, x2, x3, x4]
-                    ys = [y1, y2, y3, y4]
+                    # xs = [x1, x2, x3, x4]
+                    # ys = [y1, y2, y3, y4]
 
-                    x0 = int(np.floor(min(xs)))
-                    y0 = int(np.floor(min(ys)))
-# x1/y1 if you need them:
-                    x1p = int(np.ceil(max(xs)))
-                    y1p = int(np.ceil(max(ys)))
-                    x_full, y_full = w2.world_to_pixel_values(ra, dec)
-                    x = x_full - x0
-                    y = y_full - y0
+                    # x0 = int(np.floor(min(xs)))
+                    # y0 = int(np.floor(min(ys)))
+# # x1/y1 if you need them:
+                    # x1p = int(np.ceil(max(xs)))
+                    # y1p = int(np.ceil(max(ys)))
+                    # x_full, y_full = w2.world_to_pixel_values(ra, dec)
+                    # x = x_full - x0
+                    # y = y_full - y0
 
-                    ax.plot(x, y, marker='x', color='red', markersize=10, label='Object Position')
+                    wcs = wcs.sub(['longitude', 'latitude'])  # drop non-celestial axes if present
+                    x, y = wcs.world_to_pixel_values(ra, dec)
+                    print(f"Calculated pixel coordinates: ({x}, {y}) for RA: {ra}, Dec: {dec} with bounds ({ra_min}, {ra_max}, {dec_min}, {dec_max}) and cutout shape {cutout.shape}")
+
+                    ax.plot(x, y, marker='x', color='red', markersize=10) #, label='Object Position')
                     print(f"Plotted object position at pixel coordinates: ({x}, {y})")
-                    ax.legend(loc='upper right', fontsize=8)
+                    # ax.legend(loc='upper right', fontsize=8)
 
                 ax.set_title(f"band: {bands[j]}", fontsize=14)
                 ax.set_xlabel("RA °", fontdict={'fontsize': 18}, labelpad=14)
