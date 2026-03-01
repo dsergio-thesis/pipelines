@@ -216,6 +216,8 @@ class StagePreprocessLSST(DataPipelineStage):
         bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
         bands = ['u', 'g', 'r', 'i', 'z', 'y']
 
+        label_counts = dict()
+
         num_bands = len(bands)
 
         # precompute safe scales (dataset-level)
@@ -225,6 +227,14 @@ class StagePreprocessLSST(DataPipelineStage):
         for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"):
             target_ra = row.coord_ra
             target_dec = row.coord_dec
+
+            if hasattr(row, "label"):
+                if (str(row.label) in label_counts):
+                    # print(f"found label {str(row.label)}, adding to existing counts")
+                    label_counts[str(row.label)] += 1
+                else:
+                    # print(f"found label {str(row.label)}, setting count to 1")
+                    label_counts[str(row.label)] = 1
 
             # 4 features per band: transformed flux, transformed err, log SNR, bad-flag
             photometric_features = np.zeros((num_bands, 4), dtype=np.float32)
@@ -268,6 +278,8 @@ class StagePreprocessLSST(DataPipelineStage):
                 dataset.update(row.objectId, hdu_phot)
             else:
                 dataset.append(hdu_phot)
+
+        print(f"Label counts: {label_counts}")
 
         self.output = Table.from_pandas(df)
 
@@ -370,7 +382,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
                 hdu_img.header['ra'] = float(target_ra)
                 hdu_img.header['dec'] = float(target_dec)
                 hdu_img.header['objectId'] = int(row.objectId)
-                hdu_img.header['rvz_redshift'] = -999
+                hdu_img.header['redshift'] = -999
                 hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
                 hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
                 hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
@@ -411,7 +423,9 @@ class StageButlerFetchLSST(DataPipelineStage):
         # read the positions from the previous stage
         objects = self.prev_stage.output
 
+
         print(f"Fetching LSST data via Butler for {len(objects)} objects...")
+        # print(objects['label'])
 
         tasks = build_groups(
                 objects, 
@@ -436,6 +450,9 @@ def worker_patch(args):
 
     tract, patch, object_rows, dataset_dir, dataset_labels = args
 
+    # print("object_rows")
+    # print(object_rows)
+
     dataset = FITS_Image_Morphometry_Photometry_Dataset(
             dataset_dir=dataset_dir,
             labels_init_file=dataset_labels,
@@ -457,6 +474,9 @@ def worker_patch(args):
     band_images = np.zeros((len(BANDS), STAMP_H, STAMP_W), dtype=np.float32)
 
     for row in object_rows:
+
+        # print("row\n\n")
+        # print(row)
         ra_deg = float(row["coord_ra"])
         dec_deg = float(row["coord_dec"])
 
@@ -493,8 +513,8 @@ def worker_patch(args):
 
             bbox = cutout.getBBox()
             # hdr = fits_header_from_lsst_cutout_wcs(cutout.getWcs(), bbox)
-            hdr = make_cutout_header3(cutout)
-            print(f"hdr: {hdr}")
+            hdr = make_cutout_header3(cutout, ra_deg, dec_deg)
+            # print(f"hdr: {hdr}")
 
 
             # print("cutout bbox:", cutout.getBBox())  # should show a small region
@@ -516,14 +536,14 @@ def worker_patch(args):
         
         
 
-        print(f"band_images shape: {band_images.shape}")
+        # print(f"band_images shape: {band_images.shape}")
 
         hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
-        hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
+        hdu_img.header['label'] = int(row['label'])
         hdu_img.header['ra'] = float(target_ra)
         hdu_img.header['dec'] = float(target_dec)
         hdu_img.header['objectId'] = int(row['objectId'])
-        hdu_img.header['rvz_redshift'] = -999
+        hdu_img.header['redshift'] = -999
         # hdu_img.header['min_ra'] = min_ra
         # hdu_img.header['max_ra'] = max_ra
         # hdu_img.header['min_dec'] = min_dec
@@ -531,13 +551,13 @@ def worker_patch(args):
 
         for k, v in hdr.items():
             hdu_img.header[k] = v
-            print(f"wcs header: {k}: {v}")
+            # print(f"wcs header: {k}: {v}")
 
         if (dataset.contains(row['objectId'])):
-            print(f"dataset contains {row['objectId']}")
+            # print(f"dataset contains {row['objectId']}")
             dataset.update(row['objectId'], hdu_img)
         else:
-            print(f"dataset DOES NOT contain {row['objectId']}")
+            # print(f"dataset DOES NOT contain {row['objectId']}")
             dataset.append(hdu_img)
 
     return len(object_rows)
@@ -597,91 +617,10 @@ def wcs_bounds_radec(skywcs, width: int, height: int):
 
 from astropy.io import fits
 
-def fits_header_from_lsst_cutout_wcs(wcs_cutout, bbox):
-    """
-    Convert an LSST SkyWcs for a cutout into a FITS header whose pixel
-    coordinates are LOCAL to the cutout array (0..W-1, 0..H-1).
-
-    bbox is the LSST Box2I for the cutout in PARENT pixel coordinates.
-    """
-    md = wcs_cutout.getFitsMetadata()     # lsst.daf.base.PropertyList-like
-    hdr = fits.Header()
-
-    # Copy LSST WCS metadata into FITS header
-    for k, v in md.toDict().items():
-        hdr[k] = v
-
-    # Shift CRPIX so that the WCS is referenced to the cutout array origin.
-    # FITS WCS math is 1-based, but this shift is still exactly "-minPixel".
-    x0 = bbox.getMinX()
-    y0 = bbox.getMinY()
-    print(f"x0={x0}, y0={y0}")
-
-    if "CRPIX1" in hdr:
-        hdr["CRPIX1"] = hdr["CRPIX1"] - x0
-    if "CRPIX2" in hdr:
-        hdr["CRPIX2"] = hdr["CRPIX2"] - y0
-
-    # Force this to be a 2D celestial WCS even if the data is a 3D cube
-    hdr["WCSAXES"] = 2
-
-    return hdr
-
-from astropy.io import fits
-
-def make_cutout_header(cutout):
-    wcs = cutout.getWcs()
-    bbox = cutout.getBBox()
-
-    # LSST -> dict -> FITS header
-    hdr = fits.Header(wcs.getFitsMetadata().toDict())
-
-    # Shift reference pixel into cutout-local coordinates
-    x0 = bbox.getMinX()
-    y0 = bbox.getMinY()
-    print(f"x0={x0}, y0={y0}")
-
-    if "CRPIX1" in hdr: 
-        print(f"before hdr[CRPIX1] = {hdr['CRPIX1']}")
-        hdr["CRPIX1"] = hdr["CRPIX1"] - x0
-        print(f"hdr[CRPIX1] = {hdr['CRPIX1']}")
-    if "CRPIX2" in hdr: 
-        hdr["CRPIX2"] = hdr["CRPIX2"] - y0
-
-    # Ensure WCS is treated as 2D even if the data is 3D (bands,y,x)
-    hdr["WCSAXES"] = 2
-
-    return hdr
-
-from astropy.io import fits
-
-def make_cutout_header2(cutout):
-    wcs = cutout.getWcs()
-    md = wcs.getFitsMetadata()
-    hdr = fits.Header(md.toDict())
-
-    # This is the cutout's origin offset in parent coords
-    xy0 = cutout.getXY0()          # lsst.geom.Point2I
-    x0, y0 = xy0.getX(), xy0.getY()
-    print(f"x0={x0}, y0={y0}")
-
-    # Rebase CRPIX into cutout-local pixel coords
-    if "CRPIX1" in hdr: 
-        print(f".before hdr[CRPIX1] = {hdr['CRPIX1']}")
-        hdr["CRPIX1"] -= x0
-        print(f"hdr[CRPIX1] = {hdr['CRPIX1']}")
-
-    if "CRPIX2" in hdr: 
-        hdr["CRPIX2"] -= y0
-
-    hdr["WCSAXES"] = 2
-    return hdr
-
-
 import lsst.geom as geom
 from astropy.io import fits
 
-def make_cutout_header3(cutout):
+def make_cutout_header3(cutout, ra, dec):
     wcs = cutout.getWcs()
 
     # Start from LSST's FITS WCS keywords
@@ -701,13 +640,19 @@ def make_cutout_header3(cutout):
     # FITS uses 1-based pixel coordinates for CRPIX
     hdr["CRPIX1"] = x_ref + 1.0
     hdr["CRPIX2"] = y_ref + 1.0
-    hdr["CRVAL1"] = ra_ref
-    hdr["CRVAL2"] = dec_ref
+    hdr["CRVAL1"] = ra
+    hdr["CRVAL2"] = dec
 
     ra_min, ra_max, dec_min, dec_max = wcs_bounds_radec(wcs, width, height)
+
+    ra_min = ra + hdr['CD1_1'] * width / 2
+    ra_max = ra - hdr['CD1_1'] * width / 2
+    dec_min = dec - hdr['CD2_2'] * height / 2
+    dec_max = dec + hdr['CD2_2'] * height / 2
+
     hdr["min_ra"] = ra_min
     hdr["max_ra"] = ra_max
-    hdr["dec_min"] = dec_min
-    hdr["dec_max"] = dec_max
+    hdr["min_dec"] = dec_min
+    hdr["max_dec"] = dec_max
 
     return hdr

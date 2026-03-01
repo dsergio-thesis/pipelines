@@ -18,7 +18,7 @@ FMT = "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
 
 def setup_logging():
     root = logging.getLogger()
-    root.setLevel(logging.DEBUG)   # let handlers filter
+    root.setLevel(LOG_LEVEL)   # let handlers filter
     root.handlers.clear()
 
     formatter = logging.Formatter(FMT)
