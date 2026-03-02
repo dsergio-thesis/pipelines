@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 def main():
 
     config = AstroosConfig.from_cli()
-    coord, radius = config.get_target("CDF_South")
+    coord, radius = config.get_target("COSMOS")
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name
     pipeline_name = config.pipeline_name

@@ -24,6 +24,7 @@ fi
 
 # put tarball somewhere that won't pollute git and is easy to clean
 OUT_DIR="${TMPDIR:-/tmp}/pipelines_exports"
+#OUT_DIR=/home/dsergio/pipelines/pipelines_exports
 mkdir -p "$OUT_DIR"
 
 TS="$(date +%Y%m%d-%H%M%S)"
@@ -50,5 +51,4 @@ rclone copyto "$TARBALL" "$DEST" \
   --low-level-retries 20
 
 # remove local tarball after success
-rm -f "$TARBALL"
-echo "Done."
+rm -f "$TARBALL" echo "Done."
