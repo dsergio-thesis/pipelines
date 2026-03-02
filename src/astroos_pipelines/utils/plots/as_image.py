@@ -18,6 +18,7 @@ def plot_random_samples_as_image(
         cmap='gist_ncar',
         plot_title="",
         plot_show=False,
+        predictions=None,
         ):
     """
     Plot random samples from a dataset with their labels and features.
@@ -131,10 +132,10 @@ def plot_random_samples_as_image(
                 wcs = random_metadata[i-1].get("wcs", None)
                 print("wcs type:", type(wcs))
                 if wcs is not None:
-                    print("pixel_n_dim:", getattr(wcs, "pixel_n_dim", None))
-                    print("world_n_dim:", getattr(wcs, "world_n_dim", None))
-                    if hasattr(wcs, "wcs"):
-                        print("CTYPE:", wcs.wcs.ctype)
+                    # print("pixel_n_dim:", getattr(wcs, "pixel_n_dim", None))
+                    # print("world_n_dim:", getattr(wcs, "world_n_dim", None))
+                    # if hasattr(wcs, "wcs"):
+                        # print("CTYPE:", wcs.wcs.ctype)
                     # pix = wcs.world_to_pixel_values(random_samples_info.iloc[i-1]['ra'], random_samples_info.iloc[i-1]['dec'])
                     # w2 = wcs.celestial  # drops non-celestial axis/axes
                     # w2 = wcs.sub(['longitude', 'latitude'])
@@ -173,9 +174,10 @@ def plot_random_samples_as_image(
                     x, y = wcs.world_to_pixel_values(ra, dec)
                     print(f"Calculated pixel coordinates: ({x}, {y}) for RA: {ra}, Dec: {dec} with bounds ({ra_min}, {ra_max}, {dec_min}, {dec_max}) and cutout shape {cutout.shape}")
 
-                    ax.plot(x, y, marker='x', color='red', markersize=10) #, label='Object Position')
+                    ax.plot(ra, dec, marker='o', color='red', markersize=20, label='Pos', fillstyle='none', markeredgewidth=1) 
+
                     print(f"Plotted object position at pixel coordinates: ({x}, {y})")
-                    # ax.legend(loc='upper right', fontsize=8)
+                    # ax.legend(loc='upper right', fontsize=6)
 
                 ax.set_title(f"band: {bands[j]}", fontsize=14)
                 ax.set_xlabel("RA °", fontdict={'fontsize': 18}, labelpad=14)

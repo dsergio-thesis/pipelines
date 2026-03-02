@@ -128,9 +128,9 @@ class DataLoaderFITS(DataLoader):
         Expects each item in batch to be a tuple of (image, label, morph_features, phot_features, header).
         """
         images, labels, morph_features, phot_features, headers = zip(*batch)
-        images = torch.stack(images)
+        images = torch.stack(images) if images and images[0] is not None else None
         labels = torch.stack(labels)
-        morph_features = torch.stack(morph_features)
+        morph_features = torch.stack(morph_features) if morph_features and morph_features[0] is not None else None 
         phot_features = torch.stack(phot_features)
         headers = list(headers)
         return images, labels, morph_features, phot_features, headers 
@@ -273,12 +273,12 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
                     image = image.byteswap().newbyteorder()
 
                 wcs = WCS(img_hdu.header)
-                print("__getitem__ wcs type:", type(wcs))
-                if wcs is not None:
-                    print("pixel_n_dim:", getattr(wcs, "pixel_n_dim", None))
-                    print("world_n_dim:", getattr(wcs, "world_n_dim", None))
-                    if hasattr(wcs, "wcs"):
-                        print("CTYPE:", wcs.wcs.ctype)
+                # print("__getitem__ wcs type:", type(wcs))
+                # if wcs is not None:
+                    # print("pixel_n_dim:", getattr(wcs, "pixel_n_dim", None))
+                    # print("world_n_dim:", getattr(wcs, "world_n_dim", None))
+                    # if hasattr(wcs, "wcs"):
+                        # print("CTYPE:", wcs.wcs.ctype)
                 header_dict["wcs"] = wcs
             
             # Image Morphometry Transform

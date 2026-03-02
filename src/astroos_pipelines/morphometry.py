@@ -101,7 +101,7 @@ def simple_segmentation(
         # fallback: use Otsu threshold
         t = filters.threshold_otsu(image)
         bw = image > t
-        bw = morphology.remove_small_objects(bw, min_size=min_area)
+        bw = morphology.remove_small_objects(bw, max_size=min_area)
         lbl = label(bw)
         if lbl.max() == 0:
             return np.zeros_like(image, dtype=bool)
