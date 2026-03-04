@@ -249,6 +249,10 @@ class DataPipelineStage(ABC):
             if field not in self.prev_stage.manifest or self.prev_stage.manifest[field] is None:
                 print(f"Previous stage {self.prev_stage.stage_name} manifest is missing required field: {field}")
                 return False
+            else:
+                # print manifest to json file for provenance graph construction
+                with open(f"{self.prev_stage.stage_dir}/manifest.json", "w") as f:
+                    json.dump(self.prev_stage.manifest, f, indent=4)
         return True
 
     @abstractmethod
