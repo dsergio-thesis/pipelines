@@ -97,6 +97,25 @@ class AstroosConfig:
         )
 
     @classmethod
+    def random_data(cls) -> "PipelineConfig":
+        def env(key: str, default: Optional[str] = None) -> str:
+            v = os.getenv(key, default)
+            if v is None:
+                raise RuntimeError(f"Missing required env var: {key}")
+            return v
+        return cls(
+            dataset_dir=cls.clean_path(env("PIPELINE_DATASET_DIR")).expanduser(),
+            dataset_name="random_data",
+            pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
+            pipeline_name="p_random_data",
+            pipeline_minor_version=int(env("PIPELINE_MINOR_VERSION")),
+            label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
+            frame=os.getenv("PIPELINE_FRAME", "icrs"),
+            obstime=os.getenv("PIPELINE_OBSTIME"),
+            equinox=os.getenv("PIPELINE_EQUINOX"),
+        )
+
+    @classmethod
     def build_arg_parser(cls) -> argparse.ArgumentParser:
         p = argparse.ArgumentParser(
             description="Run the astronomy pipeline",

@@ -1,0 +1,17 @@
+{
+    "node_id": "astroos_pipelines.pipelines.StageTransformRandom",
+    "run_id": "p_random_data_v2.2",
+    "code": {
+        "repo": "thesis-org/pipelines",
+        "commit": null
+    },
+    "environment": {
+        "python_version": "3.11.13 (main, Jun  5 2025, 08:14:07) [Clang 14.0.6 ]"
+    },
+    "inputs": [],
+    "outputs": [],
+    "parameters": {},
+    "lineage": {
+        "parents": []
+    }
+}

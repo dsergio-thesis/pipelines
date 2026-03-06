@@ -1,4 +1,6 @@
 
+import numpy as np
+from astropy.table import Table
 from astropy.table import Table, vstack
 from abc import ABC, abstractmethod
 import sys
@@ -7,6 +9,7 @@ import os
 import importlib
 
 import json
+
 
 from astroos_pipelines.utils.formatting import ascii_kv_table
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
@@ -38,7 +41,9 @@ class Pipeline(ABC):
         self.stages_added = False
         self.metadata = metadata
         self.output = None
-        log.debug(f"[PIPELINE] '{self.pipeline_name}' initialized at directory: {self.pipeline_dir}")
+        log.debug(f"[PIPELINE] '{self.pipeline_name}'"
+            f" initialized at directory: {self.pipeline_dir}")
+
 
     def _construct_name(self, 
                         name: str, 
@@ -113,12 +118,19 @@ class Pipeline(ABC):
 
         print(f"---------------- Running Pipeline ---------------- \n")
         log.info(f"running pipeline at directory: {self.pipeline_dir}...")
+
         for stage in self.stages:
             log.info(f"{stage.stage_index} Running stage: {stage.stage_name}")
             if not stage._validate_prev_stage_manifest():
-                raise RuntimeError(f"Validation failed for {self.pipeline_name} stage {stage.stage_name}. (_validate_prev_stage_manifest returned False)")
+                raise RuntimeError(
+                        f"Validation failed for {self.pipeline_name}\n"
+                        f" stage {stage.stage_name}\n"
+                        f" (_validate_prev_stage_manifest returned False)")
             if not stage._validate_prev_stage():
-                raise RuntimeError(f"Validation failed for {self.pipeline_name} stage {stage.stage_name}. (_validate_prev_stage returned False)")
+                raise RuntimeError(
+                        f"Validation failed for {self.pipeline_name}\n"
+                        f" stage {stage.stage_name}\n"
+                        f" (_validate_prev_stage returned False)")
             stage.run()
 
             if stage.stage_dir is not None:
@@ -126,8 +138,8 @@ class Pipeline(ABC):
                     json.dump(stage.manifest, f, indent=4)
             
             log.info(f"Completed stage: {stage.stage_name}")
-        print("Pipeline completed.")
 
+        print("Pipeline completed.")
         self.output = self.stages[-1].output
     
     def clear_pipeline(self):
@@ -181,27 +193,7 @@ class PipelineClassification(Pipeline):
         return info
 
 
-class PipelineDummy(Pipeline):
-    """
-    Dummy data pipeline for testing.
-    """
-
-    def __init__(self, name, max_records=1, metadata={}, minor_version=None):
-        super().__init__(name=name, metadata=metadata, max_records=max_records, minor_version=minor_version)
-        log.info(f"Initialized dummy pipeline with name: {self.pipeline_name}")
-
-    def _validate_prev_stage(self):
-        return True
-    
-    def run(self):
-        log.info("Running Dummy Pipeline...")
-        log.info("Dummy Pipeline completed.")
-
-    def prepare_pipeline(self):
-        pass
-
-
-class DataPipelineStage(ABC):
+class StagePipeline(ABC):
     """
     Abstract base class for data pipeline stages.
     """
@@ -269,6 +261,17 @@ class DataPipelineStage(ABC):
             f" - output={self.output}\n"
         return s
 
+    def to_dict(self):
+        return {
+            "stage_name": self.stage_name,
+            "requires_stage_dir": self.requires_stage_dir,
+            "stage_dir": self.stage_dir,
+            "pipeline": self.pipeline.pipeline_name if self.pipeline else None,
+            "prev_stage": self.prev_stage.stage_name if self.prev_stage else None,
+            "prev_stage_dir": self.prev_stage_dir,
+            # "output": str(self.output),
+        }
+
     def cache_pipeline_output(self):
         table = self.output
         # first check cache
@@ -289,7 +292,56 @@ class DataPipelineStage(ABC):
         table.write(f"{self.stage_dir}/output.csv", format="csv", overwrite=True)
         log.info(f"Saved query result to {self.stage_dir}/output.csv")
 
-class StageInfo(DataPipelineStage):
+
+class StageCatalogRandom(StagePipeline):
+    """
+    Generate random data for testing the pipeline.
+    """
+
+    def __init__(self):
+        super().__init__(stage_name="random_data", requires_stage_dir=True)
+
+    def _validate_prev_stage(self):
+        return True
+
+    def run(self):
+
+        np.random.seed(42)
+        n = 100
+        self.output = Table({
+            "objectId": np.arange(n),
+            "feature1": np.random.rand(n),
+            "feature2": np.random.rand(n),
+            "label": np.random.randint(0, 2, n),
+        })
+        print(f"Generated random data with {len(self.output)} rows.")
+
+
+class StageTransformRandom(StagePipeline):
+    """
+    Generate random data for testing the pipeline.
+    """
+
+    def __init__(self):
+        super().__init__(stage_name="random_data", requires_stage_dir=True)
+
+    def _validate_prev_stage(self):
+        return True
+
+    def run(self):
+
+        np.random.seed(42)
+        n = 100
+        self.output = Table({
+            "objectId": np.arange(n),
+            "feature1": np.random.rand(n),
+            "feature2": np.random.rand(n),
+            "label": np.random.randint(0, 2, n),
+        })
+        print(f"Transformed random data with {len(self.output)} rows.")
+
+
+class StageInfo(StagePipeline):
     """
     Data pipeline stage for reporting info.
     """
