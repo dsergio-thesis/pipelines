@@ -20,6 +20,10 @@ importlib.reload(sys.modules['astroos_pipelines.utils.rsp'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
 from astropy.io import fits
 # do wcs next
 
@@ -184,17 +188,43 @@ class StageLSSTExploratoryDataAnalysis(StagePipeline):
         # print(table.info)
 
         # plot distributions of key features
-        import matplotlib.pyplot as plt
-        import seaborn as sns
-        df = table.to_pandas()
-        plt.figure(figsize=(10, 6))
-        sns.histplot(df['coord_ra'], bins=50, kde=True)
-        plt.title("Distribution of coord_ra")
-        plt.xlabel("coord_ra")
-        plt.ylabel("Count")
-        plt.savefig(f"{self.stage_dir}/coord_ra_distribution.png")
-        plt.close()
+        
+        fig = plt.figure(figsize=(16, 1), constrained_layout=True)
+        fig.suptitle(plot_title, fontsize=24)
 
+        gs = gridspec.GridSpec(
+            1, 
+            2, 
+            figure=fig,
+            width_ratios=[1.0] * num_cols,
+            height_ratios=([1.0]) * num_rows,
+        )
+    
+        df = table.to_pandas()
+
+        # plt.figure(figsize=(10, 6))
+        # sns.histplot(df['coord_ra'], bins=50, kde=True)
+        # plt.title("Distribution of coord_ra")
+        # plt.xlabel("coord_ra")
+        # plt.ylabel("Count")
+        # plt.savefig(f"{self.stage_dir}/coord_ra_distribution.png")
+        # plt.close()
+
+        # add to subplot
+        ax = fig.add_subplot(gs[0, 0])
+        sns.histplot(df['coord_dec'], bins=50, kde=True, ax=ax)
+        ax.set_title("Distribution of coord_dec")
+        ax.set_xlabel("coord_dec")
+        ax.set_ylabel("Count")
+
+        ax = fig.add_subplot(gs[0, 1])
+        sns.histplot(df['coord_ra'], bins=50, kde=True, ax=ax)
+        ax.set_title("Distribution of coord_ra")
+        ax.set_xlabel("coord_ra")
+        ax.set_ylabel("Count")
+
+        plt.savefig(f"{self.stage_dir}/coord_ra_dec_distribution.png")
+        plt.close()
 
 
 # ============================================================
