@@ -107,12 +107,20 @@ class AstroosQueryLSST(AstroosQuery):
         """
         log.info(f"Async Querying LSST ADQL with query:\n{query}")
 
-        job = self.tap_service.async_submit(query)
-        self.tap_service.async_wait(job)
-        res = self.tap_service.async_result(job)
-        log.debug(f"Async LSST Query Result:")
-        log.debug(res)
-        table = Table(res.to_table())
+        # job = self.tap_service.async_submit(query)
+        # self.tap_service.async_wait(job)
+        # res = self.tap_service.async_result(job)
+        # log.debug(f"Async LSST Query Result:")
+        # log.debug(res)
+        job = self.tap_service.submit_job(query)
+        job.run()
+        job.wait(phases=['COMPLETED', 'ERROR'])
+        print('Job phase is', job.phase)
+        if job.phase == 'ERROR':
+            job.raise_if_error()
+            table = Table(res.to_table())
+        assert job.phase == 'COMPLETED'
+        table = job.fetch_result().to_table()
 
         return table
 

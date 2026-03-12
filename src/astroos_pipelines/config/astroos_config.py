@@ -41,7 +41,7 @@ class AstroosConfig:
         "virgo_cluster": CoordSpec("12 30 49.423 +12 23 28.04", "hmsdms", 30.0),
         "obj_3c273":     CoordSpec("12 29 06.699 +02 03 08.60", "hmsdms", 2.0),
         "someother":     CoordSpec("14 35 42.8685615528 +40 18 02.133470196", "hmsdms", 3.0),
-        "CDF_South":     CoordSpec("53.161 -27.791", "deg", 10.0),
+        "CDF_South":     CoordSpec("53.161 -27.791", "deg", -1.0),
         "COSMOS":        CoordSpec("150.1 2.2", "deg", 30),
     })
 
