@@ -180,9 +180,22 @@ class StageLSSTExploratoryDataAnalysis(StagePipeline):
         # read the table from the previous stage 
         table = self.prev_stage.output
 
-        print("Column names and types:")
-        for name in table.colnames:
-            print(f"{name}: {table[name].dtype}")
+        print("Basic statistics of the catalog:")
+        print(table.info)
+        print(table.describe())
+
+        # plot distributions of key features
+        import matplotlib.pyplot as plt
+        import seaborn as sns
+        df = table.to_pandas()
+        plt.figure(figsize=(10, 6))
+        sns.histplot(df['r_psfFlux'], bins=50, kde=True)
+        plt.title("Distribution of r-band PSF Flux")
+        plt.xlabel("r_psfFlux")
+        plt.ylabel("Count")
+        plt.savefig(self.stage_dir / "r_psfFlux_distribution.png")
+        plt.close()
+
 
 
 # ============================================================
