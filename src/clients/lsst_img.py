@@ -3,7 +3,7 @@ import sys
 import os
 import importlib
 
-from astroos_pipelines.pipelines import PipelineClassification, PipelineDummy
+from astroos_pipelines.pipelines import PipelineClassification
 from astroos_pipelines.lsst.pipelines import StageCatalogLSST,  StageFetchLSSTSoda, \
         StageMatchLSSTtoHST, StagePreprocessLSST, StageButlerFetchLSST 
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
@@ -61,9 +61,6 @@ def main():
             )
 
     pipelines = [
-            PipelineDummy(
-                name="dummy_pipeline",
-                ),
             PipelineClassification(
                 name=pipeline_name,
                 metadata=pipeline_metadata,
@@ -88,21 +85,20 @@ def main():
             ]
 
             
-    pipelines[0].add_stages([])
 
-    pipelines[1].add_stages([ # Soda
+    pipelines[0].add_stages([ # Soda
         StageCatalogLSST(),
         StageMatchLSSTtoHST(),
         StagePreprocessLSST(),
         StageFetchLSSTSoda(),
         ])
 
-    pipelines[2].add_stages([ # Phot
+    pipelines[1].add_stages([ # Phot
         StageCatalogLSST(),
         StageMatchLSSTtoHST(),
         StagePreprocessLSST(),
         ])
-    pipelines[3].add_stages([ # Butler
+    pipelines[2].add_stages([ # Butler
         StageCatalogLSST(),
         StageMatchLSSTtoHST(),
         StagePreprocessLSST(),
@@ -111,7 +107,7 @@ def main():
 
 
     # pipelines[1].run_pipeline()
-    pipelines[3].run_pipeline()
+    pipelines[2].run_pipeline()
 
     # for p in pipelines:
     #     p.run_pipeline()

@@ -11,7 +11,7 @@ import pandas as pd
 import importlib
 
 from astroos_pipelines.lsst.query import AstroosQueryLSST
-from astroos_pipelines.pipelines import DataPipelineStage
+from astroos_pipelines.pipelines import StagePipeline 
 from astroos_pipelines.utils.rsp import get_cutout_bands
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 
@@ -49,7 +49,7 @@ setup_logging()
 log = logging.getLogger(__name__)
 
 
-class StageCatalogLSST(DataPipelineStage):
+class StageCatalogLSST(StagePipeline):
     """
     Data pipeline stage for cataloging LSST data via TAP.
     """
@@ -157,7 +157,7 @@ class StageCatalogLSST(DataPipelineStage):
 # ============================================================
 # StageMatchLSSTtoHST 
 # ============================================================
-class StageMatchLSSTtoHST(DataPipelineStage): 
+class StageMatchLSSTtoHST(StagePipeline): 
     """
     Data pipeline stage for cross-matching LSST catalog with HST labels.
     """
@@ -190,7 +190,7 @@ class StageMatchLSSTtoHST(DataPipelineStage):
 # ============================================================
 # StagePreprocessLSST
 # ============================================================
-class StagePreprocessLSST(DataPipelineStage):
+class StagePreprocessLSST(StagePipeline):
     """
     Data pipeline stage for preprocessing LSST catalog features.
     Main purpose is to transform the raw fluxes and errors into a more ML-friendly format, and to store them in the dataset for later use.
@@ -287,7 +287,7 @@ class StagePreprocessLSST(DataPipelineStage):
 # ============================================================
 # StageFetchLSSTSoda
 # ============================================================
-class StageFetchLSSTSoda(DataPipelineStage):
+class StageFetchLSSTSoda(StagePipeline):
     """
     Data pipeline stage for fetching LSST data via SIA and SODA.
     """
@@ -400,7 +400,7 @@ class StageFetchLSSTSoda(DataPipelineStage):
 
 
 
-class StageButlerFetchLSST(DataPipelineStage):
+class StageButlerFetchLSST(StagePipeline):
     """
     Data pipeline stage for fetching LSST data via the Butler.
     """
