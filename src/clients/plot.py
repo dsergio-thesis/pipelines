@@ -44,7 +44,7 @@ def main():
     random_seed = 1
     random_seed = None
     cmap = 'gist_ncar'
-    # cmap = cmc.batlow
+    cmap = cmc.batlow
 
     dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
         dataset_dir=os.path.join(dataset_dir, dataset_name),
