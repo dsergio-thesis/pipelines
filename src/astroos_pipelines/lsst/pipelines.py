@@ -157,7 +157,7 @@ class StageCatalogLSST(StagePipeline):
 # ============================================================
 # StageLSSTExploratoryDataAnalysis
 # ============================================================
-class StageLSSTExploratoryDataAnalysis(DataPipelineStage):
+class StageLSSTExploratoryDataAnalysis(StagePipeline):
     """
     Data pipeline stage for exploratory data analysis of LSST catalog.
     """

@@ -3,9 +3,9 @@ import sys
 import os
 import importlib
 
-from astroos_pipelines.pipelines import PipelineClassification, PipelineDummy
+from astroos_pipelines.pipelines import PipelineClassification
 from astroos_pipelines.lsst.pipelines import StageCatalogLSST,  StageFetchLSSTSoda, \
-        StageMatchLSSTtoHST, StagePreprocessLSST, StageButlerFetchLSST \
+        StageMatchLSSTtoHST, StagePreprocessLSST, StageButlerFetchLSST, \
         StageLSSTExploratoryDataAnalysis
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.config.astroos_config import AstroosConfig
