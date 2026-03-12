@@ -17,12 +17,14 @@ from astroos_pipelines.transforms import AddGaussianNoise, \
     PolarTransform, \
     CropZeros, \
     CropAroundCentroid
+from astroos_pipelines.config.astroos_config import AstroosConfig
 
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.transforms'])
 importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
 importlib.reload(sys.modules['astroos_pipelines.utils.plots.as_image'])
 importlib.reload(sys.modules['astroos_pipelines.utils.plots.as_html'])
+importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
 
 rsp_mode = False
 try:
@@ -47,6 +49,16 @@ except ImportError as e:
 
 def main():
 
+    config = AstroosConfig.from_cli()
+    coord, radius = config.get_target("CDF_South")
+    dataset_dir = config.dataset_dir
+    dataset_name = config.dataset_name
+    pipeline_name = config.pipeline_name
+    pipeline_minor_version = config.pipeline_minor_version
+    max_records = config.max_records
+    label_def_file = config.label_def_file
+
+    print(f"coord: {coord}, radius: {radius}")
 
     query_coords = self.pipeline.metadata.get('query_coords')
     query_radius = self.pipeline.metadata.get('query_radius')
