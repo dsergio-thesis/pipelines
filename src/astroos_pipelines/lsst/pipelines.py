@@ -155,6 +155,37 @@ class StageCatalogLSST(DataPipelineStage):
 
 
 # ============================================================
+# StageLSSTExploratoryDataAnalysis
+# ============================================================
+class StageLSSTExploratoryDataAnalysis(DataPipelineStage):
+    """
+    Data pipeline stage for exploratory data analysis of LSST catalog.
+    """
+    def __init__(self):
+        super().__init__(stage_name="eda", requires_stage_dir=True)
+
+    def _validate_prev_stage(self):
+        if not rsp_mode:
+            log.error("RSP mode is not available. Cannot run StageLSSTExploratoryDataAnalysis.")
+            return False
+
+        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
+        if not all(col in self.prev_stage.output.columns for col in required_columns):
+            log.error(f"Previous stage output is missing required columns: {required_columns}")
+            return False
+        return True
+
+    def run(self):
+
+        # read the table from the previous stage 
+        table = self.prev_stage.output
+
+        print("Column names and types:")
+        for name in table.colnames:
+            print(f"{name}: {table[name].dtype}")
+
+
+# ============================================================
 # StageMatchLSSTtoHST 
 # ============================================================
 class StageMatchLSSTtoHST(DataPipelineStage): 
