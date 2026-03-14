@@ -15,9 +15,11 @@ from astroos_pipelines.lsst.query import AstroosQueryLSST
 from astroos_pipelines.pipelines import StagePipeline 
 from astroos_pipelines.utils.rsp import get_cutout_bands
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
+from astroos_pipelines.utils.dataset_eda import dataset_eda
 
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 importlib.reload(sys.modules['astroos_pipelines.utils.rsp'])
+importlib.reload(sys.modules['astroos_pipelines.utils.dataset_eda'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 
@@ -233,50 +235,57 @@ class StageLSSTExploratoryDataAnalysis(StagePipeline):
         # read the table from the previous stage 
         table = self.prev_stage.output
 
+
+        include_columns = ['coord_ra', 'coord_dec']
+
+        dataset_eda(table=table,
+                    columns=include_columns,
+                    save_dir=self.stage_dir)
+
         # print("Basic statistics of the catalog:")
         # print(table.info)
 
         # plot distributions of key features
 
-        num_rows = 1
-        num_cols = 2
+        # num_rows = 1
+        # num_cols = 2
         
-        fig = plt.figure(constrained_layout=True)
-        fig.suptitle("DP1 EDA", fontsize=24)
+        # fig = plt.figure(constrained_layout=True)
+        # fig.suptitle("DP1 EDA", fontsize=24)
 
-        gs = gridspec.GridSpec(
-            1, 
-            2, 
-            figure=fig,
-            width_ratios=[1.0] * num_cols,
-            height_ratios=([1.0]) * num_rows,
-        )
+        # gs = gridspec.GridSpec(
+            # 1, 
+            # 2, 
+            # figure=fig,
+            # width_ratios=[1.0] * num_cols,
+            # height_ratios=([1.0]) * num_rows,
+        # )
     
-        df = table.to_pandas()
+        # df = table.to_pandas()
 
-        # plt.figure(figsize=(10, 6))
-        # sns.histplot(df['coord_ra'], bins=50, kde=True)
-        # plt.title("Distribution of coord_ra")
-        # plt.xlabel("coord_ra")
-        # plt.ylabel("Count")
-        # plt.savefig(f"{self.stage_dir}/coord_ra_distribution.png")
+        # # plt.figure(figsize=(10, 6))
+        # # sns.histplot(df['coord_ra'], bins=50, kde=True)
+        # # plt.title("Distribution of coord_ra")
+        # # plt.xlabel("coord_ra")
+        # # plt.ylabel("Count")
+        # # plt.savefig(f"{self.stage_dir}/coord_ra_distribution.png")
+        # # plt.close()
+
+        # # add to subplot
+        # ax = fig.add_subplot(gs[0, 0])
+        # sns.histplot(df['coord_dec'], bins=50, kde=True, ax=ax)
+        # ax.set_title("Distribution of coord_dec")
+        # ax.set_xlabel("coord_dec")
+        # ax.set_ylabel("Count")
+
+        # ax = fig.add_subplot(gs[0, 1])
+        # sns.histplot(df['coord_ra'], bins=50, kde=True, ax=ax)
+        # ax.set_title("Distribution of coord_ra")
+        # ax.set_xlabel("coord_ra")
+        # ax.set_ylabel("Count")
+
+        # plt.savefig(f"{self.stage_dir}/coord_ra_dec_distribution.png")
         # plt.close()
-
-        # add to subplot
-        ax = fig.add_subplot(gs[0, 0])
-        sns.histplot(df['coord_dec'], bins=50, kde=True, ax=ax)
-        ax.set_title("Distribution of coord_dec")
-        ax.set_xlabel("coord_dec")
-        ax.set_ylabel("Count")
-
-        ax = fig.add_subplot(gs[0, 1])
-        sns.histplot(df['coord_ra'], bins=50, kde=True, ax=ax)
-        ax.set_title("Distribution of coord_ra")
-        ax.set_xlabel("coord_ra")
-        ax.set_ylabel("Count")
-
-        plt.savefig(f"{self.stage_dir}/coord_ra_dec_distribution.png")
-        plt.close()
 
 
 # ============================================================
@@ -525,6 +534,9 @@ class StageFetchLSSTSoda(StagePipeline):
 
 
 
+# ============================================================
+# StageButlerFetchLSST
+# ============================================================
 class StageButlerFetchLSST(StagePipeline):
     """
     Data pipeline stage for fetching LSST data via the Butler.
