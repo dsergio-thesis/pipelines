@@ -59,6 +59,13 @@ class StageHSTCatalogQuery(StagePipeline):
 
         table = Table.read(file, hdu=1)
 
+        # only first max_records rows for eda
+        max_records = self.pipeline.max_records 
+
+        if len(table) > max_records:
+            log.warning(f"Table has {len(table)} records, but only using first {max_records} for EDA.")
+            table = table[:max_records]
+
         self.output = table
 
 
