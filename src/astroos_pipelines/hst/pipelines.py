@@ -50,7 +50,8 @@ class StageHSTCatalogQuery(StagePipeline):
         fits_file = ""
 
         # load arbitrary fits for eda using astropy
-        file = "/Users/davidsergio/thesis-org/hst/hst.fits"
+        # file = "/Users/davidsergio/thesis-org/hst/hst.fits"
+        file = "catalogs/hst/hst.fits"
         # hdul = fits.open(file)
         # print(f"Number of HDUs in the FITS file: {len(hdul)}")
         # hdu = hdul[1]

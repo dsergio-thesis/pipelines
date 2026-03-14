@@ -15,11 +15,11 @@ from astroos_pipelines.lsst.query import AstroosQueryLSST
 from astroos_pipelines.pipelines import StagePipeline 
 from astroos_pipelines.utils.rsp import get_cutout_bands
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
-from astroos_pipelines.utils.dataset_eda import dataset_eda
+from astroos_pipelines.utils.plots.dataset_eda import dataset_eda
 
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 importlib.reload(sys.modules['astroos_pipelines.utils.rsp'])
-importlib.reload(sys.modules['astroos_pipelines.utils.dataset_eda'])
+importlib.reload(sys.modules['astroos_pipelines.utils.plots.dataset_eda'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 
@@ -236,7 +236,10 @@ class StageLSSTExploratoryDataAnalysis(StagePipeline):
         table = self.prev_stage.output
 
 
-        include_columns = ['coord_ra', 'coord_dec']
+        include_columns = {
+                'coord_ra': "Right Ascension", 
+                'coord_dec': "Declination",
+                }
 
         dataset_eda(table=table,
                     columns=include_columns,
