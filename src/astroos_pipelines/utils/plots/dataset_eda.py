@@ -43,7 +43,10 @@ def dataset_eda(table: astropy.table.Table,
     if (ra_col in df.columns and dec_col in df.columns): 
         plt.figure(figsize=(8, 6))
         sns.scatterplot(x=df[ra_col], y=df[dec_col], s=10, alpha=0.5)
-        plt.title(f"{title} Sky Distribution (RA vs Dec)")
+        # set limits to show the whole sky        
+        plt.xlim(0, 360)
+        plt.ylim(-90, 90)
+        plt.title(f"{title} Sky Dist. {len(df)} Objects")
         plt.xlabel(columns[ra_col])
         plt.ylabel(columns[dec_col])
         file_name = f"{save_dir}/sky_distribution.png"
