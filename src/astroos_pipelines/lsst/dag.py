@@ -422,7 +422,7 @@ class LSSTNodePreprocess(Node):
             hdu_phot.header['dec'] = float(target_dec)
             hdu_phot.header['objectId'] = int(row.objectId)
 
-            dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(self.parameters("dataset"))
+            dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(self.parameters.get("dataset"))
 
             if (dataset.contains(row.objectId)):
                 dataset.update(row.objectId, hdu_phot)
