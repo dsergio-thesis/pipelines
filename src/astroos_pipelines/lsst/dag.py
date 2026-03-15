@@ -215,7 +215,11 @@ class LSSTNodeCatalog(Node):
         table = client.query_async(query)
 
 
-        columns = table.colnames
+        columns = {}
+        for col in table.colnames:
+            columns[col] = col
+        columns.pop("objectId", None)
+
 
         self.output_fits_table(table, columns=columns)
 
@@ -264,7 +268,7 @@ class LSSTNodeEDA(Node):
                     save_dir=f"_pipelines/{self.node_id}",
                     title="LSST DP1")
 
-        self.output_fits_table(table, columns=columns
+        self.output_fits_table(table, columns=columns)
 
 
 class LSSTNodeMatchToHST(Node):
