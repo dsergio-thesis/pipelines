@@ -19,54 +19,39 @@ def main():
             N_photometric_features=4,
             )
 
-    catalog = LSSTNodeCatalog(
+    lsst_catalog = LSSTNodeCatalog(
             parameters={
                 "max_records": max_records,
                 "query_coords": pipeline_metadata.get("query_coords", None),
                 "query_radius": pipeline_metadata.get("query_radius", None),})
 
-    match = LSSTNodeMatchToHST(
+    lsst_hst_match = LSSTNodeMatchToHST(
             parameters={
                 "max_records": max_records,},
-            parents=[catalog.node_id],
+            parents=[lsst_catalog.node_id],
             )
 
-    preprocess = LSSTNodePreprocess(
+    lsst_hst_preprocess = LSSTNodePreprocess(
             parameters={
-                "dataset": dataset_cart_phot.to_dict()
-                },
-            parents=[match.node_id],
+                "max_records": max_records,},
+            parents=[lsst_hst_match.node_id],
+            )
+    lsst_hst_data = LSSTNodePhotoDataset(
+            parameters={
+                "dataset": dataset_cart_phot.to_dict()},
+            parents=[lsst_hst_preprocess.node_id],
             )
 
     dag = PipelineDAG()
 
-    dag.add_node(catalog)
-    dag.add_node(match)
-    dag.add_node(preprocess)
+    dag.add_node(lsst_catalog)
+    dag.add_node(lsst_hst_match)
+    dag.add_node(lsst_hst_preprocess)
+    dag.add_node(lsst_hst_data)
 
-    dag.run_from_node(catalog.node_id)
+    dag.run_from_node(lsst_catalog.node_id)
 
     dag.to_yaml("_pipelines/lsst_phot_pipeline.yaml")
-
-
-    # pipelines = [
-            # PipelineClassification(
-                # name=pipeline_name,
-                # metadata=pipeline_metadata,
-                # max_records=max_records,
-                # dataset=dataset_cart_phot,
-                # minor_version=None,
-                # ),
-            # ]
-
-    # pipelines[0].add_stages([
-        # StageCatalogLSST(),
-        # StageMatchLSSTtoHST(),
-        # StagePreprocessLSST(),
-        # ])
-
-    # pipelines[0].run_pipeline()
-
 
 if __name__ == "__main__":
     main()

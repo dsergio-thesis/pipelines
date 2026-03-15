@@ -273,7 +273,7 @@ class PipelineDAG(DAG):
         
         for p in node.parents:
             parent_node = self.nodes[p]
-            print(f"parent_node.outputs: {parent_node.outputs}")
+            # print(f"parent_node.outputs: {parent_node.outputs}")
             node.inputs.extend(parent_node.outputs)
 
         node.run()

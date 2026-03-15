@@ -417,7 +417,7 @@ class LSSTNodePreprocess(Node):
             Next: add difference between PSF and cModel fluxes as morphology proxy?
 
             """
-            photometric_features = np.zeros((num_bands, 4), dtype=np.float32)
+            photometric_features = np.zeros((num_bands, 5), dtype=np.float32)
             
             mag_g = None
             mag_g_flag = True
@@ -516,8 +516,10 @@ class LSSTNodePreprocess(Node):
         for col in df_clean.columns:
             columns[col] = col
 
+        columns.pop("objectId", None)
+
         table = Table.from_pandas(df_clean)
-        self.output_fits_table(table, columns=columns))
+        self.output_fits_table(table, columns=columns)
 
 
 
@@ -562,15 +564,16 @@ class LSSTNodePhotoDataset(Node):
 
         for row in tqdm(df.itertuples(), total=len(df), desc="Building Photometric Dataset"):
 
-            target_ra = row.coord_ra
-            target_dec = row.coord_dec
-            photometric_features = np.zeros((6, 4), dtype=np.float32)
+            target_ra = row.ra
+            target_dec = row.dec
+            photometric_features = np.zeros((6, 5), dtype=np.float32)
             for bi, band in enumerate(['u', 'g', 'r', 'i', 'z', 'y']):
                 photometric_features[bi] = [
                     getattr(row, f"{band}_psfFlux_arcsinh", 0.0),
                     getattr(row, f"{band}_psfFluxErr_arcsinh", 0.0),
                     getattr(row, f"{band}_psfFlux_SNR_log", 0.0),
                     getattr(row, f"{band}_psfFlux_mag", 0.0),
+                    getattr(row, f"{band}_psfFlux_bad_flag", 0.0),
                 ]
             photometric_features = np.hstack([photometric_features.flatten(),
                                             getattr(row, 'color_gr', 0.0),

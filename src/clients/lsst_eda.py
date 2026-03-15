@@ -21,7 +21,7 @@ def main():
             parents=[lsst_catalog.node_id],
             )
     lsst_preprocess = LSSTNodePreprocess(
-            parameters="max_records": max_records,
+            parameters={"max_records": max_records},
             parents=[lsst_eda.node_id],
             )
     lsst_preprocess_eda = LSSTNodeEDA(
