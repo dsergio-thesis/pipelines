@@ -108,7 +108,7 @@ class LSSTNodeCatalog(Node):
             ra_max = (query_coords.ra.deg + delta_ra) % 360
 
 
-            # Extended Chandra Deep Field South (ECDFS)
+            # Query for objects within the RA/Dec box defined by the center and radius.
             query = \
             """
             SELECT TOP {max_records}
@@ -147,15 +147,10 @@ class LSSTNodeCatalog(Node):
             refExtendedness
 
             FROM dp1.Object
-            -- WHERE coord_ra BETWEEN 52 AND 54
-            --   AND coord_dec BETWEEN -28 AND -26
-
-            -- WHERE coord_ra BETWEEN 53.1 AND 53.2
-            --  AND coord_dec BETWEEN -27.9 AND -27.6
+            
             WHERE coord_ra BETWEEN {ra_min} AND {ra_max}
                 AND coord_dec BETWEEN {dec_min} AND {dec_max}
 
-            -- AND objectId = 611255072642319851
             """
             query = query.format(
                     max_records=max_records,
@@ -166,7 +161,7 @@ class LSSTNodeCatalog(Node):
                     )
         else:
 
-            # Extended Chandra Deep Field South (ECDFS)
+            # Query for all objects (up to max_records limit)
             query = \
             """
             SELECT TOP {max_records}
@@ -220,11 +215,9 @@ class LSSTNodeCatalog(Node):
         table = client.query_async(query)
 
 
-        col_names = table.colnames
-        col_types = [str(table[name].dtype) for name in col_names]
-        print("Query result columns and types:")
+        columns = table.colnames
 
-        self.output_fits_table(table)
+        self.output_fits_table(table, columns=columns)
 
         print(f"number of results: {len(table)}")
 
@@ -264,18 +257,14 @@ class LSSTNodeEDA(Node):
 
         artifact = self.inputs[0]
         table = Table.read(artifact.file_path, hdu=1)
-
-
-        include_columns = {
-                'coord_ra': "Right Ascension", 
-                'coord_dec': "Declination",
-                'u_psfFlux': "u PSF Flux",
-                }
+        columns = artifact.columns
 
         dataset_eda(table=table,
-                    columns=include_columns,
+                    columns=columns,
                     save_dir=f"_pipelines/{self.node_id}",
                     title="LSST DP1")
+
+        self.output_fits_table(table, columns=columns
 
 
 class LSSTNodeMatchToHST(Node):

@@ -200,6 +200,10 @@ def dataset_eda(table: astropy.table.Table,
                 data = np.array(data)
                 data = data[~np.isinf(data)]
                 summary_stats[col] = {
+                    'total': str(len(data)),
+                    'n_missing': str(np.sum(np.isnan(data))),
+                    'n_inf': str(np.sum(np.isinf(data))),
+                    'n_valid': str(np.sum(~np.isnan(data) & ~np.isinf(data))),
                     'mean': str(np.mean(data)), 
                     'median': str(np.median(data)), 
                     'std': str(np.std(data)), 

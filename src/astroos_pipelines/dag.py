@@ -33,8 +33,8 @@ class Node(ABC):
         self.parents = parents
         self.children = []
         self.parameters = parameters
-        self.inputs = inputs
-        self.outputs = outputs
+        self.inputs = []
+        self.outputs = []
         self.visited = False
         
         if node_id:
@@ -44,7 +44,7 @@ class Node(ABC):
                 node_type=self.node_type,
                 parent_ids=[p for p in parents],
                 params=self.parameters,
-                # artifact_hashes=[a.output_path for a in self.inputs + self.outputs],
+                artifact_hashes=[a.output_path for a in self.inputs + self.outputs],
             )
 
         print(f"creating a node with parents {parents}")
@@ -82,18 +82,23 @@ class Node(ABC):
         return subclass._from_dict(d)
 
 
-    def output_fits_table(self, table: Table):
+    def output_fits_table(self, table: Table, columns=None):
+
+        # generate a unique random id for the file name
+        file_id = hashlib.sha256(os.urandom(16)).hexdigest()[:8]
         file_path = os.path.join(
                 "_pipelines", 
-                self.node_id, 
-                f"{self.node_type}.fits")
+                self.node_id,
+                self.node_type,
+                f"{file_id}.fits")
 
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         table.write(file_path, format="fits", overwrite=True)
 
         artifact = Artifact(
             name=self.node_type,
-            file_path=file_path
+            file_path=file_path,
+            columns=columns if columns else None,
         )
 
         if (self.outputs is None):
@@ -135,12 +140,14 @@ class DAG(ABC):
 class Artifact:
     """DAG artifact, the data that flows between nodes in the DAG."""
     name: str
+    columns: dict = None
     file_path: str = None
 
     def to_dict(self):
         return {
             "name": self.name,
             "file_path": self.file_path,
+            "columns": self.columns,
         }
 
     @classmethod
@@ -148,6 +155,7 @@ class Artifact:
         return cls(
             name=d["name"],
             file_path=d["file_path"],
+            columns=d.get("columns", None),
         )
 
 import numpy as np

@@ -11,32 +11,30 @@ def main():
     max_records = config.max_records
     print("Configuration loaded successfully.")
 
-    catalog = HSTNodeCatalog(parameters={"max_records": max_records}) 
-    eda = HSTNodeEDA(parameters={"max_records": max_records},
-                     parents=[catalog.node_id])
+    hst_catalog = HSTNodeCatalog(parameters={"max_records": max_records}) 
+    hst_eda = HSTNodeEDA(parameters={"max_records": max_records},
+                     parents=[hst_catalog.node_id])
+    hst_clean = HSTNodeClean(parameters={"max_records": max_records},
+                     parents=[hst_eda.node_id])
+    hst_clean_eda = HSTNodeEDA(parameters={"max_records": max_records},
+                     parents=[hst_clean.node_id])
+    hst_select_clean = HSTNodeSelect(parameters={"max_records": max_records},
+                     parents=[hst_clean_eda.node_id])
+    hst_select_eda = HSTNodeEDA(parameters={"max_records": max_records},
+                     parents=[hst_select_clean.node_id])
+
     dag = PipelineDAG()
 
-    dag.add_node(catalog)
-    dag.add_node(eda)
-    dag.run_from_node(catalog.node_id)
+    dag.add_node(hst_catalog)
+    dag.add_node(hst_eda)
+    dag.add_node(hst_clean)
+    dag.add_node(hst_clean_eda)
+    dag.add_node(hst_select_clean)
+    dag.add_node(hst_select_eda)
+    
+    dag.run_from_node(hst_catalog.node_id)
     dag.to_yaml("_pipelines/hst_eda_pipeline.yaml")
 
-    # pipelines = [
-            # PipelineClassification(
-                # name=pipeline_name,
-                # metadata=pipeline_metadata,
-                # max_records=max_records,
-                # dataset=None,
-                # minor_version=None,
-                # ),
-            # ]
-
-    # pipelines[0].add_stages([ # EDA
-                             # StageHSTCatalogQuery(),
-                             # StageHSTExploratoryDataAnalysis(),
-                             # ])
-
-    # pipelines[0].run_pipeline()
 
 if __name__ == "__main__":
     main()
