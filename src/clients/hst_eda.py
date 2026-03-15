@@ -11,30 +11,32 @@ def main():
     max_records = config.max_records
     print("Configuration loaded successfully.")
 
-    dataset = FITS_Image_Morphometry_Photometry_Dataset(
-            dataset_dir=os.path.join(dataset_dir, dataset_name),
-            labels_init_file=label_def_file,
-            N_bands=5, 
-            N_morphometric_features=4,
-            N_photometric_features=4,
-            )
+    catalog = HSTNodeCatalog(parameters={"max_records": max_records}) 
+    eda = HSTNodeEDA(parameters={"max_records": max_records},
+                     parents=[catalog.node_id])
+    dag = PipelineDAG()
 
-    pipelines = [
-            PipelineClassification(
-                name=pipeline_name,
-                metadata=pipeline_metadata,
-                max_records=max_records,
-                dataset=dataset,
-                minor_version=None,
-                ),
-            ]
+    dag.add_node(catalog)
+    dag.add_node(eda)
+    dag.run_from_node(catalog.node_id)
+    dag.to_yaml("_pipelines/hst_eda_pipeline.yaml")
 
-    pipelines[0].add_stages([ # EDA
-                             StageHSTCatalogQuery(),
-                             StageHSTExploratoryDataAnalysis(),
-                             ])
+    # pipelines = [
+            # PipelineClassification(
+                # name=pipeline_name,
+                # metadata=pipeline_metadata,
+                # max_records=max_records,
+                # dataset=None,
+                # minor_version=None,
+                # ),
+            # ]
 
-    pipelines[0].run_pipeline()
+    # pipelines[0].add_stages([ # EDA
+                             # StageHSTCatalogQuery(),
+                             # StageHSTExploratoryDataAnalysis(),
+                             # ])
+
+    # pipelines[0].run_pipeline()
 
 if __name__ == "__main__":
     main()

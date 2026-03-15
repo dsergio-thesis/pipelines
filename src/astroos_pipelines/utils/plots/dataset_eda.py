@@ -28,6 +28,8 @@ def dataset_eda(table: astropy.table.Table,
 
     """
 
+    os.makedirs(save_dir, exist_ok=True)
+
     sky_regions = sky_regions or {
         "Galactic Center": (350, 10, -10, 10),
         "CDF-S": (50, 55, -30, -20),
@@ -73,6 +75,7 @@ def dataset_eda(table: astropy.table.Table,
         
         binned_points = [] 
         for bin_key, points in bins.items():
+            print(f"Bin {bin_key} has {len(points)} points")
             if len(points) > 10:
                 points = np.array(points)
                 coords_rad = np.radians(points)

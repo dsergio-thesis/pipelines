@@ -11,7 +11,6 @@ def main():
     max_records = config.max_records
     print("Configuration loaded successfully.")
 
-
     dataset_cart_phot = FITS_Image_Morphometry_Photometry_Dataset(
             dataset_dir=os.path.join(dataset_dir, dataset_name),
             labels_init_file=label_def_file,
@@ -22,7 +21,7 @@ def main():
 
     pipelines = [
             PipelineClassification(
-                name=pipeline_name + "_phot",
+                name=pipeline_name,
                 metadata=pipeline_metadata,
                 max_records=max_records,
                 dataset=dataset_cart_phot,

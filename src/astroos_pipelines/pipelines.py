@@ -1,4 +1,3 @@
-
 import numpy as np
 from astropy.table import Table
 from astropy.table import Table, vstack
