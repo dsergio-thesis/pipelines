@@ -380,3 +380,26 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         return ascii_kv_table(info, title="FITS_Image_Morphometry_Photometry_Dataset")
 
 
+    def to_dict(self):
+        return {
+            "dataset_dir": self.dataset_dir,
+            "num_objects": len(self.manifest_list),
+            "num_classes": self.num_classes(),
+            "N_bands": self.N_bands,
+            "N_morphometric_features": self.N_morphometric_features,
+            "N_photometric_features": self.N_photometric_features,
+            "manifest_file": self.manifest_file,
+            "labels": self.labels.to_dict() if self.labels is not None else None,
+        }
+    
+    @classmethod
+    def from_dict(cls, d):
+        dataset = cls(
+            dataset_dir=d["dataset_dir"],
+            N_bands=d["N_bands"],
+            N_morphometric_features=d["N_morphometric_features"],
+            N_photometric_features=d["N_photometric_features"],
+        )
+        if d.get("labels") is not None:
+            dataset.labels = Labels.from_dict(d["labels"])
+        return dataset
