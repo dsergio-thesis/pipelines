@@ -16,10 +16,17 @@ def main():
                 "max_records": max_records,
                 "query_coords": pipeline_metadata.get("query_coords", None),
                 "query_radius": pipeline_metadata.get("query_radius", None),})
-
     lsst_eda = LSSTNodeEDA(
             parameters={"max_records": max_records,},
             parents=[lsst_catalog.node_id],
+            )
+    lsst_preprocess = LSSTNodePreprocess(
+            parameters="max_records": max_records,
+            parents=[lsst_eda.node_id],
+            )
+    lsst_preprocess_eda = LSSTNodeEDA(
+            parameters={"max_records": max_records,},
+            parents=[lsst_preprocess.node_id],
             )
 
 
@@ -27,6 +34,9 @@ def main():
 
     dag.add_node(lsst_catalog)
     dag.add_node(lsst_eda)
+    dag.add_node(lsst_preprocess)
+    dag.add_node(lsst_preprocess_eda)
+
     dag.run_from_node(lsst_catalog.node_id)
     dag.to_yaml("_pipelines/lsst_eda_pipeline.yaml")
 

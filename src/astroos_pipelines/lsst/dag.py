@@ -351,8 +351,28 @@ class LSSTNodePreprocess(Node):
 
         artifact = self.inputs[0]
         table = Table.read(artifact.file_path, hdu=1)
-
         df = table.to_pandas()
+
+        df_clean = pd.DataFrame()  # will hold cleaned data with new features
+        df_clean['objectId'] = df['objectId']
+        df_clean['ra'] = df['coord_ra']
+        df_clean['dec'] = df['coord_dec']
+        df_clean['tract'] = df['tract']
+        df_clean['patch'] = df['patch']
+        df_clean['detect_fromBlend'] = df['detect_fromBlend']
+        df_clean['detect_isIsolated'] = df['detect_isIsolated']
+        df_clean['refExtendedness'] = df['refExtendedness']
+        df_clean['label'] = df['label'] if 'label' in df.columns else [np.nan] * len(df)
+        df_clean['color_gr'] = [np.nan] * len(df)
+        df_clean['color_ri'] = [np.nan] * len(df)
+        df_clean['color_iz'] = [np.nan] * len(df)
+        for band in ['u', 'g', 'r', 'i', 'z', 'y']:
+            df_clean[f"{band}_psfFlux_arcsinh"] = [np.nan] * len(df)
+            df_clean[f"{band}_psfFluxErr_arcsinh"] = [np.nan] * len(df)
+            df_clean[f"{band}_psfFlux_SNR_log"] = [np.nan] * len(df)
+            df_clean[f"{band}_psfFlux_mag"] = [np.nan] * len(df)
+            df_clean[f"{band}_psfFlux_bad_flag"] = [np.nan] * len(df)
+
         n = len(df)
         print(f"Feature preprocesing for {n} objects...")
 
@@ -450,7 +470,13 @@ class LSSTNodePreprocess(Node):
 
                     bad = 1.0 if bool(flag) else 0.0
 
-                photometric_features[bi] = (x1, x2, x3, bad)
+                photometric_features[bi] = (x1, x2, x3, x4, bad)
+
+                df_clean.at[row.Index, f"{band}_psfFlux_arcsinh"] = x1
+                df_clean.at[row.Index, f"{band}_psfFluxErr_arcsinh"] = x2
+                df_clean.at[row.Index, f"{band}_psfFlux_SNR_log"] = x3
+                df_clean.at[row.Index, f"{band}_psfFlux_mag"] = x4
+                df_clean.at[row.Index, f"{band}_psfFlux_bad_flag"] = bad
 
             if mag_g is not None and mag_r is not None and not mag_g_flag and not mag_r_flag:
                 color_gr = mag_g - mag_r
@@ -467,23 +493,104 @@ class LSSTNodePreprocess(Node):
 
             photometric_features = np.hstack([photometric_features.flatten(), [color_gr, color_ri, color_iz]])
 
+            df_clean.at[row.Index, 'color_gr'] = color_gr
+            df_clean.at[row.Index, 'color_ri'] = color_ri
+            df_clean.at[row.Index, 'color_iz'] = color_iz
+
+            # hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
+            # hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
+            # hdu_phot.header['ra'] = float(target_ra)
+            # hdu_phot.header['dec'] = float(target_dec)
+            # hdu_phot.header['objectId'] = int(row.objectId)
+
+            # dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(self.parameters.get("dataset"))
+
+            # if (dataset.contains(row.objectId)):
+                # dataset.update(row.objectId, hdu_phot)
+            # else:
+                # dataset.append(hdu_phot)
+
+        print(f"Label counts: {label_counts}")
+
+        columns = {}
+        for col in df_clean.columns:
+            columns[col] = col
+
+        table = Table.from_pandas(df_clean)
+        self.output_fits_table(table, columns=columns))
+
+
+
+class LSSTNodePhotoDataset(Node):
+    def __init__(self,
+             node_type="catalog_lsst_photo_dataset",
+             node_id=None,
+             parents=[],
+             parameters=None,
+             inputs=[],
+             outputs=[]):
+        super().__init__(node_type=node_type,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            )
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "LSSTNodePhotoDataset"
+        return d
+
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+
+        artifact = self.inputs[0]
+        table = Table.read(artifact.file_path, hdu=1)
+        df = table.to_pandas()
+
+        dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(self.parameters.get("dataset"))
+
+        for row in tqdm(df.itertuples(), total=len(df), desc="Building Photometric Dataset"):
+
+            target_ra = row.coord_ra
+            target_dec = row.coord_dec
+            photometric_features = np.zeros((6, 4), dtype=np.float32)
+            for bi, band in enumerate(['u', 'g', 'r', 'i', 'z', 'y']):
+                photometric_features[bi] = [
+                    getattr(row, f"{band}_psfFlux_arcsinh", 0.0),
+                    getattr(row, f"{band}_psfFluxErr_arcsinh", 0.0),
+                    getattr(row, f"{band}_psfFlux_SNR_log", 0.0),
+                    getattr(row, f"{band}_psfFlux_mag", 0.0),
+                ]
+            photometric_features = np.hstack([photometric_features.flatten(),
+                                            getattr(row, 'color_gr', 0.0),
+                                            getattr(row, 'color_ri', 0.0),
+                                            getattr(row, 'color_iz', 0.0),
+                                            ])
+
             hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
             hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
             hdu_phot.header['ra'] = float(target_ra)
             hdu_phot.header['dec'] = float(target_dec)
             hdu_phot.header['objectId'] = int(row.objectId)
 
-            dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(self.parameters.get("dataset"))
-
             if (dataset.contains(row.objectId)):
                 dataset.update(row.objectId, hdu_phot)
             else:
                 dataset.append(hdu_phot)
 
-        print(f"Label counts: {label_counts}")
-
         table = Table.from_pandas(df)
-        self.output_fits_table(table)
+        self.output_fits_table(table, columns=self.parameters.get("columns", None))
 
 
 class LSSTNodeButlerFetch(Node):
