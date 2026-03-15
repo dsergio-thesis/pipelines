@@ -352,7 +352,9 @@ class LSSTNodePreprocess(Node):
         n = len(df)
         print(f"Feature preprocesing for {n} objects...")
 
-        bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
+        def flux_to_mag(flux):
+            return -2.5 * np.log10(flux) + 31.4
+
         bands = ['u', 'g', 'r', 'i', 'z', 'y']
 
         label_counts = dict()
@@ -375,19 +377,46 @@ class LSSTNodePreprocess(Node):
                     # print(f"found label {str(row.label)}, setting count to 1")
                     label_counts[str(row.label)] = 1
 
-            # 4 features per band: transformed flux, transformed err, log SNR, bad-flag
+            """
+            5 features per band: 
+                - flux Transformed (arcsinh)
+                - err Transformed (arcsinh)
+                - log SNR (clamped to 0 if err=0)
+                - mag (from flux, with safe handling of zero/negative flux)
+                - bad-flag (1 if any issues with flux/err, else 0)
+
+            And 3 color features:
+                - g-r color (mag_g - mag_r)
+                - r-i color (mag_r - mag_i)
+                - i-z color (mag_i - mag_z)
+    
+            Next: add difference between PSF and cModel fluxes as morphology proxy?
+
+            """
             photometric_features = np.zeros((num_bands, 4), dtype=np.float32)
+            
+            mag_g = None
+            mag_g_flag = True
+            mag_r = None
+            mag_r_flag = True
+            mag_i = None
+            mag_i_flag = True
+            mag_z = None
+            mag_z_flag = True
 
             for bi, band in enumerate(bands):
                 flux = getattr(row, f"{band}_psfFlux", None)
                 err  = getattr(row, f"{band}_psfFluxErr", None)
                 flag = getattr(row, f"{band}_psfFlux_flag", False)
 
+                mag = flux_to_mag(flux.clip(lower=1e-12))
+                
                 # sanitize missing/NaN
                 if flux is None or err is None or (isinstance(flux, float) and np.isnan(flux)) or (isinstance(err, float) and np.isnan(err)):
                     x1 = 0.0
                     x2 = 0.0
                     x3 = 0.0
+                    x4 = 0.0
                     bad = 1.0  # treat missing as bad
                 else:
                     # arcsinh scaling 
@@ -401,9 +430,38 @@ class LSSTNodePreprocess(Node):
                     else:
                         x3 = 0.0
 
+                    x4 = mag
+                    if band == 'g':
+                        mag_g = mag
+                        mag_g_flag = flag
+                    elif band == 'r':
+                        mag_r = mag
+                        mag_r_flag = flag
+                    elif band == 'i':
+                        mag_i = mag
+                        mag_i_flag = flag
+                    elif band == 'z':
+                        mag_z = mag
+                        mag_z_flag = flag
+
                     bad = 1.0 if bool(flag) else 0.0
 
                 photometric_features[bi] = (x1, x2, x3, bad)
+
+            if mag_g is not None and mag_r is not None and not mag_g_flag and not mag_r_flag:
+                color_gr = mag_g - mag_r
+            else:
+                color_gr = 0.0
+            if mag_r is not None and mag_i is not None and not mag_r_flag and not mag_i_flag:
+                color_ri = mag_r - mag_i
+            else:
+                color_ri = 0.0
+            if mag_i is not None and mag_z is not None and not mag_i_flag and not mag_z_flag:
+                color_iz = mag_i - mag_z
+            else:
+                color_iz = 0.0
+
+            photometric_features = np.hstack([photometric_features.flatten(), [color_gr, color_ri, color_iz]])
 
             hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
             hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
