@@ -413,7 +413,7 @@ class LSSTNodePreprocess(Node):
                 err  = getattr(row, f"{band}_psfFluxErr", None)
                 flag = getattr(row, f"{band}_psfFlux_flag", False)
 
-                mag = flux_to_mag(flux.clip(lower=1e-12))
+                mag = flux_to_mag(flux)
                 
                 # sanitize missing/NaN
                 if flux is None or err is None or (isinstance(flux, float) and np.isnan(flux)) or (isinstance(err, float) and np.isnan(err)):
@@ -519,21 +519,14 @@ class LSSTNodeButlerFetch(Node):
 
     def run(self):
 
-        # read the positions from the previous stage
-        # objects = self.prev_stage.output
-
         artifact = self.inputs[0]
         table = Table.read(artifact.file_path, hdu=1)
 
         print(f"Fetching LSST data via Butler for {len(table)} objects...")
-        # print(objects['label'])
 
         tasks = build_groups(
                 table, 
                 self.parameters.get("dataset")
-                # objects,
-                # self.pipeline.dataset.get_dataset_dir(),
-                # self.pipeline.dataset.get_labels_file()
                 )
 
         with ProcessPoolExecutor(max_workers=8) as ex:
