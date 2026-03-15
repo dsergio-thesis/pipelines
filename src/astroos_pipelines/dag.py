@@ -150,17 +150,48 @@ class Artifact:
             file_path=d["file_path"],
         )
 
+import numpy as np
+from astropy.coordinates import SkyCoord
+from astropy.units import Quantity
+
+def make_jsonable(obj):
+    if isinstance(obj, SkyCoord):
+        return {
+            "__type__": "SkyCoord",
+            "ra_deg": round(obj.ra.deg, 12),
+            "dec_deg": round(obj.dec.deg, 12),
+            "frame": obj.frame.name,
+        }
+    if isinstance(obj, Quantity):
+        return {
+            "__type__": "Quantity",
+            "value": round(float(obj.value), 12),
+            "unit": str(obj.unit),
+        }
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, dict):
+        return {str(k): make_jsonable(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [make_jsonable(v) for v in obj]
+    return obj
 
 def compute_node_id(node_type, parent_ids, params, artifact_hashes=[]):
     payload = {
         "node_type": node_type,
         "parents": sorted(parent_ids),
-        "params": params,
+        "params": make_jsonable(params),
         "artifacts": sorted(artifact_hashes),
     }
 
     # deterministic serialization
-    serialized = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+    serialized = json.dumps(payload, 
+                            sort_keys=True, 
+                            separators=(",", ":"))
 
     # sha256 hash
     node_id = hashlib.sha256(serialized.encode("utf-8")).hexdigest()
@@ -209,13 +240,17 @@ class PipelineDAG(DAG):
 
     def to_yaml(self, file_path):
         with open(file_path, "w") as file:
-            yaml.dump(
-                {
-                    "nodes": [i.to_dict() for i in self.nodes.values()]
-                },
-                file,
-                sort_keys=False
-            )
+            data = {
+                "nodes": [node.to_dict() for node in self.nodes.values()]
+            }
+            yaml.safe_dump(to_plain_data(data), file, sort_keys=False)
+            # yaml.dump(
+                # {
+                    # "nodes": [i.to_dict() for i in self.nodes.values()]
+                # },
+                # file,
+                # sort_keys=False
+            # )
 
     def run_from_node(self, node_id):
         node = self.nodes[node_id]
@@ -342,4 +377,46 @@ class NodeTransformRandom(Node):
         self.output_fits_table(data)
         print(f"Transformed random data with {len(data)} rows.")
 
+from pathlib import Path
 
+import numpy as np
+from astropy.coordinates import SkyCoord
+from astropy.units import Quantity
+
+
+def to_plain_data(obj):
+    if isinstance(obj, SkyCoord):
+        icrs = obj.icrs
+        return {
+            "type": "SkyCoord",
+            "frame": "icrs",
+            "ra_deg": float(icrs.ra.deg),
+            "dec_deg": float(icrs.dec.deg),
+        }
+
+    if isinstance(obj, Quantity):
+        return {
+            "type": "Quantity",
+            "value": float(obj.value),
+            "unit": str(obj.unit),
+        }
+
+    if isinstance(obj, Path):
+        return str(obj)
+
+    if isinstance(obj, np.integer):
+        return int(obj)
+
+    if isinstance(obj, np.floating):
+        return float(obj)
+
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+
+    if isinstance(obj, dict):
+        return {str(k): to_plain_data(v) for k, v in obj.items()}
+
+    if isinstance(obj, (list, tuple)):
+        return [to_plain_data(v) for v in obj]
+
+    return obj

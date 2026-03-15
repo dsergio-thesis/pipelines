@@ -13,10 +13,12 @@ import importlib
 
 from astroos_pipelines.lsst.query import AstroosQueryLSST
 from astroos_pipelines.pipelines import StagePipeline 
+from astroos_pipelines.dag import *
 from astroos_pipelines.utils.rsp import get_cutout_bands
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.utils.plots.dataset_eda import dataset_eda
 
+importlib.reload(sys.modules['astroos_pipelines.dag'])
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 importlib.reload(sys.modules['astroos_pipelines.utils.rsp'])
 importlib.reload(sys.modules['astroos_pipelines.utils.plots.dataset_eda'])
@@ -91,13 +93,14 @@ class LSSTNodeCatalog(Node):
 
         query_coords = self.parameters.get('query_coords')
         query_radius = self.parameters.get('query_radius')
+        max_records = self.parameters.get('max_records')
 
-        client = AstroosQueryLSST(root_dir=self.stage_dir, 
-                                  credentials_file=self.pipeline.credentials_file,
-                                  max_records=self.pipeline.max_records)
+        client = AstroosQueryLSST(root_dir=f"_pipelines/{self.node_id}", 
+                                  credentials_file=None,
+                                  max_records=max_records)
 
         if query_radius > 0:
-            dec_min = max(self.pipeline.metadata.get('query_coords').dec.deg - self.pipeline.metadata.get('query_radius').to(u.deg).value, -90)
+            dec_min = max(query_coords.dec.deg - query_radius.to(u.deg).value, -90)
             dec_max = min(query_coords.dec.deg + query_radius.to(u.deg).value, 90)
 
             delta_ra = query_radius.to(u.deg).value / np.cos(np.deg2rad(query_coords.dec.deg))
@@ -155,7 +158,7 @@ class LSSTNodeCatalog(Node):
             -- AND objectId = 611255072642319851
             """
             query = query.format(
-                    max_records=self.pipeline.max_records,
+                    max_records=max_records,
                     ra_min=ra_min,
                     ra_max=ra_max,
                     dec_min=dec_min,
@@ -205,7 +208,7 @@ class LSSTNodeCatalog(Node):
             """
 
             query = query.format(
-                    max_records=self.pipeline.max_records,
+                    max_records=max_records,
                     )
 
         # print(f"Query: {query}")
@@ -244,7 +247,7 @@ class LSSTNodeEDA(Node):
 
     def to_dict(self):
         d = super().to_dict()
-        d["type"] = "LSSTNodeCatalog"
+        d["type"] = "LSSTNodeEDA"
         return d
 
     @classmethod
@@ -275,62 +278,88 @@ class LSSTNodeEDA(Node):
                     title="LSST DP1")
 
 
-# ============================================================
-# StageMatchLSSTtoHST 
-# ============================================================
-class StageMatchLSSTtoHST(StagePipeline): 
-    """
-    Data pipeline stage for cross-matching LSST catalog with HST labels.
-    """
-    def __init__(self):
-        super().__init__(stage_name="match", requires_stage_dir=True)
+class LSSTNodeMatchToHST(Node):
+    def __init__(self,
+             node_type="catalog_lsst_match_hst",
+             node_id=None,
+             parents=[],
+             parameters=None,
+             inputs=[],
+             outputs=[]):
+        super().__init__(node_type=node_type,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            )
 
-    def _validate_prev_stage(self):
-        if not rsp_mode:
-            log.error("RSP mode is not available. Cannot run StageMatchLSSTtoHST.")
-            return False
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "LSSTNodeMatchToHST"
+        return d
 
-        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
-        if not all(col in self.prev_stage.output.columns for col in required_columns):
-            log.error(f"Previous stage output is missing required columns: {required_columns}")
-            return False
-        return True
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+        )
 
     def run(self):
 
-        # read the table from the previous stage 
-        table = self.prev_stage.output
 
-        self.output = Table.from_pandas(AstroosQueryLSST.cross_match_labels_hst(table.to_pandas(), "catalogs/hst/hst.fits"))
+        artifact = self.inputs[0]
+        table = Table.read(artifact.file_path, hdu=1)
+
+        table = Table.from_pandas(AstroosQueryLSST.cross_match_labels_hst(table.to_pandas(), "catalogs/hst/hst.fits"))
 
         # print("pipeline labels match: ")
         # print(self.output['label'].value_counts())
 
-        self.cache_pipeline_output()
+        self.output_fits_table(table)
 
-# ============================================================
-# StagePreprocessLSST
-# ============================================================
-class StagePreprocessLSST(StagePipeline):
-    """
-    Data pipeline stage for preprocessing LSST catalog features.
-    Main purpose is to transform the raw fluxes and errors into a more ML-friendly format, and to store them in the dataset for later use.
-    """
-    def __init__(self):
-        super().__init__(stage_name="preprocess", requires_stage_dir=True)
-    def _validate_prev_stage(self):
-        if not rsp_mode:
-            log.error("RSP mode is not available. Cannot run StagePreprocessLSST.")
-            return False
-        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
-        if not all(col in self.prev_stage.output.columns for col in required_columns):
-            log.error(f"Previous stage output is missing required columns: {required_columns}")
-            return False
-        return True
+class LSSTNodePreprocess(Node):
+    def __init__(self,
+             node_type="catalog_lsst_preprocess",
+             node_id=None,
+             parents=[],
+             parameters=None,
+             inputs=[],
+             outputs=[]):
+        super().__init__(node_type=node_type,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            )
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "LSSTNodePreprocess"
+        return d
+
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+        )
 
     def run(self):
 
-        df = self.prev_stage.output.to_pandas()
+
+        artifact = self.inputs[0]
+        table = Table.read(artifact.file_path, hdu=1)
+
+        df = table.to_pandas()
         n = len(df)
         print(f"Feature preprocesing for {n} objects...")
 
@@ -393,7 +422,7 @@ class StagePreprocessLSST(StagePipeline):
             hdu_phot.header['dec'] = float(target_dec)
             hdu_phot.header['objectId'] = int(row.objectId)
 
-            dataset = self.pipeline.dataset
+            dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(self.parameters("dataset"))
 
             if (dataset.contains(row.objectId)):
                 dataset.update(row.objectId, hdu_phot)
@@ -402,123 +431,8 @@ class StagePreprocessLSST(StagePipeline):
 
         print(f"Label counts: {label_counts}")
 
-        self.output = Table.from_pandas(df)
-
-
-# ============================================================
-# StageFetchLSSTSoda
-# ============================================================
-class StageFetchLSSTSoda(StagePipeline):
-    """
-    Data pipeline stage for fetching LSST data via SIA and SODA.
-    """
-    def __init__(self):
-        super().__init__(stage_name="fetch", requires_stage_dir=True)
-
-    def _validate_prev_stage(self):
-        if not rsp_mode:
-            log.error("RSP mode is not available. Cannot run StageFetchLSSTSoda.")
-            return False
-
-        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
-        if not all(col in self.prev_stage.output.columns for col in required_columns):
-            log.error(f"Previous stage output is missing required columns: {required_columns}")
-            return False
-        return True
-
-    def run(self):
-
-        # read the positions from the previous stage
-        df = self.prev_stage.output.to_pandas()
-        n = len(df)
-        print(f"Fetching LSST SODA cutout images for {n} objects...")
-
-        bands = ['u', 'g', 'r', 'i', 'z']  # add 'y' 
-        bands = ['u', 'g', 'r', 'i', 'z', 'y']
-        num_bands = len(bands)
-
-        # for row in tqdm(df.itertuples(), total=n, desc="Downloading LSST SODA Cutout Images"):
-            # target_ra = row.coord_ra
-            # target_dec = row.coord_dec
-
-            # # Get cutouts (num_bands, 200, 200)
-            # band_images = get_cutout_bands(
-                # target_ra=target_ra,
-                # target_dec=target_dec,
-                # bands=bands
-            # )
-
-            # hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
-            # hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
-            # hdu_img.header['ra'] = float(target_ra)
-            # hdu_img.header['dec'] = float(target_dec)
-            # hdu_img.header['objectId'] = int(row.objectId)
-            # hdu_img.header['rvz_redshift'] = -999
-            # hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
-            # hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
-            # hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
-            # hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
-
-            # dataset = self.pipeline.dataset
-
-            # if (dataset.contains(row.objectId)):
-                # # print(f"dataset contains {row.objectId}")
-                # dataset.update(row.objectId, hdu_img)
-            # else:
-                # # print(f"dataset DOES NOT contain {row.objectId}")
-                # dataset.append(hdu_img)
-
-        # self.output = Table.from_pandas(df)
-
-
-
-
-        from concurrent.futures import ThreadPoolExecutor, as_completed
-
-        def process_row(row):
-            target_ra = row.coord_ra
-            target_dec = row.coord_dec
-
-            band_images = get_cutout_bands(
-                target_ra=target_ra,
-                target_dec=target_dec,
-                bands=bands
-            )
-
-            return row, band_images
-
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            futures = [executor.submit(process_row, row)
-                       for row in df.itertuples()]
-
-            for future in tqdm(as_completed(futures), total=len(futures)):
-                row, band_images = future.result()
-                # build HDU here
-
-                target_ra = row.coord_ra
-                target_dec = row.coord_dec
-
-                hdu_img = fits.ImageHDU(data=band_images, name="CUTOUTS")
-                hdu_img.header['label'] = int(row.label) if hasattr(row, "label") else 0
-                hdu_img.header['ra'] = float(target_ra)
-                hdu_img.header['dec'] = float(target_dec)
-                hdu_img.header['objectId'] = int(row.objectId)
-                hdu_img.header['redshift'] = -999
-                hdu_img.header['min_ra'] = float(target_ra - 0.0138889)
-                hdu_img.header['max_ra'] = float(target_ra + 0.0138889)
-                hdu_img.header['min_dec'] = float(target_dec - 0.0138889)
-                hdu_img.header['max_dec'] = float(target_dec + 0.0138889)
-
-                dataset = self.pipeline.dataset
-
-                if (dataset.contains(row.objectId)):
-                    # print(f"dataset contains {row.objectId}")
-                    dataset.update(row.objectId, hdu_img)
-                else:
-                    # print(f"dataset DOES NOT contain {row.objectId}")
-                    dataset.append(hdu_img)
-        self.output = Table.from_pandas(df)
-
+        table = Table.from_pandas(df)
+        self.output_fits_table(table)
 
 
 # ============================================================
