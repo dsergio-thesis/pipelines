@@ -122,7 +122,7 @@ def dataset_eda(table: astropy.table.Table,
                 for name, (ra_min, ra_max, dec_min, dec_max) in sky_regions.items():
                     # print(f"Checking if cluster center {center} is in region '{name}' with RA [{ra_min}, {ra_max}] and Dec [{dec_min}, {dec_max}]")
                     if ra_min <= center[0] <= ra_max and dec_min <= center[1] <= dec_max:
-                        region_name = name
+                        region_name = name + "\u2020"
                         break
 
             plt.text(center[0] + 20, center[1] + 10, region_name,

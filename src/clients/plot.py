@@ -1,34 +1,15 @@
-import os
-import sys
-from torchvision import transforms
-import cmcrameri.cm as cmc
-import importlib
 
-from astroos_pipelines.config.astroos_config import AstroosConfig
-from astroos_pipelines.utils.plots.as_image import plot_random_samples_as_image
-from astroos_pipelines.utils.plots.as_html import plot_random_samples_as_html
-from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
-from astroos_pipelines.transforms import AddGaussianNoise, \
-    MorphometryFeatures, \
-    SegmentationTransform, \
-    PolarTransform, \
-    CropZeros, \
-    CropAroundCentroid
-
-importlib.reload(sys.modules['astroos_pipelines.datasets'])
-importlib.reload(sys.modules['astroos_pipelines.transforms'])
-importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])
-importlib.reload(sys.modules['astroos_pipelines.utils.plots.as_image'])
-importlib.reload(sys.modules['astroos_pipelines.utils.plots.as_html'])
+from clients._local import *
 
 def main():
 
-    config = AstroosConfig.from_cli()
+    config, pipeline_metadata = client_config()
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name
+    label_def_file = config.label_def_file
+    pipeline_name = config.pipeline_name
     max_records = config.max_records
-    print()
-    print(config)
+    print("Configuration loaded successfully.")
     
     transformCartesian = transforms.Compose([
         # transforms.ToTensor(),

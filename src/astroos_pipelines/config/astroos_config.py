@@ -37,13 +37,16 @@ class AstroosConfig:
     obstime: Optional[str] = None
     equinox: Optional[str] = None
 
-    coords: Dict[str, CoordSpec] = field(default_factory=lambda: {
-        "virgo_cluster": CoordSpec("12 30 49.423 +12 23 28.04", "hmsdms", 30.0),
-        "obj_3c273":     CoordSpec("12 29 06.699 +02 03 08.60", "hmsdms", 2.0),
-        "someother":     CoordSpec("14 35 42.8685615528 +40 18 02.133470196", "hmsdms", 3.0),
-        "CDF_South":     CoordSpec("53.161 -27.791", "deg", -1.0),
-        "COSMOS":        CoordSpec("150.1 2.2", "deg", 30),
-    })
+    # coords: Dict[str, CoordSpec] = field(default_factory=lambda: {
+        # "virgo_cluster": CoordSpec("12 30 49.423 +12 23 28.04", "hmsdms", 30.0),
+        # "obj_3c273":     CoordSpec("12 29 06.699 +02 03 08.60", "hmsdms", 2.0),
+        # "someother":     CoordSpec("14 35 42.8685615528 +40 18 02.133470196", "hmsdms", 3.0),
+        # "CDF_South":     CoordSpec("53.161 -27.791", "deg", -1.0),
+        # "COSMOS":        CoordSpec("150.1 2.2", "deg", 30),
+    # })
+    coords: Dict[str, CoordSpec] = field(
+        default_factory=lambda: load_coords_from_csv("catalogs/sky_region_labels.csv")
+    )
 
     max_records: int = 3
 
@@ -220,3 +223,26 @@ class AstroosConfig:
         ]
         return ascii_kv_table(rows, title="AstroosConfig")
     
+
+import csv
+from pathlib import Path
+from typing import Dict
+
+def load_coords_from_csv(path: str | Path) -> Dict[str, CoordSpec]:
+    coords = {}
+
+    with open(path, newline="") as f:
+        reader = csv.DictReader(f)
+
+        for row in reader:
+            label = row["Label"].strip()
+            ra_dec = row["RA_DEC"].strip()
+            fmt = row["Format"].strip()
+            size = float(row["Size_arcmin"])
+
+            # normalize key (optional but recommended)
+            key = label.lower().replace(" ", "_").replace("(", "").replace(")", "")
+
+            coords[key] = CoordSpec(ra_dec, fmt, size)
+
+    return coords

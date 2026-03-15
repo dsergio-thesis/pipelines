@@ -1,5 +1,5 @@
 
-from clients.client_local import *
+from clients._local import *
 
 def main():
     
@@ -9,7 +9,6 @@ def main():
     label_def_file = config.label_def_file
     pipeline_name = config.pipeline_name
     max_records = config.max_records
-
     print("Configuration loaded successfully.")
 
     dataset = FITS_Image_Morphometry_Photometry_Dataset(
