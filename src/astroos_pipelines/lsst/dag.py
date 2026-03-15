@@ -435,40 +435,54 @@ class LSSTNodePreprocess(Node):
         self.output_fits_table(table)
 
 
-# ============================================================
-# StageButlerFetchLSST
-# ============================================================
-class StageButlerFetchLSST(StagePipeline):
-    """
-    Data pipeline stage for fetching LSST data via the Butler.
-    """
-    def __init__(self):
-        super().__init__(stage_name="fetch_butler", requires_stage_dir=True)
+class LSSTNodeButlerFetch(Node):
+    def __init__(self,
+             node_type="catalog_lsst_butler_fetch",
+             node_id=None,
+             parents=[],
+             parameters=None,
+             inputs=[],
+             outputs=[]):
+        super().__init__(node_type=node_type,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            )
 
-    def _validate_prev_stage(self):
-        if not rsp_mode:
-            log.error("RSP mode is not available. Cannot run StageButlerFetchLSST.")
-            return False
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "LSSTNodeButlerFetch"
+        return d
 
-        required_columns = {'objectId', 'coord_ra', 'coord_dec'}
-        if not all(col in self.prev_stage.output.columns for col in required_columns):
-            log.error(f"Previous stage output is missing required columns: {required_columns}")
-            return False
-        return True
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+        )
 
     def run(self):
 
         # read the positions from the previous stage
-        objects = self.prev_stage.output
+        # objects = self.prev_stage.output
 
+        artifact = self.inputs[0]
+        table = Table.read(artifact.file_path, hdu=1)
 
         print(f"Fetching LSST data via Butler for {len(objects)} objects...")
         # print(objects['label'])
 
         tasks = build_groups(
-                objects, 
-                self.pipeline.dataset.get_dataset_dir(),
-                self.pipeline.dataset.get_labels_file()
+                table, 
+                self.parameters.get("dataset")
+                # objects,
+                # self.pipeline.dataset.get_dataset_dir(),
+                # self.pipeline.dataset.get_labels_file()
                 )
 
         with ProcessPoolExecutor(max_workers=8) as ex:
@@ -486,18 +500,20 @@ def worker_patch(args):
     STAMP_W = 100
     STAMP_H = 100
 
-    tract, patch, object_rows, dataset_dir, dataset_labels = args
+    # tract, patch, object_rows, dataset_dir, dataset_labels = args
+    tract, patch, object_rows, dataset_dict = args
 
     # print("object_rows")
     # print(object_rows)
 
-    dataset = FITS_Image_Morphometry_Photometry_Dataset(
-            dataset_dir=dataset_dir,
-            labels_init_file=dataset_labels,
-            N_bands=len(BANDS), 
-            N_morphometric_features=4,
-            N_photometric_features=4,
-            )
+    # dataset = FITS_Image_Morphometry_Photometry_Dataset(
+            # dataset_dir=dataset_dir,
+            # labels_init_file=dataset_labels,
+            # N_bands=len(BANDS), 
+            # N_morphometric_features=4,
+            # N_photometric_features=4,
+            # )
+    dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(dataset_dict)
 
     from lsst.daf.butler import Butler
     butler = Butler("dp1", collections="LSSTComCam/DP1")
@@ -600,11 +616,11 @@ def worker_patch(args):
 
     return len(object_rows)
 
-def build_groups(objects, dataset_dir, labels_init_file):
+def build_groups(objects, dataset_dict):
     groups = defaultdict(list)
     for row in objects:
         groups[(int(row["tract"]), int(row["patch"]))].append(row)
-    return [(t, p, rows, dataset_dir, labels_init_file) for (t, p), rows in groups.items()]
+    return [(t, p, rows, dataset_dict) for (t, p), rows in groups.items()]
 
 
 
