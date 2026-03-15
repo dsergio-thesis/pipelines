@@ -112,7 +112,7 @@ class StageHSTExploratoryDataAnalysis(StagePipeline):
                            'L_IR': "Infrared Luminosity",
                            'chi2': "Chi-squared of SED fit",
             } 
-        dataset_eda(table=table, columns=include_columns, save_dir=self.stage_dir)
+        dataset_eda(table=table, columns=include_columns, save_dir=self.stage_dir, title="HST")
 
         # save all columns to a yaml file for reference
         # also include description of the columns if available

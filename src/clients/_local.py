@@ -7,7 +7,7 @@ from torchvision import transforms
 
 from astroos_pipelines.utils.plots.as_image import plot_random_samples_as_image
 from astroos_pipelines.utils.plots.as_html import plot_random_samples_as_html
-from astroos_pipelines.pipelines import PipelineClassification
+from astroos_pipelines.pipelines import PipelineClassification, \
         StageCatalogRandom, StageTransformRandom
 from astroos_pipelines.hst.pipelines import StageHSTCatalogQuery, \
         StageHSTExploratoryDataAnalysis

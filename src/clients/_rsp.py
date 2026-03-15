@@ -24,7 +24,9 @@ def client_config():
     log = logging.getLogger(__name__)
 
     config = AstroosConfig.from_cli()
-    coord, radius = config.get_target("CDF_South")
+    print("Config: ")
+    print(config)
+    coord, radius = config.get_target("Extended Chandra Deep Field South (ECDFS)")
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name
     pipeline_name = config.pipeline_name

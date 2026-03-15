@@ -239,11 +239,13 @@ class StageLSSTExploratoryDataAnalysis(StagePipeline):
         include_columns = {
                 'coord_ra': "Right Ascension", 
                 'coord_dec': "Declination",
+                'u_psfFlux': "u PSF Flux",
                 }
 
         dataset_eda(table=table,
                     columns=include_columns,
-                    save_dir=self.stage_dir)
+                    save_dir=self.stage_dir,
+                    title="LSST DP1")
 
         # print("Basic statistics of the catalog:")
         # print(table.info)

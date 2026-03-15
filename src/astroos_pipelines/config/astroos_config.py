@@ -55,6 +55,11 @@ class AstroosConfig:
         return p if p.is_absolute() else self.dataset_dir / p
 
     def get_target(self, key: str) -> Tuple[SkyCoord, u.Quantity]:
+        key = key.lower().replace(" ", "_").replace("(", "").replace(")", "")
+        if key not in self.coords:
+            print()
+            raise RuntimeError(f"{key} is not in {self.coords}")
+        
         spec = self.coords[key]
 
         kwargs = {"frame": self.frame}
