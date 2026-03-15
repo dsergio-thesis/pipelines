@@ -95,13 +95,16 @@ class Labels:
         return len(self.labels)
 
     def to_dict(self):
-        return self.labels.to_dict(orient='index')
+        d = {}
+        d['labels'] = self.labels.to_dict(orient='index')
+        d['unknown_label_index'] = self.unknown_label_index
+        d['labels_dir'] = self.labels_dir
+        return d
 
     @classmethod
-    def from_dict(cls, labels_dict, labels_dir, labels_init_file=None, required_columns=None, unknown_label_index=31):
-        labels_df = pd.DataFrame.from_dict(labels_dict, orient='index')
-        if labels_init_file is not None:
-            labels_df.to_csv(labels_init_file, index=False)
-        return cls(labels_dir, labels_init_file, required_columns, unknown_label_index)
+    def from_dict(cls, d):
+        instance = cls(labels_dir=d['labels_dir'], labels_init_file=None, unknown_label_index=d['unknown_label_index'])
+        instance.labels = pd.DataFrame.from_dict(d['labels'], orient='index')
+        return instance
 
 
