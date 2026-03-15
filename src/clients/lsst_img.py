@@ -41,14 +41,14 @@ def main():
 
     preprocess = LSSTNodePreprocess(
             parameters={
-                "dataset": dataset_cart_phot.to_dict()
+                "dataset": dataset_cart_cutouts_morph_b.to_dict()
                 },
             parents=[match.node_id],
             )
 
-    fetch = = LSSTNodeButlerFetch(
+    fetch = LSSTNodeButlerFetch(
             parameters={
-                "dataset": dataset_cart_phot.to_dict()
+                "dataset": dataset_cart_cutouts_morph_b.to_dict()
                 },
             parents=[preprocess.node_id],
             )

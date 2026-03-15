@@ -474,7 +474,7 @@ class LSSTNodeButlerFetch(Node):
         artifact = self.inputs[0]
         table = Table.read(artifact.file_path, hdu=1)
 
-        print(f"Fetching LSST data via Butler for {len(objects)} objects...")
+        print(f"Fetching LSST data via Butler for {len(table)} objects...")
         # print(objects['label'])
 
         tasks = build_groups(
