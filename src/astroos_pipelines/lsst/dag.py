@@ -612,19 +612,23 @@ class LSSTNodePhotoDataset(Node):
 
             target_ra = row.ra
             target_dec = row.dec
-            photometric_features = np.zeros((6, 5), dtype=np.float32)
+            photometric_features = np.zeros((6, 4), dtype=np.float32)
             for bi, band in enumerate(['u', 'g', 'r', 'i', 'z', 'y']):
                 photometric_features[bi] = [
                     getattr(row, f"{band}_psfFlux_arcsinh", 0.0),
                     getattr(row, f"{band}_psfFluxErr_arcsinh", 0.0),
                     getattr(row, f"{band}_psfFlux_SNR_log", 0.0),
                     getattr(row, f"{band}_psfFlux_mag", 0.0),
-                    getattr(row, f"{band}_psfFlux_bad_flag", 0.0),
+                    # getattr(row, f"{band}_psfFlux_bad_flag", 0.0),
                 ]
             photometric_features = np.hstack([photometric_features.flatten(),
                                             getattr(row, 'color_gr', 0.0),
                                             getattr(row, 'color_ri', 0.0),
                                             getattr(row, 'color_iz', 0.0),
+                                            getattr(row, 'color_gi', 0.0),
+                                            getattr(row, 'color_rz', 0.0),
+                                            getattr(row, 'color_ug', 0.0),
+                                            getattr(row, 'color_zy', 0.0),
                                             ])
 
             hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
