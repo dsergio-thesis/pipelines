@@ -568,10 +568,10 @@ class LSSTNodePreprocess(Node):
             curvatures['ri_iz'] = (colors['ri'] - colors['iz']) if (not np.isnan(colors['ri']) and not np.isnan(colors['iz'])) else np.nan
             curvatures['iz_zy'] = (colors['iz'] - colors['zy']) if (not np.isnan(colors['iz']) and not np.isnan(colors['zy'])) else np.nan
 
-            photometric_features = np.hstack([photometric_features.flatten(), [
-                color for color in colors.values(),
-                curv for curv in curvatures.values(),
-            ]])
+            photometric_features = np.hstack([photometric_features.flatten(), 
+                [color for color in colors.values()] + 
+                [curv for curv in curvatures.values()]
+                                              ])
             for color_name, color_value in colors.items():
                 df_clean.at[row.Index, f"color_{color_name}"] = color_value
             for curv_name, curv_value in curvatures.items():
