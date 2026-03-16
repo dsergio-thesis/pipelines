@@ -418,9 +418,9 @@ class LSSTNodePreprocess(Node):
                     label_counts[str(row.label)] = 1
 
             """
-            4 features per band: 
+            3 features per band: 
                 - flux Transformed (arcsinh)
-                - err Transformed (arcsinh)
+                - x err Transformed (arcsinh)
                 - log SNR (clamped to 0 if err=0)
                 - mag (from flux, with safe handling of zero/negative flux)
                 - x bad-flag (1 if any issues with flux/err, else 0)
@@ -514,10 +514,10 @@ class LSSTNodePreprocess(Node):
 
                     bad = 1.0 if bool(flag) else 0.0
 
-                photometric_features[bi] = (x1, x2, x3, x4)
+                photometric_features[bi] = (x1, x3, x4)
 
                 df_clean.at[row.Index, f"{band}_psfFlux_arcsinh"] = x1
-                df_clean.at[row.Index, f"{band}_psfFluxErr_arcsinh"] = x2
+                # df_clean.at[row.Index, f"{band}_psfFluxErr_arcsinh"] = x2
                 df_clean.at[row.Index, f"{band}_psfFlux_SNR_log"] = x3
                 df_clean.at[row.Index, f"{band}_psfFlux_mag"] = x4
                 # df_clean.at[row.Index, f"{band}_psfFlux_bad_flag"] = bad
@@ -647,11 +647,11 @@ class LSSTNodePhotoDataset(Node):
 
             target_ra = row.ra
             target_dec = row.dec
-            photometric_features = np.zeros((6, 4), dtype=np.float32)
+            photometric_features = np.zeros((6, 3), dtype=np.float32)
             for bi, band in enumerate(['u', 'g', 'r', 'i', 'z', 'y']):
                 photometric_features[bi] = [
                     getattr(row, f"{band}_psfFlux_arcsinh", 0.0),
-                    getattr(row, f"{band}_psfFluxErr_arcsinh", 0.0),
+                    # getattr(row, f"{band}_psfFluxErr_arcsinh", 0.0),
                     getattr(row, f"{band}_psfFlux_SNR_log", 0.0),
                     getattr(row, f"{band}_psfFlux_mag", 0.0),
                     # getattr(row, f"{band}_psfFlux_bad_flag", 0.0),
