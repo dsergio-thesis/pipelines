@@ -25,10 +25,11 @@ def main():
                 "query_coords": pipeline_metadata.get("query_coords", None),
                 "query_radius": pipeline_metadata.get("query_radius", None),})
 
-    hst_catalog = HSTNodeCatalog(parameters={"max_records": max_records}) 
-    hst_clean = HSTNodeClean(parameters={"max_records": max_records},
+    hst_max_records = 300000
+    hst_catalog = HSTNodeCatalog(parameters={"max_records": hst_max_records}) 
+    hst_clean = HSTNodeClean(parameters={"max_records": hst_max_records},
                      parents=[hst_catalog.node_id])
-    hst_select_clean = HSTNodeSelect(parameters={"max_records": max_records},
+    hst_select_clean = HSTNodeSelect(parameters={"max_records": hst_max_records},
                      parents=[hst_clean.node_id])
 
     lsst_hst_match = LSSTNodeMatchToHST(
