@@ -423,9 +423,9 @@ class LSSTNodePreprocess(Node):
                 - err Transformed (arcsinh)
                 - log SNR (clamped to 0 if err=0)
                 - mag (from flux, with safe handling of zero/negative flux)
-                - bad-flag (1 if any issues with flux/err, else 0)
+                - x bad-flag (1 if any issues with flux/err, else 0)
 
-            And 7 color features:
+            And 9 color features:
                 - g-r color (mag_g - mag_r)
                 - r-i color (mag_r - mag_i)
                 - i-z color (mag_i - mag_z)
@@ -433,6 +433,8 @@ class LSSTNodePreprocess(Node):
                 - z-y color (mag_z - mag_y)
                 - g-i color (mag_g - mag_i)
                 - r-z color (mag_r - mag_z)
+                - g-z color (mag_g - mag_z)
+                - r-y color (mag_r - mag_y)
     
             Next: add difference between PSF and cModel fluxes as morphology proxy?
 
@@ -532,6 +534,14 @@ class LSSTNodePreprocess(Node):
                 color_zy = mag_z - mag_y
             else:
                 color_zy = 0.0
+            if mag_g is not None and mag_z is not None and not mag_g_flag and not mag_z_flag:
+                color_gz = mag_g - mag_z
+            else:
+                color_gz = 0.0
+            if mag_r is not None and mag_y is not None and not mag_r_flag and not mag_y_flag:
+                color_ry = mag_r - mag_y
+            else:
+                color_ry = 0.0
 
             photometric_features = np.hstack([photometric_features.flatten(), [color_gr, color_ri, color_iz]])
 
@@ -542,6 +552,8 @@ class LSSTNodePreprocess(Node):
             df_clean.at[row.Index, 'color_rz'] = color_rz
             df_clean.at[row.Index, 'color_ug'] = color_ug
             df_clean.at[row.Index, 'color_zy'] = color_zy
+            df_clean.at[row.Index, 'color_gz'] = color_gz
+            df_clean.at[row.Index, 'color_ry'] = color_ry
 
             # hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
             # hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
@@ -629,6 +641,8 @@ class LSSTNodePhotoDataset(Node):
                                             getattr(row, 'color_rz', 0.0),
                                             getattr(row, 'color_ug', 0.0),
                                             getattr(row, 'color_zy', 0.0),
+                                            getattr(row, 'color_gz', 0.0),
+                                            getattr(row, 'color_ry', 0.0),
                                             ])
 
             hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
