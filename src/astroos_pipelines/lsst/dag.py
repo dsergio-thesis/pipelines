@@ -455,7 +455,7 @@ class LSSTNodePreprocess(Node):
             Next: add diff/ratio PSF and cModel for morphology
 
             """
-            photometric_features = np.zeros((num_bands, 4), dtype=np.float32)
+            photometric_features = np.zeros((num_bands, 3), dtype=np.float32)
             
             mag_g = None
             mag_g_flag = True
