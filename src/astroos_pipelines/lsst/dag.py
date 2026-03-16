@@ -425,22 +425,34 @@ class LSSTNodePreprocess(Node):
                 - mag (from flux, with safe handling of zero/negative flux)
                 - x bad-flag (1 if any issues with flux/err, else 0)
 
-            And 9 color features:
-                - g-r color (mag_g - mag_r)
-                - r-i color (mag_r - mag_i)
-                - i-z color (mag_i - mag_z)
+            15 color features:
                 - u-g color (mag_u - mag_g)
-                - z-y color (mag_z - mag_y)
-                - g-i color (mag_g - mag_i)
-                - r-z color (mag_r - mag_z)
-                - g-z color (mag_g - mag_z)
-                - r-y color (mag_r - mag_y)
+                - u-r color (mag_u - mag_r)
+                - u-i color (mag_u - mag_i)
+                - u-z color (mag_u - mag_z)
+                - u-y color (mag_u - mag_y)
 
-            And 2 curvature features:
-                - curvature_1 = (mag_g - mag_r) - (mag_r - mag_i) = mag_g - 2*mag_r + mag_i
-                - curvature_2 = (mag_r - mag_i) - (mag_i - mag_z) = mag_r - 2*mag_i + mag_z
+                - g-r color (mag_g - mag_r)
+                - g-i color (mag_g - mag_i)
+                - g-z color (mag_g - mag_z)
+                - g-y color (mag_g - mag_y)
+
+                - r-i color (mag_r - mag_i)
+                - r-z color (mag_r - mag_z)
+                - r-y color (mag_r - mag_y)
+                
+                - i-z color (mag_i - mag_z)
+                - i-y color (mag_i - mag_y)
+
+                - z-y color (mag_z - mag_y)
+
+            4 Adjacent curvatures:
+                - curv_ug_gr = (mag_u - mag_g) - (mag_g - mag_r) = mag_u - 2*mag_g + mag_r
+                - curv_gr_ri = (mag_g - mag_r) - (mag_r - mag_i) = mag_g - 2*mag_r + mag_i
+                - curv_ri_iz = (mag_r - mag_i) - (mag_i - mag_z) = mag_r - 2*mag_i + mag_z
+                - curv_iz_zy = (mag_i - mag_z) - (mag_z - mag_y) = mag_i - 2*mag_z + mag_y
     
-            Next: add difference between PSF and cModel fluxes as morphology proxy?
+            Next: add diff/ratio PSF and cModel for morphology
 
             """
             photometric_features = np.zeros((num_bands, 4), dtype=np.float32)
@@ -510,64 +522,61 @@ class LSSTNodePreprocess(Node):
                 df_clean.at[row.Index, f"{band}_psfFlux_mag"] = x4
                 # df_clean.at[row.Index, f"{band}_psfFlux_bad_flag"] = bad
 
-            if mag_g is not None and mag_r is not None and not mag_g_flag and not mag_r_flag:
-                color_gr = mag_g - mag_r
-            else:
-                color_gr = 0.0
-            if mag_r is not None and mag_i is not None and not mag_r_flag and not mag_i_flag:
-                color_ri = mag_r - mag_i
-            else:
-                color_ri = 0.0
-            if mag_i is not None and mag_z is not None and not mag_i_flag and not mag_z_flag:
-                color_iz = mag_i - mag_z
-            else:
-                color_iz = 0.0
-            if mag_g is not None and mag_i is not None and not mag_g_flag and not mag_i_flag:
-                color_gi = mag_g - mag_i
-            else:
-                color_gi = 0.0
-            if mag_r is not None and mag_z is not None and not mag_r_flag and not mag_z_flag:
-                color_rz = mag_r - mag_z
-            else:
-                color_rz = 0.0
-            if mag_u is not None and mag_g is not None and not mag_u_flag and not mag_g_flag:
-                color_ug = mag_u - mag_g
-            else:
-                color_ug = 0.0
-            if mag_z is not None and mag_y is not None and not mag_z_flag and not mag_y_flag:
-                color_zy = mag_z - mag_y
-            else:
-                color_zy = 0.0
-            if mag_g is not None and mag_z is not None and not mag_g_flag and not mag_z_flag:
-                color_gz = mag_g - mag_z
-            else:
-                color_gz = 0.0
-            if mag_r is not None and mag_y is not None and not mag_r_flag and not mag_y_flag:
-                color_ry = mag_r - mag_y
-            else:
-                color_ry = 0.0
-            if mag_g is not None and mag_r is not None and mag_i is not None and not mag_g_flag and not mag_r_flag and not mag_i_flag:
-                curvature_1 = (mag_g - mag_r) - (mag_r - mag_i)  # = mag_g - 2*mag_r + mag_i
-            else:
-                curvature_1 = 0.0
-            if mag_r is not None and mag_i is not None and mag_z is not None and not mag_r_flag and not mag_i_flag and not mag_z_flag:
-                curvature_2 = (mag_r - mag_i) - (mag_i - mag_z)  # = mag_r - 2*mag_i + mag_z
-            else:
-                curvature_2 = 0.0
+            mags = {
+                "u": mag_u,
+                "g": mag_g,
+                "r": mag_r,
+                "i": mag_i,
+                "z": mag_z,
+                "y": mag_y,
+            }
 
-            photometric_features = np.hstack([photometric_features.flatten(), [color_gr, color_ri, color_iz]])
+            flags = {
+                "u": mag_u_flag,
+                "g": mag_g_flag,
+                "r": mag_r_flag,
+                "i": mag_i_flag,
+                "z": mag_z_flag,
+                "y": mag_y_flag,
+            }
 
-            df_clean.at[row.Index, 'color_gr'] = color_gr
-            df_clean.at[row.Index, 'color_ri'] = color_ri
-            df_clean.at[row.Index, 'color_iz'] = color_iz
-            df_clean.at[row.Index, 'color_gi'] = color_gi
-            df_clean.at[row.Index, 'color_rz'] = color_rz
-            df_clean.at[row.Index, 'color_ug'] = color_ug
-            df_clean.at[row.Index, 'color_zy'] = color_zy
-            df_clean.at[row.Index, 'color_gz'] = color_gz
-            df_clean.at[row.Index, 'color_ry'] = color_ry
-            df_clean.at[row.Index, 'curvature_1'] = curvature_1
-            df_clean.at[row.Index, 'curvature_2'] = curvature_2
+            def color(b1, b2):
+                m1, m2 = mags[b1], mags[b2]
+                f1, f2 = flags[b1], flags[b2]
+                return m1 - m2 if (m1 is not None and m2 is not None and not f1 and not f2) else np.nan
+            
+            colors = {}
+            colors['ug'] = color('u', 'g')
+            colors['ur'] = color('u', 'r')
+            colors['ui'] = color('u', 'i')
+            colors['uz'] = color('u', 'z')
+            colors['uy'] = color('u', 'y')
+            colors['gr'] = color('g', 'r')
+            colors['gi'] = color('g', 'i')
+            colors['gz'] = color('g', 'z')
+            colors['gy'] = color('g', 'y')
+            colors['ri'] = color('r', 'i')
+            colors['rz'] = color('r', 'z')
+            colors['ry'] = color('r', 'y')
+            colors['iz'] = color('i', 'z')
+            colors['iy'] = color('i', 'y')
+            colors['zy'] = color('z', 'y')
+
+            curvatures = {}
+            curvatures['ug_gr'] = (colors['ug'] - colors['gr']) if (not np.isnan(colors['ug']) and not np.isnan(colors['gr'])) else np.nan
+            curvatures['gr_ri'] = (colors['gr'] - colors['ri']) if (not np.isnan(colors['gr']) and not np.isnan(colors['ri'])) else np.nan
+            curvatures['ri_iz'] = (colors['ri'] - colors['iz']) if (not np.isnan(colors['ri']) and not np.isnan(colors['iz'])) else np.nan
+            curvatures['iz_zy'] = (colors['iz'] - colors['zy']) if (not np.isnan(colors['iz']) and not np.isnan(colors['zy'])) else np.nan
+
+            photometric_features = np.hstack([photometric_features.flatten(), [
+                color for color in colors.values(),
+                curv for curv in curvatures.values(),
+            ]])
+            for color_name, color_value in colors.items():
+                df_clean.at[row.Index, f"color_{color_name}"] = color_value
+            for curv_name, curv_value in curvatures.items():
+                df_clean.at[row.Index, f"curvature_{curv_name}"] = curv_value
+
 
             # hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
             # hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
@@ -648,18 +657,25 @@ class LSSTNodePhotoDataset(Node):
                     # getattr(row, f"{band}_psfFlux_bad_flag", 0.0),
                 ]
             photometric_features = np.hstack([photometric_features.flatten(),
-                                            getattr(row, 'color_gr', 0.0),
-                                            getattr(row, 'color_ri', 0.0),
-                                            getattr(row, 'color_iz', 0.0),
-                                            getattr(row, 'color_gi', 0.0),
-                                            getattr(row, 'color_rz', 0.0),
-                                            getattr(row, 'color_ug', 0.0),
-                                            getattr(row, 'color_zy', 0.0),
-                                            getattr(row, 'color_gz', 0.0),
-                                            getattr(row, 'color_ry', 0.0),
-                                            getattr(row, 'curvature_1', 0.0),
-                                            getattr(row, 'curvature_2', 0.0)
-                                            ])
+                getattr(row, "color_ug", np.nan),
+                getattr(row, "color_ur", np.nan),
+                getattr(row, "color_ui", np.nan),
+                getattr(row, "color_uz", np.nan),
+                getattr(row, "color_uy", np.nan),
+                getattr(row, "color_gr", np.nan),
+                getattr(row, "color_gi", np.nan),
+                getattr(row, "color_gz", np.nan),
+                getattr(row, "color_gy", np.nan),
+                getattr(row, "color_ri", np.nan),
+                getattr(row, "color_rz", np.nan),
+                getattr(row, "color_ry", np.nan),
+                getattr(row, "color_iz", np.nan),
+                getattr(row, "color_iy", np.nan),
+                getattr(row, "color_zy", np.nan),
+                getattr(row, "curvature_ug_gr", np.nan),
+                getattr(row, "curvature_gr_ri", np.nan),
+                getattr(row, "curvature_ri_iz", np.nan),
+                getattr(row, "curvature_iz_zy", np.nan),])
 
             hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
             hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
