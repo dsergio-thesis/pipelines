@@ -322,7 +322,8 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
                 img.to(torch.float32) if img is not None else None,
                 torch.tensor(label, dtype=torch.long),
                 torch.from_numpy(morph).to(torch.float32) if morph is not None else None,
-                torch.from_numpy(phot).to(torch.float32) if phot is not None else None,
+                # torch.from_numpy(phot).to(torch.float32) if phot is not None else None,
+                torch.tensor(np.asarray(phot, dtype=np.float32), dtype=torch.float32) if phot is not None else None,
                 header_dict
             )
 

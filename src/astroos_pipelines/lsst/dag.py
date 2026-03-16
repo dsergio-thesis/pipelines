@@ -418,22 +418,26 @@ class LSSTNodePreprocess(Node):
                     label_counts[str(row.label)] = 1
 
             """
-            5 features per band: 
+            4 features per band: 
                 - flux Transformed (arcsinh)
                 - err Transformed (arcsinh)
                 - log SNR (clamped to 0 if err=0)
                 - mag (from flux, with safe handling of zero/negative flux)
                 - bad-flag (1 if any issues with flux/err, else 0)
 
-            And 3 color features:
+            And 7 color features:
                 - g-r color (mag_g - mag_r)
                 - r-i color (mag_r - mag_i)
                 - i-z color (mag_i - mag_z)
+                - u-g color (mag_u - mag_g)
+                - z-y color (mag_z - mag_y)
+                - g-i color (mag_g - mag_i)
+                - r-z color (mag_r - mag_z)
     
             Next: add difference between PSF and cModel fluxes as morphology proxy?
 
             """
-            photometric_features = np.zeros((num_bands, 5), dtype=np.float32)
+            photometric_features = np.zeros((num_bands, 4), dtype=np.float32)
             
             mag_g = None
             mag_g_flag = True
@@ -486,13 +490,13 @@ class LSSTNodePreprocess(Node):
 
                     bad = 1.0 if bool(flag) else 0.0
 
-                photometric_features[bi] = (x1, x2, x3, x4, bad)
+                photometric_features[bi] = (x1, x2, x3, x4)
 
                 df_clean.at[row.Index, f"{band}_psfFlux_arcsinh"] = x1
                 df_clean.at[row.Index, f"{band}_psfFluxErr_arcsinh"] = x2
                 df_clean.at[row.Index, f"{band}_psfFlux_SNR_log"] = x3
                 df_clean.at[row.Index, f"{band}_psfFlux_mag"] = x4
-                df_clean.at[row.Index, f"{band}_psfFlux_bad_flag"] = bad
+                # df_clean.at[row.Index, f"{band}_psfFlux_bad_flag"] = bad
 
             if mag_g is not None and mag_r is not None and not mag_g_flag and not mag_r_flag:
                 color_gr = mag_g - mag_r
@@ -506,12 +510,32 @@ class LSSTNodePreprocess(Node):
                 color_iz = mag_i - mag_z
             else:
                 color_iz = 0.0
+            if mag_g is not None and mag_i is not None and not mag_g_flag and not mag_i_flag:
+                color_gi = mag_g - mag_i
+            else:
+                color_gi = 0.0
+            if mag_r is not None and mag_z is not None and not mag_r_flag and not mag_z_flag:
+                color_rz = mag_r - mag_z
+            else:
+                color_rz = 0.0
+            if mag_u is not None and mag_g is not None and not mag_u_flag and not mag_g_flag:
+                color_ug = mag_u - mag_g
+            else:
+                color_ug = 0.0
+            if mag_z is not None and mag_y is not None and not mag_z_flag and not mag_y_flag:
+                color_zy = mag_z - mag_y
+            else:
+                color_zy = 0.0
 
             photometric_features = np.hstack([photometric_features.flatten(), [color_gr, color_ri, color_iz]])
 
             df_clean.at[row.Index, 'color_gr'] = color_gr
             df_clean.at[row.Index, 'color_ri'] = color_ri
             df_clean.at[row.Index, 'color_iz'] = color_iz
+            df_clean.at[row.Index, 'color_gi'] = color_gi
+            df_clean.at[row.Index, 'color_rz'] = color_rz
+            df_clean.at[row.Index, 'color_ug'] = color_ug
+            df_clean.at[row.Index, 'color_zy'] = color_zy
 
             # hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
             # hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
