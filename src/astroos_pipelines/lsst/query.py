@@ -185,7 +185,7 @@ class AstroosQueryLSST(AstroosQuery):
         return df
 
     @staticmethod
-    def cross_match_labels_hst(df, labels_fits_file):
+    def cross_match_labels_hst(df, df_hst):
         """
         Cross-match 
 
@@ -193,8 +193,8 @@ class AstroosQueryLSST(AstroosQuery):
         ----------
         df : pandas.DataFrame
             DataFrame with columns 'coord_ra' and 'coord_dec' for cross-matching. 
-        labels_fits_file : str
-            Path to the FITS file containing labels for cross-matching.
+        df_hst : pandas.DataFrame
+            DataFrame with HST data, including 'ra', 'dec', and 'lssfr' columns for labeling.
 
         Returns
         -------
@@ -204,7 +204,7 @@ class AstroosQueryLSST(AstroosQuery):
         log.info("Cross-matching LSST data.")
 
 
-        hst_dict = AstroosQueryLSST.load_hst_and_make_labels(labels_fits_file)
+        hst_dict = AstroosQueryLSST.load_hst_and_make_labels(df_hst)
         # print("hst_dict")
         # print(hst_dict)
 
@@ -213,9 +213,10 @@ class AstroosQueryLSST(AstroosQuery):
         return df
 
     @staticmethod
-    def load_hst_and_make_labels(hst_fits_path: str):
-        hst = Table.read(hst_fits_path, hdu=1)
+    def load_hst_and_make_labels(df_hst):
 
+        hst = Table.from_pandas(df_hst)
+        
         print(f"length of hst: {len(hst)}")
 
         ra  = np.array(hst["ra"], dtype=float)

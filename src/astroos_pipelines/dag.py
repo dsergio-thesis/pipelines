@@ -1,5 +1,6 @@
 
 from __future__ import annotations
+from graphviz import Digraph
 from dataclasses import dataclass
 import hashlib
 import json
@@ -12,6 +13,41 @@ import sys
 import os
 import numpy as np
 from astropy.table import Table
+from pathlib import Path
+import numpy as np
+from astropy.coordinates import SkyCoord
+from astropy.units import Quantity
+
+
+def to_plain_data(obj):
+    if isinstance(obj, SkyCoord):
+        icrs = obj.icrs
+        return {
+            "type": "SkyCoord",
+            "frame": "icrs",
+            "ra_deg": float(icrs.ra.deg),
+            "dec_deg": float(icrs.dec.deg),
+        }
+    if isinstance(obj, Quantity):
+        return {
+            "type": "Quantity",
+            "value": float(obj.value),
+            "unit": str(obj.unit),
+        }
+    if isinstance(obj, Path):
+        return str(obj)
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, dict):
+        return {str(k): to_plain_data(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [to_plain_data(v) for v in obj]
+    return obj
+
 
 class Node(ABC):
     """Represents a node in the DAG, which can be a task or an operation."""
@@ -47,7 +83,7 @@ class Node(ABC):
                 artifact_hashes=[a.output_path for a in self.inputs + self.outputs],
             )
 
-        print(f"creating a node with parents {parents}")
+        print(f"Creating {self.node_id} with parents {parents}")
         
     @abstractmethod
     def run(self):
@@ -94,6 +130,30 @@ class Node(ABC):
 
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
         table.write(file_path, format="fits", overwrite=True)
+
+        artifact = Artifact(
+            name=self.node_type,
+            file_path=file_path,
+            columns=columns if columns else None,
+        )
+
+        if (self.outputs is None):
+            self.outputs = [artifact]
+        else:
+            self.outputs.append(artifact)
+    
+    def output_csv_table(self, table: Table, columns=None):
+
+        # generate a unique random id for the file name
+        file_id = hashlib.sha256(os.urandom(16)).hexdigest()[:8]
+        file_path = os.path.join(
+                "_pipelines", 
+                self.node_id,
+                self.node_type,
+                f"{file_id}.csv")
+
+        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        table.write(file_path, format="csv", overwrite=True)
 
         artifact = Artifact(
             name=self.node_type,
@@ -252,13 +312,23 @@ class PipelineDAG(DAG):
                 "nodes": [node.to_dict() for node in self.nodes.values()]
             }
             yaml.safe_dump(to_plain_data(data), file, sort_keys=False)
-            # yaml.dump(
-                # {
-                    # "nodes": [i.to_dict() for i in self.nodes.values()]
-                # },
-                # file,
-                # sort_keys=False
-            # )
+    
+
+    def to_graphviz(self, view=False):
+        dot = Digraph(comment="Pipeline DAG")
+        dot.attr(rankdir="LR")  # left to right
+
+        for node_id, node in self.nodes.items():
+            label = f"{node.node_type}\n{node_id[:8]}"
+            dot.node(node_id, label)
+
+        for node_id, node in self.nodes.items():
+            for parent_id in node.parents:
+                dot.edge(parent_id, node_id)
+
+        output_path = os.path.join("_pipelines", "random_dag_visualization.png")
+        dot.render(output_path, format="png", cleanup=True, view=view)
+        return dot
 
     def run_from_node(self, node_id):
         node = self.nodes[node_id]
@@ -270,19 +340,24 @@ class PipelineDAG(DAG):
     def _run_node(self, node_id):
         print(f"Running node {node_id} with children {self.children[node_id]}")
         node = self.nodes[node_id]
+        node.visited = True
         
         for p in node.parents:
             parent_node = self.nodes[p]
-            # print(f"parent_node.outputs: {parent_node.outputs}")
+
+            if not parent_node.visited:
+                self._run_node(p)
+            print(f"{parent_node.node_id} outputs: {parent_node.outputs}")
             node.inputs.extend(parent_node.outputs)
 
         node.run()
         
         if node_id in self.children:
             for child_id in self.children[node_id]:
-                self._run_node(child_id)
+                child_node = self.nodes[child_id]
+                if not child_node.visited:
+                    self._run_node(child_id)
                 
-        node.visited = True
 
 
 class NodeCatalogRandom(Node):
@@ -323,15 +398,18 @@ class NodeCatalogRandom(Node):
 
     def run(self):
 
-        np.random.seed(42)
-        n = 100
+        n = self.parameters.get("n", 10)
+        max_value = self.parameters.get("max_value", 10)
+
+        np.random.seed(0)
         data = Table({
             "objectId": np.arange(n),
-            "feature1": np.random.rand(n),
-            "feature2": np.random.rand(n),
+            "feature1": np.random.rand(n) * max_value,
+            "feature2": np.random.rand(n) * max_value,
             "label": np.random.randint(0, 2, n),
         })
-        self.output_fits_table(data)
+
+        self.output_csv_table(data)
         print(f"Generated random data with {len(data)} rows.")
 
 
@@ -373,58 +451,75 @@ class NodeTransformRandom(Node):
 
     def run(self):
 
-        np.random.seed(42)
-        n = 100
-        data = Table({
-            "objectId": np.arange(n),
-            "feature1": np.random.rand(n),
-            "feature2": np.random.rand(n),
-            "label": np.random.randint(0, 2, n),
-        })
+        artifact = self.inputs[0] # expects one input artifact
+        data = Table.read(artifact.file_path)
 
-        self.output_fits_table(data)
-        print(f"Transformed random data with {len(data)} rows.")
+        columns = artifact.columns if artifact.columns else data.colnames
+        for col in columns:
+            if col in data.colnames and np.issubdtype(data[col].dtype, np.number):
+                data[col] = data[col] * self.parameters.get("multiplier", 2)
 
-from pathlib import Path
-
-import numpy as np
-from astropy.coordinates import SkyCoord
-from astropy.units import Quantity
+        self.output_csv_table(data, columns=columns)
+        print(f"Transformed data with multiplier {self.parameters.get('multiplier', 2)}.")
 
 
-def to_plain_data(obj):
-    if isinstance(obj, SkyCoord):
-        icrs = obj.icrs
-        return {
-            "type": "SkyCoord",
-            "frame": "icrs",
-            "ra_deg": float(icrs.ra.deg),
-            "dec_deg": float(icrs.dec.deg),
-        }
+class NodeMergeRandom(Node):
+    """
+    Merge for testing the pipeline.
+    """
 
-    if isinstance(obj, Quantity):
-        return {
-            "type": "Quantity",
-            "value": float(obj.value),
-            "unit": str(obj.unit),
-        }
+    def __init__(self,
+                 node_type="merge_random",
+                 node_id=None,
+                 parents=[],
+                 parameters=None,
+                 inputs=[],
+                 outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+        )
+    
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "NodeMergeRandom"
+        return d
+    
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+        )
 
-    if isinstance(obj, Path):
-        return str(obj)
+    def run(self):
 
-    if isinstance(obj, np.integer):
-        return int(obj)
+        # expects two input artifacts
+        if len(self.inputs) < 2:
+            raise ValueError(f"NodeMergeRandom expects at least two input artifacts, got {len(self.inputs)}")
+        artifact1 = self.inputs[0]
+        artifact2 = self.inputs[1]
+        data1 = Table.read(artifact1.file_path)
+        data2 = Table.read(artifact2.file_path)
 
-    if isinstance(obj, np.floating):
-        return float(obj)
+        columns1 = artifact1.columns if artifact1.columns else data1.colnames
+        columns2 = artifact2.columns if artifact2.columns else data2.colnames
 
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
+        merged = data1[columns1].copy()
+        for col in columns2:
+            if col in merged.colnames:
+                merged[col + "_2"] = data2[col]
+            else:
+                merged[col] = data2[col]
 
-    if isinstance(obj, dict):
-        return {str(k): to_plain_data(v) for k, v in obj.items()}
+        self.output_csv_table(merged)
+        print(f"Merged data with {len(merged)} rows and {len(merged.colnames)} columns.")
 
-    if isinstance(obj, (list, tuple)):
-        return [to_plain_data(v) for v in obj]
 
-    return obj

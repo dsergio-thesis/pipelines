@@ -304,11 +304,22 @@ class LSSTNodeMatchToHST(Node):
 
     def run(self):
 
+        # expects 2 input artifacts: LSST catalog and HST catalog (both as FITS tables with RA/Dec columns)
+        if len(self.inputs) < 2:
+            raise RuntimeError("LSSTNodeMatchToHST requires 2 input artifacts (LSST and HST).")
+        
+        for artifact in self.inputs:
+            if (artifact.name == "hst_catalog"):
+                hst_table = Table.read(artifact.file_path, hdu=1)
+            elif (artifact.name == "lsst_catalog"):
+                lsst_table = Table.read(artifact.file_path, hdu=1)
 
-        artifact = self.inputs[0]
-        table = Table.read(artifact.file_path, hdu=1)
 
-        table = Table.from_pandas(AstroosQueryLSST.cross_match_labels_hst(table.to_pandas(), "catalogs/hst/hst.fits"))
+        table = Table.from_pandas(
+                AstroosQueryLSST.cross_match_labels_hst(
+                    lsst_table.to_pandas(), 
+                    hst_table.to_pandas(), 
+                    max_sep_arcsec=1.0))
 
         # print("pipeline labels match: ")
         # print(self.output['label'].value_counts())

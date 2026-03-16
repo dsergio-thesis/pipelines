@@ -25,10 +25,16 @@ def main():
                 "query_coords": pipeline_metadata.get("query_coords", None),
                 "query_radius": pipeline_metadata.get("query_radius", None),})
 
+    hst_catalog = HSTNodeCatalog(parameters={"max_records": max_records}) 
+    hst_clean = HSTNodeClean(parameters={"max_records": max_records},
+                     parents=[hst_catalog.node_id])
+    hst_select_clean = HSTNodeSelect(parameters={"max_records": max_records},
+                     parents=[hst_clean.node_id])
+
     lsst_hst_match = LSSTNodeMatchToHST(
             parameters={
                 "max_records": max_records,},
-            parents=[lsst_catalog.node_id],
+            parents=[lsst_catalog.node_id, hst_select_clean.node_id],
             )
 
     lsst_hst_preprocess = LSSTNodePreprocess(
@@ -44,12 +50,18 @@ def main():
 
     dag = PipelineDAG()
 
+    dag.add_node(hst_catalog)
+    dag.add_node(hst_clean)
+    dag.add_node(hst_select_clean)
+
     dag.add_node(lsst_catalog)
     dag.add_node(lsst_hst_match)
     dag.add_node(lsst_hst_preprocess)
     dag.add_node(lsst_hst_data)
 
     dag.run_from_node(lsst_catalog.node_id)
+
+    dag.to_graphviz()
 
     dag.to_yaml("_pipelines/lsst_phot_pipeline.yaml")
 
