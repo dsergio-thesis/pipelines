@@ -487,6 +487,12 @@ class LSSTNodePreprocess(Node):
                     elif band == 'z':
                         mag_z = mag
                         mag_z_flag = flag
+                    elif band == 'u':
+                        mag_u = mag
+                        mag_u_flag = flag
+                    elif band == 'y':
+                        mag_y = mag
+                        mag_y_flag = flag
 
                     bad = 1.0 if bool(flag) else 0.0
 
