@@ -314,9 +314,15 @@ class PipelineDAG(DAG):
             yaml.safe_dump(to_plain_data(data), file, sort_keys=False)
     
 
-    def to_graphviz(self, view=False):
+    def to_graphviz(self, filename=None, view=False):
         dot = Digraph(comment="Pipeline DAG")
-        dot.attr(rankdir="LR")  # left to right
+        # set title with extra padding around it
+        dot.attr(label="Pipeline DAG\n ", labelloc="t", fontsize="20")
+        # dot.attr(rankdir="LR")  # left to right
+
+        # top to bottom: rankdir="TB"
+        dot.attr("node", shape="box", style="filled", fillcolor="lightblue", rankdir="TP")
+        
 
         for node_id, node in self.nodes.items():
             label = f"{node.node_type}\n{node_id[:8]}"
@@ -326,7 +332,9 @@ class PipelineDAG(DAG):
             for parent_id in node.parents:
                 dot.edge(parent_id, node_id)
 
-        output_path = os.path.join("_pipelines", "random_dag_visualization.png")
+        if filename is None:
+            filename = "pipeline_dag"
+        output_path = os.path.join("_pipelines", f"{filename}_visualization.png")
         dot.render(output_path, format="png", cleanup=True, view=view)
         return dot
 
