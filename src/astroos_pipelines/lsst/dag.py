@@ -435,6 +435,10 @@ class LSSTNodePreprocess(Node):
                 - r-z color (mag_r - mag_z)
                 - g-z color (mag_g - mag_z)
                 - r-y color (mag_r - mag_y)
+
+            And 2 curvature features:
+                - curvature_1 = (mag_g - mag_r) - (mag_r - mag_i) = mag_g - 2*mag_r + mag_i
+                - curvature_2 = (mag_r - mag_i) - (mag_i - mag_z) = mag_r - 2*mag_i + mag_z
     
             Next: add difference between PSF and cModel fluxes as morphology proxy?
 
@@ -542,6 +546,14 @@ class LSSTNodePreprocess(Node):
                 color_ry = mag_r - mag_y
             else:
                 color_ry = 0.0
+            if mag_g is not None and mag_r is not None and mag_i is not None and not mag_g_flag and not mag_r_flag and not mag_i_flag:
+                curvature_1 = (mag_g - mag_r) - (mag_r - mag_i)  # = mag_g - 2*mag_r + mag_i
+            else:
+                curvature_1 = 0.0
+            if mag_r is not None and mag_i is not None and mag_z is not None and not mag_r_flag and not mag_i_flag and not mag_z_flag:
+                curvature_2 = (mag_r - mag_i) - (mag_i - mag_z)  # = mag_r - 2*mag_i + mag_z
+            else:
+                curvature_2 = 0.0
 
             photometric_features = np.hstack([photometric_features.flatten(), [color_gr, color_ri, color_iz]])
 
@@ -554,6 +566,8 @@ class LSSTNodePreprocess(Node):
             df_clean.at[row.Index, 'color_zy'] = color_zy
             df_clean.at[row.Index, 'color_gz'] = color_gz
             df_clean.at[row.Index, 'color_ry'] = color_ry
+            df_clean.at[row.Index, 'curvature_1'] = curvature_1
+            df_clean.at[row.Index, 'curvature_2'] = curvature_2
 
             # hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
             # hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
@@ -643,6 +657,8 @@ class LSSTNodePhotoDataset(Node):
                                             getattr(row, 'color_zy', 0.0),
                                             getattr(row, 'color_gz', 0.0),
                                             getattr(row, 'color_ry', 0.0),
+                                            getattr(row, 'curvature_1', 0.0),
+                                            getattr(row, 'curvature_2', 0.0)
                                             ])
 
             hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
