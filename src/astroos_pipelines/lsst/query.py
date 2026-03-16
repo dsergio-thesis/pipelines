@@ -185,7 +185,7 @@ class AstroosQueryLSST(AstroosQuery):
         return df
 
     @staticmethod
-    def cross_match_labels_hst(df, df_hst):
+    def cross_match_labels_hst(df, df_hst, max_sep_arcsec=0.8):
         """
         Cross-match 
 

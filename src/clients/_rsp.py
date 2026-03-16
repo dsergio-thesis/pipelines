@@ -6,6 +6,7 @@ import importlib
 from astroos_pipelines.pipelines import PipelineClassification
 from astroos_pipelines.lsst.pipelines import * 
 from astroos_pipelines.lsst.dag import *
+from astroos_pipelines.hst.dag import *
 from astroos_pipelines.dag import *
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.config.astroos_config import AstroosConfig
@@ -17,6 +18,7 @@ def client_config():
     # global config
     importlib.reload(sys.modules['astroos_pipelines.lsst.pipelines'])
     importlib.reload(sys.modules['astroos_pipelines.lsst.dag'])
+    importlib.reload(sys.modules['astroos_pipelines.hst.dag'])
     importlib.reload(sys.modules['astroos_pipelines.pipelines'])
     importlib.reload(sys.modules['astroos_pipelines.datasets'])
     importlib.reload(sys.modules['astroos_pipelines.dag'])

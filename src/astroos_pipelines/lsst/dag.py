@@ -308,12 +308,17 @@ class LSSTNodeMatchToHST(Node):
         if len(self.inputs) < 2:
             raise RuntimeError("LSSTNodeMatchToHST requires 2 input artifacts (LSST and HST).")
         
+        hst_table = Table()
+        lsst_table = Table()
         for artifact in self.inputs:
-            if (artifact.name == "hst_catalog"):
+            if (artifact.name == "catalog_hst_select"):
                 hst_table = Table.read(artifact.file_path, hdu=1)
-            elif (artifact.name == "lsst_catalog"):
+            elif (artifact.name == "catalog_lsst"):
                 lsst_table = Table.read(artifact.file_path, hdu=1)
 
+        if (len(hst_table) == 0 or len(lsst_table) == 0):
+            print(f"Either HST or LSST tables are size 0. self.inputs: {self.inputs}")
+            raise RuntimeError(f"Either HST or LSST tables are size 0.")
 
         table = Table.from_pandas(
                 AstroosQueryLSST.cross_match_labels_hst(
