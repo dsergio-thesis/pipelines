@@ -363,7 +363,44 @@ class LSSTNodePreprocess(Node):
         )
 
     def run(self):
+        """
+        3 features per band: 
+            - flux Transformed (arcsinh)
+            - x err Transformed (arcsinh)
+            - log SNR (clamped to 0 if err=0)
+            - mag (from flux, with safe handling of zero/negative flux)
+            - x bad-flag (1 if any issues with flux/err, else 0)
 
+        15 color features:
+            - u-g color (mag_u - mag_g)
+            - u-r color (mag_u - mag_r)
+            - u-i color (mag_u - mag_i)
+            - u-z color (mag_u - mag_z)
+            - u-y color (mag_u - mag_y)
+
+            - g-r color (mag_g - mag_r)
+            - g-i color (mag_g - mag_i)
+            - g-z color (mag_g - mag_z)
+            - g-y color (mag_g - mag_y)
+
+            - r-i color (mag_r - mag_i)
+            - r-z color (mag_r - mag_z)
+            - r-y color (mag_r - mag_y)
+            
+            - i-z color (mag_i - mag_z)
+            - i-y color (mag_i - mag_y)
+
+            - z-y color (mag_z - mag_y)
+
+        4 Adjacent curvatures:
+            - curv_ug_gr = (mag_u - mag_g) - (mag_g - mag_r) = mag_u - 2*mag_g + mag_r
+            - curv_gr_ri = (mag_g - mag_r) - (mag_r - mag_i) = mag_g - 2*mag_r + mag_i
+            - curv_ri_iz = (mag_r - mag_i) - (mag_i - mag_z) = mag_r - 2*mag_i + mag_z
+            - curv_iz_zy = (mag_i - mag_z) - (mag_z - mag_y) = mag_i - 2*mag_z + mag_y
+
+        Next: add diff/ratio PSF and cModel for morphology
+
+        """
 
         artifact = self.inputs[0]
         table = Table.read(artifact.file_path, hdu=1)
@@ -417,44 +454,6 @@ class LSSTNodePreprocess(Node):
                     # print(f"found label {str(row.label)}, setting count to 1")
                     label_counts[str(row.label)] = 1
 
-            """
-            3 features per band: 
-                - flux Transformed (arcsinh)
-                - x err Transformed (arcsinh)
-                - log SNR (clamped to 0 if err=0)
-                - mag (from flux, with safe handling of zero/negative flux)
-                - x bad-flag (1 if any issues with flux/err, else 0)
-
-            15 color features:
-                - u-g color (mag_u - mag_g)
-                - u-r color (mag_u - mag_r)
-                - u-i color (mag_u - mag_i)
-                - u-z color (mag_u - mag_z)
-                - u-y color (mag_u - mag_y)
-
-                - g-r color (mag_g - mag_r)
-                - g-i color (mag_g - mag_i)
-                - g-z color (mag_g - mag_z)
-                - g-y color (mag_g - mag_y)
-
-                - r-i color (mag_r - mag_i)
-                - r-z color (mag_r - mag_z)
-                - r-y color (mag_r - mag_y)
-                
-                - i-z color (mag_i - mag_z)
-                - i-y color (mag_i - mag_y)
-
-                - z-y color (mag_z - mag_y)
-
-            4 Adjacent curvatures:
-                - curv_ug_gr = (mag_u - mag_g) - (mag_g - mag_r) = mag_u - 2*mag_g + mag_r
-                - curv_gr_ri = (mag_g - mag_r) - (mag_r - mag_i) = mag_g - 2*mag_r + mag_i
-                - curv_ri_iz = (mag_r - mag_i) - (mag_i - mag_z) = mag_r - 2*mag_i + mag_z
-                - curv_iz_zy = (mag_i - mag_z) - (mag_z - mag_y) = mag_i - 2*mag_z + mag_y
-    
-            Next: add diff/ratio PSF and cModel for morphology
-
-            """
             photometric_features = np.zeros((num_bands, 3), dtype=np.float32)
             
             mag_g = None
@@ -640,8 +639,10 @@ class LSSTNodePhotoDataset(Node):
         artifact = self.inputs[0]
         table = Table.read(artifact.file_path, hdu=1)
         df = table.to_pandas()
+        columns = artifact.columns
 
         dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(self.parameters.get("dataset"))
+        dataset.feature_names = columns
 
         for row in tqdm(df.itertuples(), total=len(df), desc="Building Photometric Dataset"):
 
