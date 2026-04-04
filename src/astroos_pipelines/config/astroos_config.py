@@ -28,21 +28,12 @@ class AstroosConfig:
     dataset_dir: Path
     dataset_name: str
     pipeline_dir: Path
-    # pipeline_name: str
-    # pipeline_minor_version: int
     label_def_file: str
 
     frame: str = "icrs"
     obstime: Optional[str] = None
     equinox: Optional[str] = None
 
-    # coords: Dict[str, CoordSpec] = field(default_factory=lambda: {
-        # "virgo_cluster": CoordSpec("12 30 49.423 +12 23 28.04", "hmsdms", 30.0),
-        # "obj_3c273":     CoordSpec("12 29 06.699 +02 03 08.60", "hmsdms", 2.0),
-        # "someother":     CoordSpec("14 35 42.8685615528 +40 18 02.133470196", "hmsdms", 3.0),
-        # "CDF_South":     CoordSpec("53.161 -27.791", "deg", -1.0),
-        # "COSMOS":        CoordSpec("150.1 2.2", "deg", 30),
-    # })
     coords: Dict[str, CoordSpec] = field(
         default_factory=lambda: load_coords_from_csv("catalogs/sky_region_labels.csv")
     )
@@ -93,7 +84,7 @@ class AstroosConfig:
 
         return cls(
             dataset_dir=cls.clean_path(env("PIPELINE_DATASET_DIR")).expanduser(),
-            dataset_name=cls.clean_str(""),
+            dataset_name=cls.clean_str(env("PIPELINE_DATASET_NAME")),
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
             label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
             # frame=os.getenv("PIPELINE_FRAME", "icrs"),
@@ -112,7 +103,6 @@ class AstroosConfig:
             dataset_dir=cls.clean_path(env("PIPELINE_DATASET_DIR")).expanduser(),
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
             pipeline_name="p_random_data",
-            # pipeline_minor_version=int(env("PIPELINE_MINOR_VERSION")),
             label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
             # frame=os.getenv("PIPELINE_FRAME", "icrs"),
             # obstime=os.getenv("PIPELINE_OBSTIME"),
@@ -170,12 +160,6 @@ class AstroosConfig:
             dataset_dir=args.dataset_dir or base.dataset_dir,
             dataset_name=args.dataset_name or base.dataset_name,
             pipeline_dir=args.pipeline_dir or base.pipeline_dir,
-            # pipeline_name=args.pipeline_name or base.pipeline_name,
-            # pipeline_minor_version=(
-                # args.pipeline_minor_version
-                # if args.pipeline_minor_version is not None
-                # else base.pipeline_minor_version
-            # ),
             label_def_file=args.label_def_file or base.label_def_file,
             # frame=args.frame or base.frame,
             # obstime=args.obstime or base.obstime,
@@ -213,8 +197,6 @@ class AstroosConfig:
             ("dataset_dir",            self.dataset_dir),
             ("dataset_name",           self.dataset_name),
             ("pipeline_dir",           self.pipeline_dir),
-            # ("pipeline_name",          self.pipeline_name),
-            # ("pipeline_minor_version", self.pipeline_minor_version),
             ("label_def_file",         self.label_def_file),
             # ("frame",                  self.frame),
             # ("obstime",                self.obstime),
@@ -231,6 +213,11 @@ from typing import Dict
 
 def load_coords_from_csv(path: str | Path) -> Dict[str, CoordSpec]:
     coords = {}
+
+    # if file doesn't exist, return empty dict (allows for optional custom label files)
+    if not Path(path).is_file():
+        print(f"Warning: Label definition file '{path}' not found. No coordinates loaded.")
+        return coords
 
     with open(path, newline="") as f:
         reader = csv.DictReader(f)

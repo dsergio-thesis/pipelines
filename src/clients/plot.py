@@ -7,14 +7,13 @@ def main():
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name
     label_def_file = config.label_def_file
-    pipeline_name = config.pipeline_name
     max_records = config.max_records
     print("Configuration loaded successfully.")
     
     transformCartesian = transforms.Compose([
         # transforms.ToTensor(),
         # AddGaussianNoise(mean=0., std=0.3),
-        transforms.CenterCrop(50),
+        # transforms.CenterCrop(50),
         # CropAroundCentroid(crop_size=(50, 50)),
         # SegmentationTransform(nsigma=0.2, min_area=40),
         # CropAroundCentroid(crop_size=(30, 30)),
