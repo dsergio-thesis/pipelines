@@ -106,10 +106,10 @@ class Node(ABC):
         parameters=d.get("parameters", {})
 
         if d.get("inputs") is not None and len(d.get("inputs")) > 0:
-            print(f"inputs: {d.get('inputs')}")
+            print(f"inputs: {len(d.get('inputs'))}")
             inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])]
         if d.get("outputs") is not None and len(d.get("outputs")) > 0:
-            print(f"outputs: {d.get('outputs')}")
+            print(f"outputs: {len(d.get('outputs'))}")
             outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])]
 
         parent_ids=d.get("parent_ids", []),
