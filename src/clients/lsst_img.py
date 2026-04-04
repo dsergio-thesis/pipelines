@@ -7,7 +7,6 @@ def main():
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name
     label_def_file = config.label_def_file
-    pipeline_name = config.pipeline_name
     max_records = config.max_records
     print("Configuration loaded successfully.")
 

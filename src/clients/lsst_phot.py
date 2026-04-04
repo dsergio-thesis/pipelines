@@ -13,9 +13,6 @@ def main():
     dataset_cart_phot = FITS_Image_Morphometry_Photometry_Dataset(
             dataset_dir=os.path.join(dataset_dir, dataset_name),
             labels_init_file=label_def_file,
-            N_bands=6, 
-            N_morphometric_features=0,
-            N_photometric_features=4,
             )
 
     lsst_catalog = LSSTNodeCatalog(
@@ -24,7 +21,7 @@ def main():
                 "query_coords": pipeline_metadata.get("query_coords", None),
                 "query_radius": pipeline_metadata.get("query_radius", None),})
 
-    # we want the whole catalog for matching. adjust just for testing this
+    # we usually want the whole catalog for matching. adjust just for testing this
     hst_max_records = 300000
     hst_catalog = HSTNodeCatalog(parameters={"max_records": hst_max_records}) 
     hst_clean = HSTNodeClean(parameters={"max_records": hst_max_records},

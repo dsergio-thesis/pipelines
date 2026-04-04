@@ -12,7 +12,7 @@ import pandas as pd
 import importlib
 
 from astroos_pipelines.lsst.query import AstroosQueryLSST
-from astroos_pipelines.pipelines import StagePipeline 
+# from astroos_pipelines.pipelines import StagePipeline 
 from astroos_pipelines.dag import *
 from astroos_pipelines.utils.rsp import get_cutout_bands
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
@@ -306,7 +306,7 @@ class LSSTNodeMatchToHST(Node):
 
         # expects 2 input artifacts: LSST catalog and HST catalog (both as FITS tables with RA/Dec columns)
         if len(self.inputs) < 2:
-            raise RuntimeError("LSSTNodeMatchToHST requires 2 input artifacts (LSST and HST).")
+            raise RuntimeError("LSSTNodeMatchToHST requires 2 input artifacts named `catalog_hst_select` and `catalog_lsst`.")
         
         hst_table = Table()
         lsst_table = Table()
@@ -318,7 +318,7 @@ class LSSTNodeMatchToHST(Node):
 
         if (len(hst_table) == 0 or len(lsst_table) == 0):
             print(f"Either HST or LSST tables are size 0. self.inputs: {self.inputs}")
-            raise RuntimeError(f"Either HST or LSST tables are size 0.")
+            raise RuntimeError(f"Either HST or LSST tables are size 0. LSSTNodeMatchToHST requires 2 input artifacts named `catalog_hst_select` and `catalog_lsst`.")
 
         table = Table.from_pandas(
                 AstroosQueryLSST.cross_match_labels_hst(
