@@ -22,13 +22,17 @@ inputs=2, outputs=1)"]
 	d5cd54ee [label="Node(node_id=d5cd54ee
 type=catalog_lsst_preprocess
 inputs=1, outputs=1)"]
-	"0c3504b5" [label="Node(node_id=0c3504b5
+	"49f880c4" [label="Node(node_id=49f880c4
 type=catalog_lsst_photo_dataset
 inputs=1, outputs=1)"]
+	dbd2051e [label="Node(node_id=dbd2051e
+type=catalog_lsst_butler_fetch
+inputs=1, outputs=0)"]
 	"4bd430bc" -> "11820ae7"
 	"11820ae7" -> eed603bc
 	b837dc6f -> b76120e6
 	eed603bc -> b76120e6
 	b76120e6 -> d5cd54ee
-	d5cd54ee -> "0c3504b5"
+	d5cd54ee -> "49f880c4"
+	"49f880c4" -> dbd2051e
 }

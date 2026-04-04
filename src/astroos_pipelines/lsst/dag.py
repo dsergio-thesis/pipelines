@@ -782,8 +782,8 @@ def worker_patch(args):
 
         # print("row\n\n")
         # print(row)
-        ra_deg = float(row["coord_ra"])
-        dec_deg = float(row["coord_dec"])
+        ra_deg = float(row["ra"])
+        dec_deg = float(row["dec"])
 
         # SpherePoint expects (lon, lat) as Angles.
         # Use degrees explicitly.

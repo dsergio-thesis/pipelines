@@ -365,7 +365,7 @@ class PipelineDAG(DAG):
 
             if not parent_node.visited:
                 self._run_node(p)
-            print(f"{parent_node.node_id} outputs: {parent_node.outputs}")
+            print(f"{parent_node.node_id} outputs: {len(parent_node.outputs)}")
             node.inputs.extend(parent_node.outputs)
 
         node.run()
