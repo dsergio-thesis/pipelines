@@ -64,6 +64,7 @@ def main():
     dag.add_node(lsst_hst_match)
     dag.add_node(lsst_hst_preprocess)
     dag.add_node(lsst_hst_data)
+    dag.add_node(lsst_hst_fetch)
 
     dag.run_from_node(lsst_catalog.node_id)
 
