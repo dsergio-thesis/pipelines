@@ -167,9 +167,6 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
     def __init__(self,
                  dataset_dir,
                  labels_init_file=None,
-                 N_bands=5,
-                 N_morphometric_features=4,
-                 N_photometric_features=4,
                  transform=None,
                  morphometric_transform=None,
                  photometric_transform=None):
@@ -178,10 +175,6 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         self.transform = transform
         self.photometric_transform = photometric_transform
         self.morphometric_transform = morphometric_transform
-
-        self.N_bands = N_bands
-        self.N_morphometric_features = N_morphometric_features
-        self.N_photometric_features = N_photometric_features
 
         if labels_init_file is not None and not os.path.exists(labels_init_file):
             log.error(f"labels_init_file '{labels_init_file}' does not exist")
@@ -371,9 +364,6 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
             ("dataset_dir", self.dataset_dir),
             ("num_objects", len(self.manifest_list)),
             ("num_classes", self.num_classes()),
-            ("N_bands", self.N_bands),
-            ("N_morphometric_features", self.N_morphometric_features),
-            ("N_photometric_features", self.N_photometric_features),
             ("manifest", self.manifest_file),
             ("morphometric_transform", ""),
             ("photometric_transform", ""),
@@ -386,9 +376,6 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
             "dataset_dir": self.dataset_dir,
             "num_objects": len(self.manifest_list),
             "num_classes": self.num_classes(),
-            "N_bands": self.N_bands,
-            "N_morphometric_features": self.N_morphometric_features,
-            "N_photometric_features": self.N_photometric_features,
             "manifest_file": self.manifest_file,
             "labels": self.labels.to_dict() if self.labels is not None else None,
         }
@@ -397,9 +384,6 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
     def from_dict(cls, d):
         dataset = cls(
             dataset_dir=d["dataset_dir"],
-            N_bands=d["N_bands"],
-            N_morphometric_features=d["N_morphometric_features"],
-            N_photometric_features=d["N_photometric_features"],
         )
         if d.get("labels") is not None:
             dataset.labels = Labels.from_dict(d["labels"])

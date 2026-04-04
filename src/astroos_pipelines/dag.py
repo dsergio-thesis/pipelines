@@ -173,6 +173,13 @@ class Node(ABC):
             f"parameters={self.parameters}, "
             f"inputs={self.inputs}, outputs={self.outputs})"
             )
+    
+    def node_label(self):
+        return (
+            f"Node(node_id={self.node_id}\n"
+            f"type={self.node_type}\n"
+            f"inputs={len(self.inputs)}, outputs={len(self.outputs)})"
+            )
         
 
 class DAG(ABC):
@@ -318,14 +325,16 @@ class PipelineDAG(DAG):
         dot = Digraph(comment="Pipeline DAG")
         # set title with extra padding around it
         dot.attr(label="Pipeline DAG\n ", labelloc="t", fontsize="20")
-        # dot.attr(rankdir="LR")  # left to right
+
+        dot.attr(rankdir="LR")  # left to right
 
         # top to bottom: rankdir="TB"
-        dot.attr("node", shape="box", style="filled", fillcolor="lightblue", rankdir="TP")
+        dot.attr("node", shape="box", style="filled,rounded", fillcolor="lightblue")
         
 
         for node_id, node in self.nodes.items():
-            label = f"{node.node_type}\n{node_id[:8]}"
+            # label = f"{node.node_type}\n{node_id[:8]}"
+            label = node.node_label() 
             dot.node(node_id, label)
 
         for node_id, node in self.nodes.items():
@@ -333,9 +342,10 @@ class PipelineDAG(DAG):
                 dot.edge(parent_id, node_id)
 
         if filename is None:
-            filename = "pipeline_dag"
-        output_path = os.path.join("_pipelines", f"{filename}_visualization.png")
+            filename = "pipeline_dag_visualization.png"
+        output_path = os.path.join("_pipelines", filename)
         dot.render(output_path, format="png", cleanup=True, view=view)
+        dot.save("graph.dot")
         return dot
 
     def run_from_node(self, node_id):

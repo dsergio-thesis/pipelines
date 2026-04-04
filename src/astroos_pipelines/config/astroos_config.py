@@ -13,7 +13,6 @@ import importlib
 from astroos_pipelines.utils.formatting import ascii_kv_table
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
-
 CoordFormat = Literal["hmsdms", "deg"]
 
 
@@ -29,8 +28,8 @@ class AstroosConfig:
     dataset_dir: Path
     dataset_name: str
     pipeline_dir: Path
-    pipeline_name: str
-    pipeline_minor_version: int
+    # pipeline_name: str
+    # pipeline_minor_version: int
     label_def_file: str
 
     frame: str = "icrs"
@@ -94,14 +93,12 @@ class AstroosConfig:
 
         return cls(
             dataset_dir=cls.clean_path(env("PIPELINE_DATASET_DIR")).expanduser(),
-            dataset_name=cls.clean_str(env("PIPELINE_DATASET_NAME")),
+            dataset_name=cls.clean_str(""),
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
-            pipeline_name=env("PIPELINE_NAME"),
-            pipeline_minor_version=int(env("PIPELINE_MINOR_VERSION")),
             label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
-            frame=os.getenv("PIPELINE_FRAME", "icrs"),
-            obstime=os.getenv("PIPELINE_OBSTIME"),
-            equinox=os.getenv("PIPELINE_EQUINOX"),
+            # frame=os.getenv("PIPELINE_FRAME", "icrs"),
+            # obstime=os.getenv("PIPELINE_OBSTIME"),
+            # equinox=os.getenv("PIPELINE_EQUINOX"),
         )
 
     @classmethod
@@ -113,14 +110,13 @@ class AstroosConfig:
             return v
         return cls(
             dataset_dir=cls.clean_path(env("PIPELINE_DATASET_DIR")).expanduser(),
-            dataset_name="random_data",
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
             pipeline_name="p_random_data",
-            pipeline_minor_version=int(env("PIPELINE_MINOR_VERSION")),
+            # pipeline_minor_version=int(env("PIPELINE_MINOR_VERSION")),
             label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
-            frame=os.getenv("PIPELINE_FRAME", "icrs"),
-            obstime=os.getenv("PIPELINE_OBSTIME"),
-            equinox=os.getenv("PIPELINE_EQUINOX"),
+            # frame=os.getenv("PIPELINE_FRAME", "icrs"),
+            # obstime=os.getenv("PIPELINE_OBSTIME"),
+            # equinox=os.getenv("PIPELINE_EQUINOX"),
         )
 
     @classmethod
@@ -174,17 +170,17 @@ class AstroosConfig:
             dataset_dir=args.dataset_dir or base.dataset_dir,
             dataset_name=args.dataset_name or base.dataset_name,
             pipeline_dir=args.pipeline_dir or base.pipeline_dir,
-            pipeline_name=args.pipeline_name or base.pipeline_name,
-            pipeline_minor_version=(
-                args.pipeline_minor_version
-                if args.pipeline_minor_version is not None
-                else base.pipeline_minor_version
-            ),
+            # pipeline_name=args.pipeline_name or base.pipeline_name,
+            # pipeline_minor_version=(
+                # args.pipeline_minor_version
+                # if args.pipeline_minor_version is not None
+                # else base.pipeline_minor_version
+            # ),
             label_def_file=args.label_def_file or base.label_def_file,
-            frame=args.frame or base.frame,
-            obstime=args.obstime or base.obstime,
-            equinox=args.equinox or base.equinox,
-            coords=base.coords,  # unchanged for now
+            # frame=args.frame or base.frame,
+            # obstime=args.obstime or base.obstime,
+            # equinox=args.equinox or base.equinox,
+            # coords=base.coords,  # unchanged for now
             max_records=args.max_records if args.max_records is not None else base.max_records,
         )
 
@@ -217,12 +213,12 @@ class AstroosConfig:
             ("dataset_dir",            self.dataset_dir),
             ("dataset_name",           self.dataset_name),
             ("pipeline_dir",           self.pipeline_dir),
-            ("pipeline_name",          self.pipeline_name),
-            ("pipeline_minor_version", self.pipeline_minor_version),
+            # ("pipeline_name",          self.pipeline_name),
+            # ("pipeline_minor_version", self.pipeline_minor_version),
             ("label_def_file",         self.label_def_file),
-            ("frame",                  self.frame),
-            ("obstime",                self.obstime),
-            ("equinox",                self.equinox),
+            # ("frame",                  self.frame),
+            # ("obstime",                self.obstime),
+            # ("equinox",                self.equinox),
             ("coords",                 f"{len(self.coords)} entries"),
             ("max_records",            self.max_records),
         ]

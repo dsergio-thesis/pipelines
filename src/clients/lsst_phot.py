@@ -7,7 +7,6 @@ def main():
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name
     label_def_file = config.label_def_file
-    pipeline_name = config.pipeline_name
     max_records = config.max_records
     print("Configuration loaded successfully.")
 
@@ -25,6 +24,7 @@ def main():
                 "query_coords": pipeline_metadata.get("query_coords", None),
                 "query_radius": pipeline_metadata.get("query_radius", None),})
 
+    # we want the whole catalog for matching. adjust just for testing this
     hst_max_records = 300000
     hst_catalog = HSTNodeCatalog(parameters={"max_records": hst_max_records}) 
     hst_clean = HSTNodeClean(parameters={"max_records": hst_max_records},

@@ -22,9 +22,6 @@ def main():
     dataset_cart_cutouts_morph_b = FITS_Image_Morphometry_Photometry_Dataset(
             dataset_dir=os.path.join(dataset_dir, dataset_name),
             labels_init_file=label_def_file,
-            N_bands=6, 
-            N_morphometric_features=4,
-            N_photometric_features=4,
             )
 
     catalog = LSSTNodeCatalog(
