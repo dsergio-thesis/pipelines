@@ -178,9 +178,10 @@ class Node(ABC):
     
     def node_label(self):
         return (
-            f"node_id={self.node_id}\n"
-            f"{self.label} ({self.node_type})\n"
-            f"inputs={len(self.inputs)}, outputs={len(self.outputs)}"
+            # f"node_id={self.node_id}\n"
+            f"<b>{self.label}</b>\n"
+            f"#{self.node_id}\n"
+            f"{len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs"
             )
         
 
