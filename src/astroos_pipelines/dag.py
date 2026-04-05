@@ -178,8 +178,8 @@ class Node(ABC):
     
     def node_label(self):
         return f"""
-            <table border="0" cellborder="0" cellspacing="0" color="#ffffff">
-                <tr><td><b>{self.label}</b></td></tr>
+            <table border="0" cellborder="0" cellspacing="0">
+                <tr><td><font color="#ffffff"><b>{self.label}</b></font></td></tr>
                 <tr><td>#{self.node_id}</td></tr>
                 <tr><td>{len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs</td></tr>
             </table>
