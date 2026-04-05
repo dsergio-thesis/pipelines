@@ -179,7 +179,7 @@ class Node(ABC):
     def node_label(self):
         return (
             f"node_id={self.node_id}\n"
-            f"type={self.node_type}\n"
+            f"{self.label} ({self.node_type})\n"
             f"inputs={len(self.inputs)}, outputs={len(self.outputs)}"
             )
         
@@ -282,7 +282,11 @@ class PipelineDAG(DAG):
     def __init__(self, 
                  dag_file_path=None,
                  label="Pipeline DAG"):
+
+        # set dag_id to label lower case and replace any non-alphanumeric characters with underscores
         self.label = label
+        self.dag_id = "".join(c if c.isalnum() else "_" for c in label.lower())
+
         if dag_file_path:
             with open(dag_file_path, "r") as file:
                 data = yaml.safe_load(file)
@@ -347,10 +351,10 @@ class PipelineDAG(DAG):
                 dot.edge(parent_id, node_id)
 
         if filename is None:
-            filename = "dag"
+            filename = f"dag_{self.dag_id}"
         output_path = os.path.join("_pipelines", filename)
         dot.render(output_path, format="png", cleanup=True, view=view)
-        dot.save(f"dag_{self.label}.dot")
+        dot.save(f"dag_{self.dag_id}.dot")
         return dot
 
     def run_from_node(self, node_id):

@@ -66,7 +66,9 @@ class LSSTNodeCatalog(Node):
              parameters=None,
              inputs=[],
              outputs=[]):
-        super().__init__(node_type=node_type,
+        super().__init__(
+            node_type=node_type,
+            label="LSST Catalog Query",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
