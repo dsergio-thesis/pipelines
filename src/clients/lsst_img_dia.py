@@ -54,7 +54,8 @@ def main():
             parents=[lsst_hst_data.node_id],
             )
 
-    dag = PipelineDAG()
+    label = "LSST/HST DAG"
+    dag = PipelineDAG(label=label)
 
     dag.add_node(hst_catalog)
     dag.add_node(hst_clean)

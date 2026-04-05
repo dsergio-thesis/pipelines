@@ -60,12 +60,14 @@ class Node(ABC):
 
     def __init__(self, 
                  node_type, 
+                 label=None,
                  node_id=None,
                  parents=[],
                  parameters=None, 
                  inputs=[], 
                  outputs=[]):
         self.node_type = node_type
+        self.label = label or node_type
         self.parents = parents
         self.children = []
         self.parameters = parameters
@@ -176,9 +178,9 @@ class Node(ABC):
     
     def node_label(self):
         return (
-            f"Node(node_id={self.node_id}\n"
+            f"node_id={self.node_id}\n"
             f"type={self.node_type}\n"
-            f"inputs={len(self.inputs)}, outputs={len(self.outputs)})"
+            f"inputs={len(self.inputs)}, outputs={len(self.outputs)}"
             )
         
 
@@ -277,7 +279,10 @@ def compute_node_id(node_type, parent_ids, params, artifact_hashes=[]):
 class PipelineDAG(DAG):
     """DAG Pipeline"""
 
-    def __init__(self, dag_file_path=None):
+    def __init__(self, 
+                 dag_file_path=None,
+                 label="Pipeline DAG"):
+        self.label = label
         if dag_file_path:
             with open(dag_file_path, "r") as file:
                 data = yaml.safe_load(file)
@@ -322,9 +327,9 @@ class PipelineDAG(DAG):
     
 
     def to_graphviz(self, filename=None, view=False):
-        dot = Digraph(comment="Pipeline DAG")
+        dot = Digraph(comment=self.label)
         # set title with extra padding around it
-        dot.attr(label="Pipeline DAG\n ", labelloc="t", fontsize="20")
+        dot.attr(label=f"{self.label}\n ", labelloc="t", fontsize="20")
 
         dot.attr(rankdir="LR")  # left to right
 
@@ -342,10 +347,10 @@ class PipelineDAG(DAG):
                 dot.edge(parent_id, node_id)
 
         if filename is None:
-            filename = "pipeline_dag_visualization.png"
+            filename = "dag"
         output_path = os.path.join("_pipelines", filename)
         dot.render(output_path, format="png", cleanup=True, view=view)
-        dot.save("graph.dot")
+        dot.save(f"dag_{self.label}.dot")
         return dot
 
     def run_from_node(self, node_id):

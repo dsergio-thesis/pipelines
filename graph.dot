@@ -4,35 +4,35 @@ digraph {
  " labelloc=t
 	rankdir=LR
 	node [fillcolor=lightblue shape=box style="filled,rounded"]
-	"4bd430bc" [label="Node(node_id=4bd430bc
+	"4bd430bc" [label="node_id=4bd430bc
 type=catalog_hst
-inputs=0, outputs=1)"]
-	"11820ae7" [label="Node(node_id=11820ae7
+inputs=0, outputs=0"]
+	"11820ae7" [label="node_id=11820ae7
 type=catalog_hst_clean
-inputs=1, outputs=1)"]
-	eed603bc [label="Node(node_id=eed603bc
+inputs=0, outputs=0"]
+	eed603bc [label="node_id=eed603bc
 type=catalog_hst_select
-inputs=1, outputs=1)"]
-	b837dc6f [label="Node(node_id=b837dc6f
+inputs=0, outputs=0"]
+	b837dc6f [label="node_id=b837dc6f
 type=catalog_lsst
-inputs=0, outputs=1)"]
-	b76120e6 [label="Node(node_id=b76120e6
+inputs=0, outputs=0"]
+	b76120e6 [label="node_id=b76120e6
 type=catalog_lsst_match_hst
-inputs=2, outputs=1)"]
-	d5cd54ee [label="Node(node_id=d5cd54ee
+inputs=0, outputs=0"]
+	d5cd54ee [label="node_id=d5cd54ee
 type=catalog_lsst_preprocess
-inputs=1, outputs=1)"]
-	"49f880c4" [label="Node(node_id=49f880c4
+inputs=0, outputs=0"]
+	"19e7a753" [label="node_id=19e7a753
 type=catalog_lsst_photo_dataset
-inputs=1, outputs=1)"]
-	dbd2051e [label="Node(node_id=dbd2051e
+inputs=0, outputs=0"]
+	"5f973b23" [label="node_id=5f973b23
 type=catalog_lsst_butler_fetch
-inputs=1, outputs=0)"]
+inputs=0, outputs=0"]
 	"4bd430bc" -> "11820ae7"
 	"11820ae7" -> eed603bc
 	b837dc6f -> b76120e6
 	eed603bc -> b76120e6
 	b76120e6 -> d5cd54ee
-	d5cd54ee -> "49f880c4"
-	"49f880c4" -> dbd2051e
+	d5cd54ee -> "19e7a753"
+	"19e7a753" -> "5f973b23"
 }
