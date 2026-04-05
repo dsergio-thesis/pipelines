@@ -11,7 +11,8 @@ from astroos_pipelines.pipelines import *
 from astroos_pipelines.hst.pipelines import * 
 from astroos_pipelines.hst.dag import *
 from astroos_pipelines.dag import * 
-from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
+from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset, \
+        DataLoaderFITS
 from astroos_pipelines.config.astroos_config import AstroosConfig
 from astroos_pipelines.logger.logger import setup_logging
 from astroos_pipelines.transforms import AddGaussianNoise, \
