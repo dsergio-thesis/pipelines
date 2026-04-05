@@ -177,16 +177,12 @@ class Node(ABC):
             )
     
     def node_label(self):
-        # return (
-            # f"<b>{self.label}</b>\n"
-            # f"#{self.node_id}\n"
-            # f"{len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs"
-            # )
         return f"""
-            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
-                <TR><TD><B>{self.label}</B></TD></TR>
-                <TR><TD>{self.node_id[:8]}</TD></TR>
-            </TABLE>
+            <table border="0" cellborder="0" cellspacing="0" color="#ffffff">
+                <tr><td><b>{self.label}</b></td></tr>
+                <tr><td>#{self.node_id}</td></tr>
+                <tr><td>{len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs</td></tr>
+            </table>
             """
         
 
@@ -344,7 +340,7 @@ class PipelineDAG(DAG):
         dot.attr(rankdir="LR")  # left to right
 
         # top to bottom: rankdir="TB"
-        dot.attr("node", shape="box", style="filled,rounded", fillcolor="lightblue")
+        dot.attr("node", shape="box", style="filled,rounded", fillcolor="#1f77b4")
         
 
         for node_id, node in self.nodes.items():

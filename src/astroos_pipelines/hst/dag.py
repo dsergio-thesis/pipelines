@@ -31,14 +31,17 @@ log = logging.getLogger(__name__)
 
 
 class HSTNodeCatalog(Node):
-    def __init__(self,
-             node_type="catalog_hst",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="catalog_hst",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label="HST-3D Load Catalog",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -97,14 +100,17 @@ class HSTNodeCatalog(Node):
         
 
 class HSTNodeEDA(Node):
-    def __init__(self,
-             node_type="catalog_hst_eda",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="catalog_hst_eda",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label="HST-3D EDA",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -144,14 +150,17 @@ class HSTNodeEDA(Node):
 
 
 class HSTNodeClean(Node):
-    def __init__(self,
-             node_type="catalog_hst_clean",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="catalog_hst_clean",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label="HST-3D Clean",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -255,15 +264,18 @@ class HSTNodeClean(Node):
 
 
 class HSTNodeSelect(Node):
-    def __init__(self,
-             node_type="catalog_hst_select",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="catalog_hst_select",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
             node_id=node_id,
+            label="HST-3D Data Selection (remove outliers)",
             parents=parents,
             parameters=parameters,
             inputs=inputs,

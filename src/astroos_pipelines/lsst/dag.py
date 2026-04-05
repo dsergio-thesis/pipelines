@@ -60,15 +60,15 @@ log = logging.getLogger(__name__)
 
 class LSSTNodeCatalog(Node):
     def __init__(self,
-             node_type="catalog_lsst",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
+            node_type="catalog_lsst",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
         super().__init__(
             node_type=node_type,
-            label="LSST Catalog Query",
+            label="Query LSST DP-1 TAP",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -229,14 +229,17 @@ class LSSTNodeCatalog(Node):
 
 
 class LSSTNodeEDA(Node):
-    def __init__(self,
-             node_type="catalog_lsst",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="lsst_eda",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label="LSST DP-1 EDA",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -274,14 +277,17 @@ class LSSTNodeEDA(Node):
 
 
 class LSSTNodeMatchToHST(Node):
-    def __init__(self,
-             node_type="catalog_lsst_match_hst",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="catalog_lsst_match_hst",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label="LSST DP-1 HST-3D Cross-match",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -334,14 +340,17 @@ class LSSTNodeMatchToHST(Node):
         self.output_fits_table(table)
 
 class LSSTNodePreprocess(Node):
-    def __init__(self,
-             node_type="catalog_lsst_preprocess",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="catalog_lsst_preprocess",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label="Extract LSST Photometric features",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -606,14 +615,17 @@ class LSSTNodePreprocess(Node):
 
 
 class LSSTNodePhotoDataset(Node):
-    def __init__(self,
-             node_type="catalog_lsst_photo_dataset",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="catalog_lsst_photo_dataset",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label="Construct FITS Dataset",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -696,14 +708,17 @@ class LSSTNodePhotoDataset(Node):
 
 
 class LSSTNodeButlerFetch(Node):
-    def __init__(self,
-             node_type="catalog_lsst_butler_fetch",
-             node_id=None,
-             parents=[],
-             parameters=None,
-             inputs=[],
-             outputs=[]):
-        super().__init__(node_type=node_type,
+    def __init__(
+            self,
+            node_type="catalog_lsst_butler_fetch",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label="Fetch LSST DP-1 Cutouts (Butler)",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
