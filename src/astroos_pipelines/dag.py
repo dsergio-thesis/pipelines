@@ -177,12 +177,17 @@ class Node(ABC):
             )
     
     def node_label(self):
-        return (
-            # f"node_id={self.node_id}\n"
-            f"<b>{self.label}</b>\n"
-            f"#{self.node_id}\n"
-            f"{len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs"
-            )
+        # return (
+            # f"<b>{self.label}</b>\n"
+            # f"#{self.node_id}\n"
+            # f"{len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs"
+            # )
+        return f"""
+            <TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+                <TR><TD><B>{self.label}</B></TD></TR>
+                <TR><TD>{self.node_id[:8]}</TD></TR>
+            </TABLE>
+            """
         
 
 class DAG(ABC):
@@ -345,7 +350,7 @@ class PipelineDAG(DAG):
         for node_id, node in self.nodes.items():
             # label = f"{node.node_type}\n{node_id[:8]}"
             label = node.node_label() 
-            dot.node(node_id, label)
+            dot.node(node_id, f"<{label}>")
 
         for node_id, node in self.nodes.items():
             for parent_id in node.parents:
