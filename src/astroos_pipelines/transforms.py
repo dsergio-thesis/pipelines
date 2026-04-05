@@ -6,11 +6,13 @@ from PIL import Image
 import torch
 import numpy as np
 from skimage import color, measure, transform
+import importlib
 
 from astroos_pipelines.morphometry import simple_segmentation, \
     measure_morfometry, \
     centroid_flux
 
+importlib.reload(sys.modules['astroos_pipelines.morphometry'])
 
 class AddGaussianNoise:
     """Custom transform that adds Gaussian noise to a tensor image."""

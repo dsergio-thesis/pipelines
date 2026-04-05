@@ -21,7 +21,8 @@ dependencies = [
   "pyvo>=1.4",
 
   # numerics / data
-  "numpy==1.26.4",
+  #"numpy==1.26.4", # for some reason i need 1.* but for now let's use 2
+  "numpy>=2.0",
   "scipy>=1.10",
   "pandas>=2.0",
   "networkx>=3.0",
