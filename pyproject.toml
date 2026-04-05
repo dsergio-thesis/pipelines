@@ -30,7 +30,7 @@ dependencies = [
   # plotting / images
   "matplotlib>=3.7",
   "pillow>=10",
-  "scikit-image>=0.21",
+  "scikit-image>=0.26,<0.27",
   "cmcrameri>=1.7",
 
   # simulation

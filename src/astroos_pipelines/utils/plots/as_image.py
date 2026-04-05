@@ -60,6 +60,8 @@ def plot_random_samples_as_image(
     random_phot_features = [s[3] for s in samples]
     random_metadata = [s[4] for s in samples]
 
+    print(f"Random phot features: {random_phot_features}")
+
     # bounds if data exists
     random_image_bounds = None
     if random_cutouts[0] is not None:
@@ -90,22 +92,22 @@ def plot_random_samples_as_image(
     bands = ['u', 'g', 'r', 'i', 'z']
     bands = ['u', 'g', 'r', 'i', 'z', 'y']
     num_rows = num_samples_to_display
-    num_info_per_row = 4  # info, image, morph features, phot features
+    num_info_per_row = 3  # info, image, morph features, phot features
     num_cols = len(bands) 
 
     fig = plt.figure(figsize=(16, num_samples_to_display * num_info_per_row), constrained_layout=True)
     fig.suptitle(plot_title, fontsize=24)
     gs = gridspec.GridSpec(
-        num_rows * 4, 
+        num_rows * 3, 
         num_cols, 
         figure=fig,
         width_ratios=[1.0] * num_cols,
-        height_ratios=([.25] + [3.0] + [1.0] + [1.0]) * num_rows,
+        height_ratios=([.25] + [3.0] + [1.0] ) * num_rows,
     )
 
     for i in range(num_rows):  # rows
         # i += 1
-        plot_index = i * 4 - 4
+        plot_index = i * 3 - 3 
 
         label_classname = label_definitions.iloc[int(random_labels[i-1])]["long_name"] if label_definitions is not None else ""
         info = str(random_samples_info.iloc[i-1]['objectId']) if not random_samples_info.empty else ""
@@ -226,28 +228,30 @@ def plot_random_samples_as_image(
                 ax_cash.set_yticks([])
 
             # plot photometry features
-            ax_phot = fig.add_subplot(gs[plot_index + 3, j])
-            if random_phot_features[i-1] is not None:
-                features_phot = random_phot_features[i-1][j]
-                features_phot = np.array(features_phot, dtype=np.float32)
-                x = np.array([0, 1, 2, 3])
-                ax_phot.bar(x, features_phot, width=0.25, color='skyblue', edgecolor='black')
-                ax_phot.set_xticks(x)
-                ax_phot.set_xticklabels(['x1', 'x2', 'x3', 'x4'])
-                ax_phot.tick_params(axis='x', labelsize=11, pad=2)
-                lower = 0.0 if np.min(features_phot) > 0 else np.min(features_phot) * 2
-                upper = np.max(features_phot) * 2 if np.max(features_phot) > 0 else 0.0
-                ax_phot.set_ylim(float(lower), float(upper))
-                ax_phot.set_xlabel('Photometry', fontsize=12)
-                ax_phot.set_ylabel('Value', fontsize=12)
-            else:
-                ax_phot.set_facecolor("lightgray")
-                ax_phot.text(0.5, 0.5, "(no data)",
-                ha="center", va="center",
-                transform=ax_phot.transAxes,
-                fontsize=12, color="dimgray")
-                ax_phot.set_xticks([])
-                ax_phot.set_yticks([])
+            # ax_phot = fig.add_subplot(gs[plot_index + 3, j])
+            # if random_phot_features[i-1] is not None:
+                # features_phot = random_phot_features[i-1][j]
+                # features_phot = np.array(features_phot, dtype=np.float32)
+                # print(f"Photometry features for sample {i-1}, band {bands[j]}: {features_phot}")
+                # # x = np.linspace(0, len(features_phot)-1, num=len(features_phot))
+                # x = np.array([0, 1, 2, 3])
+                # ax_phot.bar(x, features_phot, color='skyblue', edgecolor='black')
+                # ax_phot.set_xticks(x)
+                # # ax_phot.set_xticklabels(['x1', 'x2', 'x3', 'x4'])
+                # ax_phot.tick_params(axis='x', labelsize=11, pad=2)
+                # lower = 0.0 if np.min(features_phot) > 0 else np.min(features_phot) * 2
+                # upper = np.max(features_phot) * 2 if np.max(features_phot) > 0 else 0.0
+                # # ax_phot.set_ylim(float(lower), float(upper))
+                # ax_phot.set_xlabel('Photometry', fontsize=12)
+                # ax_phot.set_ylabel('Value', fontsize=12)
+            # else:
+                # ax_phot.set_facecolor("lightgray")
+                # ax_phot.text(0.5, 0.5, "(no data)",
+                # ha="center", va="center",
+                # transform=ax_phot.transAxes,
+                # fontsize=12, color="dimgray")
+                # ax_phot.set_xticks([])
+                # ax_phot.set_yticks([])
             
 
     output_dir = os.path.join(dataset.get_dataset_dir(), "plots")
