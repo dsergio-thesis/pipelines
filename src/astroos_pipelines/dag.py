@@ -61,6 +61,7 @@ class Node(ABC):
     def __init__(self, 
                  node_type, 
                  label=None,
+                 description=None,
                  node_id=None,
                  parents=[],
                  parameters=None, 
@@ -68,6 +69,7 @@ class Node(ABC):
                  outputs=[]):
         self.node_type = node_type
         self.label = label or node_type
+        self.description = description or "Default node description."
         self.parents = parents
         self.children = []
         self.parameters = parameters
@@ -178,11 +180,20 @@ class Node(ABC):
     
     def node_label(self):
         return f"""
-            <table border="0" cellborder="0" cellspacing="0">
-                <tr><td><font color="#ffffff"><b>{self.label}</b></font></td></tr>
-                <tr><td>#{self.node_id}</td></tr>
-                <tr><td>{len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs</td></tr>
-            </table>
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font color="#ffffff" point-size="18"><b><u>{self.label}</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font color="#ffffff">#{self.node_id}</font>
+</td>
+</tr>
+<tr><td align="left"><font color="#ffffff">{self.description}</font></td></tr>
+<tr><td align="left"><font color="#ffffff">• {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs</font></td></tr>
+</table>
             """
         
 
@@ -340,8 +351,18 @@ class PipelineDAG(DAG):
         dot.attr(rankdir="LR")  # left to right
 
         # top to bottom: rankdir="TB"
-        dot.attr("node", shape="box", style="filled,rounded", fillcolor="#1f77b4")
-        
+        dot.attr("node", 
+                 shape="box", 
+                 style="filled,rounded", 
+                 fillcolor="#142D5B",
+                 bgcolor="transparent")
+        dot.graph_attr.update(bgcolor="transparent")
+        dot.attr(
+            "edge",
+            penwidth="2.5",
+            arrowsize="1.2",
+            color="#64748b"
+        )
 
         for node_id, node in self.nodes.items():
             # label = f"{node.node_type}\n{node_id[:8]}"

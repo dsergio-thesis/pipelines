@@ -42,6 +42,7 @@ class HSTNodeCatalog(Node):
         super().__init__(
             node_type=node_type,
             label="HST-3D Load Catalog",
+            description="Deep-field cross-survey datasets provides high-quality labels.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -111,6 +112,7 @@ class HSTNodeEDA(Node):
         super().__init__(
             node_type=node_type,
             label="HST-3D EDA",
+            description="HST-3D Exploratory Data Analysis",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -161,6 +163,7 @@ class HSTNodeClean(Node):
         super().__init__(
             node_type=node_type,
             label="HST-3D Clean",
+            description="Remove invalid values",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
