@@ -104,31 +104,55 @@ def main():
 
     colors = np.array(["#1f77b4", "#d62728"])  # blue, red
 
+
+    # scatter (example)
     plt.scatter(
         X_umap[:, 0],
         X_umap[:, 1],
-        c=colors[y],
-        s=5,
-        alpha=0.6
+        c=[colors[i] for i in y],
+        s=3,
+        alpha=0.3,
+        linewidths=0
     )
-    # for label, name in [(0, "Star-Forming"), (1, "Quiescent")]:
-        # idx = y == label
-        # plt.text(
-            # X_umap[idx, 0].mean(),
-            # X_umap[idx, 1].mean(),
-            # name,
-            # fontsize=14,
-            # weight="bold"
-        # )
 
+    # 🔥 clean axes
     plt.xticks([])
     plt.yticks([])
     plt.xlabel("UMAP 1", fontsize=12)
     plt.ylabel("UMAP 2", fontsize=12)
-    plt.title("UMAP Projection of Feature Space")
+    plt.title("UMAP Projection", fontsize=14)
+
+    # remove spines
+    for spine in plt.gca().spines.values():
+        spine.set_visible(False)
+
+    # 🔥 legend (custom, consistent)
+    from matplotlib.lines import Line2D
+
+    legend_elements = [
+        Line2D([0], [0], marker='o', color='w',
+               label='Star-forming',
+               markerfacecolor="#1f77b4", markersize=8),
+        Line2D([0], [0], marker='o', color='w',
+               label='Quiescent',
+               markerfacecolor="#d62728", markersize=8),
+    ]
+
+    plt.legend(
+        handles=legend_elements,
+        frameon=True,
+        facecolor="#eeeeee",
+        edgecolor="none",
+        fontsize=10,
+        loc="upper right"
+    )
+
+    # optional polish
+    plt.gca().set_aspect('equal', adjustable='box')
+    plt.margins(0.05)
 
     plt.tight_layout()
-    plt.savefig("umap.pdf", dpi=300)
+    plt.savefig("umap.png", dpi=300, bbox_inches="tight")
     plt.show()
 
 
