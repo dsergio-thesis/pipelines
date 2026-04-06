@@ -28,7 +28,7 @@ def main():
 
     dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
         dataset_dir=os.path.join(dataset_dir, dataset_name),
-        labels_init_file=os.path.join(dataset_dir, dataset_name, "labels.csv"),
+        labels_init_file=os.path.join("catalogs", "hst", "sfq_labels.csv"),
         transform=transformCartesian,
         morphometric_transform=MorphometryFeatures()
     )

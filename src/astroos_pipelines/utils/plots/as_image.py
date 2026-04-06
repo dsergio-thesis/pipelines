@@ -92,22 +92,22 @@ def plot_random_samples_as_image(
     bands = ['u', 'g', 'r', 'i', 'z']
     bands = ['u', 'g', 'r', 'i', 'z', 'y']
     num_rows = num_samples_to_display
-    num_info_per_row = 3  # info, image, morph features, phot features
+    num_info_per_row = 2  # info, image, morph features, phot features
     num_cols = len(bands) 
 
     fig = plt.figure(figsize=(16, num_samples_to_display * num_info_per_row), constrained_layout=True)
-    fig.suptitle(plot_title, fontsize=24)
+    fig.suptitle("LSST DP-1 samples", fontsize=24)
     gs = gridspec.GridSpec(
-        num_rows * 3, 
+        num_rows * 2, 
         num_cols, 
         figure=fig,
         width_ratios=[1.0] * num_cols,
-        height_ratios=([.25] + [3.0] + [1.0] ) * num_rows,
+        height_ratios=([.25] + [3.0] ) * num_rows,
     )
 
     for i in range(num_rows):  # rows
         # i += 1
-        plot_index = i * 3 - 3 
+        plot_index = i * 2 - 2 
 
         label_classname = label_definitions.iloc[int(random_labels[i-1])]["long_name"] if label_definitions is not None else ""
         info = str(random_samples_info.iloc[i-1]['objectId']) if not random_samples_info.empty else ""
@@ -117,6 +117,7 @@ def plot_random_samples_as_image(
 
         ax_info = fig.add_subplot(gs[plot_index, :])
         label_full = f"Label [{label_classname}] objectId [{info}] {redshift_info}"
+        label_full = f"{label_classname}"
 
         ax_info.text(0.5, 0.0, label_full,
                     rotation=0, ha='center', va='center', fontsize=18)
@@ -181,10 +182,12 @@ def plot_random_samples_as_image(
                     print(f"Plotted object position at pixel coordinates: ({x}, {y})")
                     # ax.legend(loc='upper right', fontsize=6)
 
-                ax.set_title(f"band: {bands[j]}", fontsize=14)
-                ax.set_xlabel("RA °", fontdict={'fontsize': 18}, labelpad=14)
-                ax.set_ylabel("Dec °", fontdict={'fontsize': 18}, labelpad=14)
-                ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=2))
+                ax.set_title(f"{bands[j]}", fontsize=14)
+
+                if (j == 0) and (i == 1):
+                    ax.set_xlabel("RA °", fontdict={'fontsize': 12}, labelpad=12)
+                    ax.set_ylabel("Dec °", fontdict={'fontsize': 12}, labelpad=12)
+                ax.xaxis.set_major_locator(mticker.MaxNLocator(nbins=1))
                 ax.yaxis.set_major_locator(mticker.MaxNLocator(nbins=2))
                 ax.tick_params(axis='x', labelsize=12, pad=2)
                 ax.tick_params(axis='y', labelsize=12, pad=2)
@@ -205,27 +208,27 @@ def plot_random_samples_as_image(
                 ax.set_yticks([])
 
             # plot morphometry features 
-            ax_cash = fig.add_subplot(gs[plot_index + 2, j])
-            if random_morph_features[i-1] is not None:
-                features_morph = random_morph_features[i-1][j]
-                features_morph = np.array(features_morph, dtype=np.float32)
-                x = np.array([0, 1, 2, 3])
-                ax_cash.bar(x, features_morph, width=0.25, color='skyblue', edgecolor='black')
-                ax_cash.set_xticks(x)
-                ax_cash.set_yticks(np.linspace(0.0, 1.0, num=3))
-                ax_cash.set_xticklabels(['C', 'A', 'S', 'H'])
-                ax_cash.tick_params(axis='x', labelsize=14, pad=2)
-                ax_cash.set_ylim(0.0, 1.0)
-                ax_cash.set_xlabel('Morphometry', fontsize=12)
-                ax_cash.set_ylabel('Norm', fontsize=12)
-            else:
-                ax_cash.set_facecolor("lightgray")
-                ax_cash.text(0.5, 0.5, "(no data)",
-                ha="center", va="center",
-                transform=ax_cash.transAxes,
-                fontsize=12, color="dimgray")
-                ax_cash.set_xticks([])
-                ax_cash.set_yticks([])
+            # ax_cash = fig.add_subplot(gs[plot_index + 2, j])
+            # if random_morph_features[i-1] is not None:
+                # features_morph = random_morph_features[i-1][j]
+                # features_morph = np.array(features_morph, dtype=np.float32)
+                # x = np.array([0, 1, 2, 3])
+                # ax_cash.bar(x, features_morph, width=0.25, color='skyblue', edgecolor='black')
+                # ax_cash.set_xticks(x)
+                # ax_cash.set_yticks(np.linspace(0.0, 1.0, num=3))
+                # ax_cash.set_xticklabels(['C', 'A', 'S', 'H'])
+                # ax_cash.tick_params(axis='x', labelsize=14, pad=2)
+                # ax_cash.set_ylim(0.0, 1.0)
+                # ax_cash.set_xlabel('Morphometry', fontsize=12)
+                # ax_cash.set_ylabel('Norm', fontsize=12)
+            # else:
+                # ax_cash.set_facecolor("lightgray")
+                # ax_cash.text(0.5, 0.5, "(no data)",
+                # ha="center", va="center",
+                # transform=ax_cash.transAxes,
+                # fontsize=12, color="dimgray")
+                # ax_cash.set_xticks([])
+                # ax_cash.set_yticks([])
 
             # plot photometry features
             # ax_phot = fig.add_subplot(gs[plot_index + 3, j])
