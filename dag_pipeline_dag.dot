@@ -1,0 +1,141 @@
+digraph {
+	graph [bgcolor=transparent]
+	rankdir=LR
+	node [bgcolor=transparent color="#8F3F2B" fillcolor="#D6A095" fontcolor="#2E2E2E" penwidth=2 shape=box style="filled,rounded"]
+	edge [arrowsize=1.2 color="#64748b" penwidth=2.5]
+	"4bd430bc" [label=<
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font point-size="18"><b><u>3D-HST Load Catalog</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font >#4bd430bc</font>
+</td>
+</tr>
+<tr><td><font >Query deep-field cross-survey dataset<br />Provides high-quality SFR labels</font></td></tr>
+<tr><td align="left"><font >• 0 inputs ⇾ 1 outputs</font></td></tr>
+</table>
+            >]
+	"11820ae7" [label=<
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font point-size="18"><b><u>3D-HST Clean</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font >#11820ae7</font>
+</td>
+</tr>
+<tr><td><font >Remove invalid values, clean dataset</font></td></tr>
+<tr><td align="left"><font >• 1 inputs ⇾ 1 outputs</font></td></tr>
+</table>
+            >]
+	eed603bc [label=<
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font point-size="18"><b><u>3D-HST Data Selection</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font >#eed603bc</font>
+</td>
+</tr>
+<tr><td><font >Remove outliers</font></td></tr>
+<tr><td align="left"><font >• 1 inputs ⇾ 1 outputs</font></td></tr>
+</table>
+            >]
+	a74dbf36 [label=<
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font point-size="18"><b><u>Query LSST DP-1 TAP</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font >#a74dbf36</font>
+</td>
+</tr>
+<tr><td><font >Query the Table Access Protocol (TAP)<br />for photometric features</font></td></tr>
+<tr><td align="left"><font >• 0 inputs ⇾ 1 outputs</font></td></tr>
+</table>
+            >]
+	"7a2835fc" [label=<
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font point-size="18"><b><u>LSST DP-1 HST-3D Cross-match</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font >#7a2835fc</font>
+</td>
+</tr>
+<tr><td><font >Use Deep-field HST-3D labels for supervised learning.</font></td></tr>
+<tr><td align="left"><font >• 2 inputs ⇾ 1 outputs</font></td></tr>
+</table>
+            >]
+	e57e6f1a [label=<
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font point-size="18"><b><u>Extract LSST Photometric features</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font >#e57e6f1a</font>
+</td>
+</tr>
+<tr><td><font >Extract colors from photometry.</font></td></tr>
+<tr><td align="left"><font >• 1 inputs ⇾ 1 outputs</font></td></tr>
+</table>
+            >]
+	e8fe51f0 [label=<
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font point-size="18"><b><u>Construct FITS Dataset</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font >#e8fe51f0</font>
+</td>
+</tr>
+<tr><td><font >Construct photometric dataset.</font></td></tr>
+<tr><td align="left"><font >• 1 inputs ⇾ 1 outputs</font></td></tr>
+</table>
+            >]
+	93838153 [label=<
+<table border="0" cellborder="0" cellspacing="0">
+<tr>
+<td>
+<font point-size="18"><b><u>Fetch LSST DP-1 Cutouts (Butler)</u></b></font>
+</td>
+</tr>
+<tr>
+<td>
+<font >#93838153</font>
+</td>
+</tr>
+<tr><td><font >Use the RSP Butler service <br />to fetch deep coadd cutouts.</font></td></tr>
+<tr><td align="left"><font >• 1 inputs ⇾ 0 outputs</font></td></tr>
+</table>
+            >]
+	"4bd430bc" -> "11820ae7"
+	"11820ae7" -> eed603bc
+	a74dbf36 -> "7a2835fc"
+	eed603bc -> "7a2835fc"
+	"7a2835fc" -> e57e6f1a
+	e57e6f1a -> e8fe51f0
+	e8fe51f0 -> 93838153
+}
