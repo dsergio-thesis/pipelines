@@ -191,7 +191,7 @@ class Node(ABC):
 <font color="#ffffff">#{self.node_id}</font>
 </td>
 </tr>
-<tr><td align="left"><font color="#ffffff">{self.description}</font></td></tr>
+<tr><td><font color="#ffffff">{self.description}</font></td></tr>
 <tr><td align="left"><font color="#ffffff">• {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs</font></td></tr>
 </table>
             """
@@ -344,9 +344,10 @@ class PipelineDAG(DAG):
     
 
     def to_graphviz(self, filename=None, view=False):
-        dot = Digraph(comment=self.label)
+        # dot = Digraph(comment=self.label)
+        dot = Digraph()
         # set title with extra padding around it
-        dot.attr(label=f"{self.label}\n ", labelloc="t", fontsize="20")
+        # dot.attr(label=f"{self.label}\n ", labelloc="t", fontsize="20")
 
         dot.attr(rankdir="LR")  # left to right
 
@@ -354,7 +355,7 @@ class PipelineDAG(DAG):
         dot.attr("node", 
                  shape="box", 
                  style="filled,rounded", 
-                 fillcolor="#142D5B",
+                 fillcolor="#2A6F97",
                  bgcolor="transparent")
         dot.graph_attr.update(bgcolor="transparent")
         dot.attr(

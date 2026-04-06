@@ -69,6 +69,7 @@ class LSSTNodeCatalog(Node):
         super().__init__(
             node_type=node_type,
             label="Query LSST DP-1 TAP",
+            description="Query the Table Access Protocol (TAP)<br />for photometric features",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -240,6 +241,7 @@ class LSSTNodeEDA(Node):
         super().__init__(
             node_type=node_type,
             label="LSST DP-1 EDA",
+            description="LSST DP-1 Exploratory Data Analysis",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -288,6 +290,7 @@ class LSSTNodeMatchToHST(Node):
         super().__init__(
             node_type=node_type,
             label="LSST DP-1 HST-3D Cross-match",
+            description="Use Deep-field HST-3D labels for supervised learning.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -351,6 +354,7 @@ class LSSTNodePreprocess(Node):
         super().__init__(
             node_type=node_type,
             label="Extract LSST Photometric features",
+            description="Extract colors from photometry.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -626,6 +630,7 @@ class LSSTNodePhotoDataset(Node):
         super().__init__(
             node_type=node_type,
             label="Construct FITS Dataset",
+            description="Construct photometric dataset.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -719,6 +724,7 @@ class LSSTNodeButlerFetch(Node):
         super().__init__(
             node_type=node_type,
             label="Fetch LSST DP-1 Cutouts (Butler)",
+            description="Use the RSP Butler service <br />to fetch deep coadd cutouts.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
