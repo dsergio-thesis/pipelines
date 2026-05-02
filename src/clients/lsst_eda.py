@@ -4,9 +4,9 @@ from clients._rsp import *
 def main():
 
     config, pipeline_metadata = client_config()
-    dataset_dir = config.dataset_dir
-    dataset_name = config.dataset_name
-    label_def_file = config.label_def_file
+    # dataset_dir = config.dataset_dir
+    # dataset_name = config.dataset_name
+    # label_def_file = config.label_def_file
     max_records = config.max_records
     print("Configuration loaded successfully.")
     

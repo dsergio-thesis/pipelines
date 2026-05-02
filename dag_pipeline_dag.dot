@@ -51,7 +51,7 @@ digraph {
 <tr><td align="left"><font >• 1 inputs ⇾ 1 outputs</font></td></tr>
 </table>
             >]
-	a74dbf36 [label=<
+	73961934 [label=<
 <table border="0" cellborder="0" cellspacing="0">
 <tr>
 <td>
@@ -60,14 +60,14 @@ digraph {
 </tr>
 <tr>
 <td>
-<font >#a74dbf36</font>
+<font >#73961934</font>
 </td>
 </tr>
 <tr><td><font >Query the Table Access Protocol (TAP)<br />for photometric features</font></td></tr>
 <tr><td align="left"><font >• 0 inputs ⇾ 1 outputs</font></td></tr>
 </table>
             >]
-	"7a2835fc" [label=<
+	"2237353e" [label=<
 <table border="0" cellborder="0" cellspacing="0">
 <tr>
 <td>
@@ -76,14 +76,14 @@ digraph {
 </tr>
 <tr>
 <td>
-<font >#7a2835fc</font>
+<font >#2237353e</font>
 </td>
 </tr>
 <tr><td><font >Use Deep-field HST-3D labels for supervised learning.</font></td></tr>
 <tr><td align="left"><font >• 2 inputs ⇾ 1 outputs</font></td></tr>
 </table>
             >]
-	e57e6f1a [label=<
+	"632c6635" [label=<
 <table border="0" cellborder="0" cellspacing="0">
 <tr>
 <td>
@@ -92,14 +92,14 @@ digraph {
 </tr>
 <tr>
 <td>
-<font >#e57e6f1a</font>
+<font >#632c6635</font>
 </td>
 </tr>
 <tr><td><font >Extract colors from photometry.</font></td></tr>
 <tr><td align="left"><font >• 1 inputs ⇾ 1 outputs</font></td></tr>
 </table>
             >]
-	e8fe51f0 [label=<
+	"72559c7b" [label=<
 <table border="0" cellborder="0" cellspacing="0">
 <tr>
 <td>
@@ -108,14 +108,14 @@ digraph {
 </tr>
 <tr>
 <td>
-<font >#e8fe51f0</font>
+<font >#72559c7b</font>
 </td>
 </tr>
 <tr><td><font >Construct photometric dataset.</font></td></tr>
 <tr><td align="left"><font >• 1 inputs ⇾ 1 outputs</font></td></tr>
 </table>
             >]
-	93838153 [label=<
+	"6365e60e" [label=<
 <table border="0" cellborder="0" cellspacing="0">
 <tr>
 <td>
@@ -124,7 +124,7 @@ digraph {
 </tr>
 <tr>
 <td>
-<font >#93838153</font>
+<font >#6365e60e</font>
 </td>
 </tr>
 <tr><td><font >Use the RSP Butler service <br />to fetch deep coadd cutouts.</font></td></tr>
@@ -133,9 +133,9 @@ digraph {
             >]
 	"4bd430bc" -> "11820ae7"
 	"11820ae7" -> eed603bc
-	a74dbf36 -> "7a2835fc"
-	eed603bc -> "7a2835fc"
-	"7a2835fc" -> e57e6f1a
-	e57e6f1a -> e8fe51f0
-	e8fe51f0 -> 93838153
+	73961934 -> "2237353e"
+	eed603bc -> "2237353e"
+	"2237353e" -> "632c6635"
+	"632c6635" -> "72559c7b"
+	"72559c7b" -> "6365e60e"
 }
