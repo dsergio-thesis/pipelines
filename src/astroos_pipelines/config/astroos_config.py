@@ -27,6 +27,7 @@ class CoordSpec:
 class AstroosConfig:
     dataset_dir: Path
     dataset_name: str
+    pipeline_name: str
     pipeline_dir: Path
     label_def_file: str
 
@@ -87,6 +88,7 @@ class AstroosConfig:
             dataset_name=cls.clean_str(env("PIPELINE_DATASET_NAME")),
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
             label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
+            pipeline_name=cls.clean_str(env("PIPELINE_NAME")),
             # frame=os.getenv("PIPELINE_FRAME", "icrs"),
             # obstime=os.getenv("PIPELINE_OBSTIME"),
             # equinox=os.getenv("PIPELINE_EQUINOX"),
@@ -124,6 +126,7 @@ class AstroosConfig:
         p.add_argument("--dataset-name", type=str, help="Dataset name")
         p.add_argument("--pipeline-dir", type=Path, help="Pipeline directory")
         p.add_argument("--pipeline-name", type=str, help="Pipeline name")
+        p.add_argument("-n", type=str, help="Shorthand for --pipeline-name")
         p.add_argument("--pipeline-minor-version", type=int, help="Minor version")
         p.add_argument("--label-def-file", type=str, help="Label definition CSV file")
         p.add_argument("--max-records", type=int, default=3, help="Max records to fetch from query")
@@ -159,6 +162,7 @@ class AstroosConfig:
         cfg = cls(
             dataset_dir=args.dataset_dir or base.dataset_dir,
             dataset_name=args.dataset_name or base.dataset_name,
+            pipeline_name=args.pipeline_name or args.n,
             pipeline_dir=args.pipeline_dir or base.pipeline_dir,
             label_def_file=args.label_def_file or base.label_def_file,
             # frame=args.frame or base.frame,

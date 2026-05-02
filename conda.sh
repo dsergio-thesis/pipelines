@@ -1,1 +1,2 @@
-conda activate /home/dsergio/conda/envs/astroos-pipelines-0.1.0-py311
+conda config --set channel_priority flexible
+conda env create -f conda_env.yml
