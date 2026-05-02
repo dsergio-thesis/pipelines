@@ -104,7 +104,7 @@ export PATH="$HOME/.local/bin:$PATH"
 # ---- create CLI router script in repo bin/ ----
 mkdir -p "$BIN_DIR"
 
-CLI_NAME="astroos"
+CLI_NAME="rad"
 CLI_PATH="$BIN_DIR/$CLI_NAME"
 
 cat > "$CLI_PATH" <<'EOF'
