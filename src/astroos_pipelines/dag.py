@@ -183,16 +183,16 @@ class Node(ABC):
 <table border="0" cellborder="0" cellspacing="0">
 <tr>
 <td>
-<font color="#ffffff" point-size="18"><b><u>{self.label}</u></b></font>
+<font point-size="18"><b><u>{self.label}</u></b></font>
 </td>
 </tr>
 <tr>
 <td>
-<font color="#ffffff">#{self.node_id}</font>
+<font >#{self.node_id}</font>
 </td>
 </tr>
-<tr><td><font color="#ffffff">{self.description}</font></td></tr>
-<tr><td align="left"><font color="#ffffff">• {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs</font></td></tr>
+<tr><td><font >{self.description}</font></td></tr>
+<tr><td align="left"><font >• {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs</font></td></tr>
 </table>
             """
         
@@ -355,7 +355,10 @@ class PipelineDAG(DAG):
         dot.attr("node", 
                  shape="box", 
                  style="filled,rounded", 
-                 fillcolor="#2A6F97",
+                 fillcolor="#D6A095",
+                 fontcolor="#2E2E2E",
+                 color="#8F3F2B",
+                 penwidth="2",
                  bgcolor="transparent")
         dot.graph_attr.update(bgcolor="transparent")
         dot.attr(
