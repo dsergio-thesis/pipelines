@@ -36,7 +36,7 @@ importlib.reload(sys.modules['astroos_pipelines.transforms'])
 # USER CONFIG
 # -----------------------------
 SEED = 42
-NUM_SAMPLES = 10
+NUM_SAMPLES = 100
 OUTPUT_DIR = Path("site")
 SAMPLES_DIR = OUTPUT_DIR / "assets" / "samples"
 PLOTS_DIR = OUTPUT_DIR / "assets" / "plots"
@@ -162,6 +162,13 @@ def extract_sample(sample: Any) -> tuple[Any, Any, dict[str, Any]]:
             return image, label, {}
         if len(sample) >= 3:
             image, label, meta = sample[0], sample[1], sample[2]
+
+            if (label == 0):
+                label = "Star-forming"
+            elif (label == 1):
+                label = "Quiescent"
+            else:
+                label = f"Unknown({label})"
             if meta is None:
                 meta = {}
             if not isinstance(meta, dict):
@@ -223,6 +230,12 @@ def main() -> None:
         
         for b in range(n_bands):
             arr = to_numpy_image(image[b])
+            # if (label == 0):
+                # label = "Star-forming"
+            # elif (label == 1):
+                # label = "Quiescent"
+            # else:
+                # label = f"Unknown({label})"
             print(f"Sample {i} Band {b}: label={label}, meta={meta}, image_shape={arr.shape}")
 
             filename = f"sample_{i:05d}_band{b}.png"
@@ -239,6 +252,7 @@ def main() -> None:
         # heights.append(h)
 
         label_str = str(json_safe(label))
+
         label_counter[label_str] += 1
 
         # filename = f"sample_{i:05d}.png"

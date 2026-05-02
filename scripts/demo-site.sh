@@ -10,3 +10,9 @@ export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
 
 python -m clients.demo_site "$@" 
 
+rm -rf ~/thesis-org/astroml.github.io/site/data
+rm -rf ~/thesis-org/astroml.github.io/site/assets/plots/*.png
+cp -r ~/thesis-org/pipelines/site/data ~/thesis-org/astroml.github.io/site/data
+cp -r ~/thesis-org/pipelines/site/assets/* ~/thesis-org/astroml.github.io/site/assets
+
+
