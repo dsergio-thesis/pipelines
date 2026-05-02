@@ -86,6 +86,7 @@ class HSTNodeCatalog(Node):
                            'z_peak_grism': "Grism redshift (peak)",
                            'z_best': "Best redshift",
                            'sfr': "Star Formation Rate",
+                           'lssfr': "Log Specific Star Formation Rate",
                            'sfr_IR': "Star Formation Rate from IR",
                            'sfr_UV': "Star Formation Rate from UV",
                            'lmass': "Log Stellar Mass",
@@ -215,7 +216,7 @@ class HSTNodeClean(Node):
 
         numeric_cols = [
             "Av", "L_IR", "beta", "chi2", "dec", "jh_mag", "lmass",
-            "ra", "sfr", "sfr_IR", "sfr_UV",
+            "ra", "sfr", "sfr_IR", "sfr_UV", "lssfr",
             "z_best", "z_peak_grism", "z_peak_phot", "z_spec"
         ]
         for col in numeric_cols:
@@ -318,6 +319,8 @@ class HSTNodeSelect(Node):
 
         df["beta"] = clip_outliers(df["beta"]) # beta has extreme outliers, so clip to 0.1 and 99.9 percentiles
         df = df[df["chi2"] < df["chi2"].quantile(0.99)] # chi2 has extreme outliers, so remove top 1%
+        # remove outliers of lssfr
+        df = df[df["lssfr"] > df["lssfr"].quantile(0.05)] # remove bottom 5% of lssfr for visualization
 
         science_table = Table.from_pandas(df)
 
