@@ -182,6 +182,18 @@ def dataset_eda(table: astropy.table.Table,
         ax.set_xlabel(columns[col])
         ax.set_ylabel("Count")
 
+        # ---- Save individual plot ----
+        indiv_fig, indiv_ax = plt.subplots(figsize=(6, 4))
+        sns.histplot(data, bins=50, kde=True, ax=indiv_ax)
+
+        indiv_ax.set_title(f"Distribution of {col}")
+        indiv_ax.set_xlabel(columns[col])
+        indiv_ax.set_ylabel("Count")
+
+        indiv_file = f"{save_dir}/{col.lower().replace(' ', '_')}.png"
+        indiv_fig.savefig(indiv_file, bbox_inches="tight", dpi=300)
+        plt.close(indiv_fig)
+
     # remove empty axes if grid > number of columns
     for j in range(len(columns), n_rows * n_cols):
         fig.delaxes(fig.add_subplot(gs[j // n_cols, j % n_cols]))

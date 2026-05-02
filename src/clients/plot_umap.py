@@ -91,7 +91,7 @@ def main():
         n_neighbors=15,   # local vs global structure
         min_dist=0.05,     # cluster tightness
         metric="euclidean",
-        random_state=42
+        random_state=0
     )
 
     X_umap = reducer.fit_transform(X_scaled)
@@ -115,18 +115,15 @@ def main():
         linewidths=0
     )
 
-    # 🔥 clean axes
     plt.xticks([])
     plt.yticks([])
     plt.xlabel("UMAP 1", fontsize=12)
     plt.ylabel("UMAP 2", fontsize=12)
     plt.title("UMAP Projection", fontsize=14)
 
-    # remove spines
     for spine in plt.gca().spines.values():
         spine.set_visible(False)
 
-    # 🔥 legend (custom, consistent)
     from matplotlib.lines import Line2D
 
     legend_elements = [
