@@ -30,6 +30,10 @@ class AstroosConfig:
     pipeline_name: str
     pipeline_dir: Path
     label_def_file: str
+    
+    option_create: bool = False
+    node_type: str = "generic"
+    input_artifact: Optional[str] = None
 
     frame: str = "icrs"
     obstime: Optional[str] = None
@@ -130,6 +134,9 @@ class AstroosConfig:
         p.add_argument("--pipeline-minor-version", type=int, help="Minor version")
         p.add_argument("--label-def-file", type=str, help="Label definition CSV file")
         p.add_argument("--max-records", type=int, default=3, help="Max records to fetch from query")
+        p.add_argument("-c", "--create", action="store_true", help="Create new  node")
+        p.add_argument("-i", "--input-artifact", type=str, help="Path to input artifact")
+        p.add_argument("-t", "--node-type", type=str, default="generic", help="Node type for new node")
 
         # astro metadata
         p.add_argument("--frame", type=str, default=None)
@@ -163,6 +170,9 @@ class AstroosConfig:
             dataset_dir=args.dataset_dir or base.dataset_dir,
             dataset_name=args.dataset_name or base.dataset_name,
             pipeline_name=args.pipeline_name or args.n,
+            option_create=args.create,
+            input_artifact=args.input_artifact,
+            node_type=args.node_type,
             pipeline_dir=args.pipeline_dir or base.pipeline_dir,
             label_def_file=args.label_def_file or base.label_def_file,
             # frame=args.frame or base.frame,

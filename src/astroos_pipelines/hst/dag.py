@@ -33,6 +33,7 @@ log = logging.getLogger(__name__)
 class HSTNodeCatalog(Node):
     def __init__(
             self,
+            dag_dir,
             node_type="catalog_hst",
             node_id=None,
             parents=[],
@@ -41,6 +42,7 @@ class HSTNodeCatalog(Node):
             outputs=[]):
         super().__init__(
             node_type=node_type,
+            dag_dir=dag_dir,
             label="3D-HST Load Catalog",
             description="Query deep-field cross-survey dataset<br />Provides high-quality SFR labels",
             node_id=node_id,
@@ -104,6 +106,7 @@ class HSTNodeCatalog(Node):
 class HSTNodeEDA(Node):
     def __init__(
             self,
+            dag_dir,
             node_type="catalog_hst_eda",
             node_id=None,
             parents=[],
@@ -112,6 +115,7 @@ class HSTNodeEDA(Node):
             outputs=[]):
         super().__init__(
             node_type=node_type,
+            dag_dir=dag_dir,
             label="3D-HST EDA",
             description="Exploratory Data Analysis",
             node_id=node_id,
@@ -146,7 +150,7 @@ class HSTNodeEDA(Node):
 
         dataset_eda(table=table, 
                     columns=columns, 
-                    save_dir=f"_pipelines/{self.node_id}", 
+                    save_dir=self.node_dir, 
                     title="HST")
         
         self.output_fits_table(table, columns=columns) # pass through the table to the next node
@@ -155,6 +159,7 @@ class HSTNodeEDA(Node):
 class HSTNodeClean(Node):
     def __init__(
             self,
+            dag_dir,
             node_type="catalog_hst_clean",
             node_id=None,
             parents=[],
@@ -163,6 +168,7 @@ class HSTNodeClean(Node):
             outputs=[]):
         super().__init__(
             node_type=node_type,
+            dag_dir=dag_dir,
             label="3D-HST Clean",
             description="Remove invalid values, clean dataset",
             node_id=node_id,
@@ -270,6 +276,7 @@ class HSTNodeClean(Node):
 class HSTNodeSelect(Node):
     def __init__(
             self,
+            dag_dir,
             node_type="catalog_hst_select",
             node_id=None,
             parents=[],
@@ -278,6 +285,7 @@ class HSTNodeSelect(Node):
             outputs=[]):
         super().__init__(
             node_type=node_type,
+            dag_dir=dag_dir,
             node_id=node_id,
             label="3D-HST Data Selection",
             description="Remove outliers",

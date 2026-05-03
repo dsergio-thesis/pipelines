@@ -9,4 +9,4 @@ fi
 source env.sh
 export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
 
-python -m clients.dag_init "$@"
+python -m clients.dag_node "$@"
