@@ -65,7 +65,7 @@ class Node(ABC):
                  description=None,
                  node_id=None,
                  parents=[],
-                 parameters=None, 
+                 parameters={}, 
                  inputs=[], 
                  outputs=[]):
         self.dag_dir = dag_dir
@@ -544,10 +544,13 @@ class PipelineDAG(DAG):
 
         node.run()
         source_code = inspect.getsource(node.run)
-        source_code_path = os.path.join(node.node_dir, "run_source.py")
+        source_code_path = os.path.join(node.node_dir, f"{node.node_id}-script.py")
         with open(source_code_path, "w") as f:
             f.write(source_code)
-        self.nodes[node_id].parameters["last_run_source"] = source_code_path
+
+        print(f"Finished running node {node_id}. parameters: {node.parameters}, inputs: {[i.file_path for i in node.inputs]}, outputs: {[o.file_path for o in node.outputs]}")
+        if node.parameters and "last_run_source" in node.parameters:
+            self.nodes[node_id].parameters["last_run_source"] = source_code_path
         
         if node_id in self.children:
             for child_id in self.children[node_id]:
@@ -582,7 +585,7 @@ class NodeGeneric(Node):
                  node_type="generic",
                  node_id=None,
                  parents=[],
-                 parameters=None,
+                 parameters={},
                  inputs=[],
                  outputs=[]):
         super().__init__(
@@ -636,7 +639,7 @@ class NodeCatalogRandom(Node):
                  node_type="catalog_random",
                  node_id=None,
                  parents=[],
-                 parameters=None,
+                 parameters={},
                  inputs=[],
                  outputs=[]):
         super().__init__(
@@ -689,7 +692,7 @@ class NodeTransformRandom(Node):
                  node_type="transform_random",
                  node_id=None,
                  parents=[],
-                 parameters=None,
+                 parameters={},
                  inputs=[],
                  outputs=[]):
         super().__init__(
@@ -739,7 +742,7 @@ class NodeMergeRandom(Node):
                  node_type="merge_random",
                  node_id=None,
                  parents=[],
-                 parameters=None,
+                 parameters={},
                  inputs=[],
                  outputs=[]):
         super().__init__(
@@ -800,7 +803,7 @@ class NodeBadToNaN(Node):
                  node_type="bad_to_nan",
                  node_id=None,
                  parents=[],
-                 parameters=None,
+                 parameters={},
                  inputs=[],
                  outputs=[]):
         super().__init__(
@@ -860,6 +863,7 @@ class NodeBadToNaN(Node):
 class NodeScript(Node):
     """
     A node that runs a user-provided script for testing the pipeline's ability to run arbitrary code.
+
     """
 
     def __init__(self,
@@ -867,7 +871,7 @@ class NodeScript(Node):
                  node_type="script",
                  node_id=None,
                  parents=[],
-                 parameters=None,
+                 parameters={},
                  inputs=[],
                  outputs=[]):
         super().__init__(
