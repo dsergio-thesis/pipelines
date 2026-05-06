@@ -41,13 +41,10 @@ def client_config():
     log = logging.getLogger(__name__)
     
     config = AstroosConfig.from_cli()
-    coord, radius = config.get_target("Extended Chandra Deep Field South (ECDFS)");
-
+    config.set_target("Extended Chandra Deep Field South (ECDFS)");
+    
     print()
     print(config)
 
-    pipeline_metadata = {'query_coords': coord, 'query_radius': radius}
-    print(pipeline_metadata)
-
-    return config, pipeline_metadata
+    return config
 

@@ -3,13 +3,10 @@ from clients._local import *
 
 def main():
 
-    config, pipeline_metadata = client_config()
+    config = client_config()
     dataset_dir = config.dataset_dir
-    dataset_name = config.dataset_name
     pipeline_name = config.pipeline_name
-    label_def_file = config.label_def_file
     max_records = config.max_records
-    print("Configuration loaded successfully.")
 
     dag = PipelineDAG(label=pipeline_name)
     dag_dir = dag.dag_dir

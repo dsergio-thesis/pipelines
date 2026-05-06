@@ -9,78 +9,72 @@ import argparse
 import astropy.units as u
 from astropy.coordinates import SkyCoord
 import importlib
+import csv
+from pathlib import Path
+from typing import Dict
 
-from astroos_pipelines.utils.formatting import ascii_kv_table
+from astroos_pipelines.utils.formatting import ascii_kv_table, coord_table
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
 CoordFormat = Literal["hmsdms", "deg"]
 
-
-@dataclass(frozen=True)
+@dataclass
 class CoordSpec:
+    """ Specification for a sky region coordinate. """
+    key: str
     value: str
+    sky_coord: Optional[SkyCoord] = field(default=None, compare=False)
     fmt: CoordFormat = "hmsdms"
     radius_arcmin: float = 5.0
+    selected: bool = False
+
+    def __repr__(self):
+        rows = [(self.key, self.value, self.fmt, self.radius_arcmin, self.selected)]
+        return coord_table(rows, title="Target Coordinate Specification (CoordSpec)") 
 
 
-@dataclass(frozen=True)
 class AstroosConfig:
-    dataset_dir: Path
-    dataset_name: str
-    pipeline_name: str
-    pipeline_dir: Path
-    label_def_file: str
+    """ Configuration for the astronomy pipeline. Loads from environment variables and CLI args. """
+
+    def __init__(
+            self,
+            dataset_dir: Path,
+            pipeline_dir: Path,
+            sky_regions_csv: Path,
+            dataset_name: str = None,
+            pipeline_name: str = None,
+            option_create: bool = False,
+            node_type: str = "generic", # NodeGeneric default
+            input_artifact: str = None,
+            sky_region_target_selected: str = None,
+            sky_region_target_radius_arcmin: float = None,
+            max_records: int = 3,
+            ):
+        self.dataset_dir = dataset_dir
+        self.pipeline_dir = pipeline_dir
+        self.sky_regions_csv = sky_regions_csv
+        self.dataset_name = dataset_name
+        self.pipeline_name = pipeline_name
+        self.option_create = option_create
+        self.node_type = node_type
+        self.input_artifact = input_artifact
+
+        self.max_records = max_records
+
+        self.sky_region_targets = self.load_coords_from_csv()
+        self.sky_region_target_selected = sky_region_target_selected
     
-    option_create: bool = False
-    node_type: str = "generic"
-    input_artifact: Optional[str] = None
-
-    frame: str = "icrs"
-    obstime: Optional[str] = None
-    equinox: Optional[str] = None
-
-    coords: Dict[str, CoordSpec] = field(
-        default_factory=lambda: load_coords_from_csv("catalogs/sky_region_labels.csv")
-    )
-
-    max_records: int = 3
-
-    def label_csv_path(self) -> Path:
-        p = Path(self.label_csv).expanduser()
-        return p if p.is_absolute() else self.dataset_dir / p
-
-    def get_target(self, key: str) -> Tuple[SkyCoord, u.Quantity]:
-        key = key.lower().replace(" ", "_").replace("(", "").replace(")", "")
-        if key not in self.coords:
-            print()
-            raise RuntimeError(f"{key} is not in {self.coords}")
-        
-        spec = self.coords[key]
-
-        kwargs = {"frame": self.frame}
-        if self.obstime:
-            kwargs["obstime"] = self.obstime
-        if self.equinox:
-            kwargs["equinox"] = self.equinox
-
-        if spec.fmt == "hmsdms":
-            coord = SkyCoord(spec.value, unit=(u.hourangle, u.deg), **kwargs)
-        else:
-            ra, dec = map(float, spec.value.split())
-            coord = SkyCoord(ra=ra * u.deg, dec=dec * u.deg, **kwargs)
-
-        return coord, spec.radius_arcmin * u.arcmin
-    
-    @classmethod
-    def clean_path(cls, value: str) -> Path:
+    @staticmethod
+    def clean_path(value: str) -> Path:
         return Path(value.strip().strip('"').strip("'"))
-    @classmethod
-    def clean_str(cls, value: str) -> str:
+
+    @staticmethod
+    def clean_str(value: str) -> str:
         return value.strip().strip('"').strip("'")
     
-    # -------- env wiring --------
     @classmethod
-    def from_env(cls) -> "PipelineConfig":
+    def from_env(cls):
+        """ Load configuration from environment variables. """
         def env(key: str, default: Optional[str] = None) -> str:
             v = os.getenv(key, default)
             if v is None:
@@ -88,77 +82,15 @@ class AstroosConfig:
             return v
 
         return cls(
-            dataset_dir=cls.clean_path(env("PIPELINE_DATASET_DIR")).expanduser(),
-            dataset_name=cls.clean_str(env("PIPELINE_DATASET_NAME")),
+            dataset_dir=cls.clean_path(env("DATASET_DIR")).expanduser(),
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
-            label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
-            pipeline_name=cls.clean_str(env("PIPELINE_NAME")),
-            # frame=os.getenv("PIPELINE_FRAME", "icrs"),
-            # obstime=os.getenv("PIPELINE_OBSTIME"),
-            # equinox=os.getenv("PIPELINE_EQUINOX"),
+            sky_regions_csv=cls.clean_path(env("SKY_REGIONS_CSV")).expanduser(),
         )
 
-    @classmethod
-    def random_data(cls) -> "PipelineConfig":
-        def env(key: str, default: Optional[str] = None) -> str:
-            v = os.getenv(key, default)
-            if v is None:
-                raise RuntimeError(f"Missing required env var: {key}")
-            return v
-        return cls(
-            dataset_dir=cls.clean_path(env("PIPELINE_DATASET_DIR")).expanduser(),
-            pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
-            pipeline_name="p_random_data",
-            label_def_file=cls.clean_str(env("PIPELINE_LABEL_DEF_CSV")),
-            # frame=os.getenv("PIPELINE_FRAME", "icrs"),
-            # obstime=os.getenv("PIPELINE_OBSTIME"),
-            # equinox=os.getenv("PIPELINE_EQUINOX"),
-        )
-
-    @classmethod
-    def build_arg_parser(cls) -> argparse.ArgumentParser:
-        p = argparse.ArgumentParser(
-            description="Run the astronomy pipeline",
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-        )
-
-        # pytest query file (optional)
-        p.add_argument("-q", type=Path, help="pytest query file")
-
-        # core paths / identity
-        p.add_argument("--dataset-dir", type=Path, help="Dataset root directory")
-        p.add_argument("--dataset-name", type=str, help="Dataset name")
-        p.add_argument("--pipeline-dir", type=Path, help="Pipeline directory")
-        p.add_argument("--pipeline-name", type=str, help="Pipeline name")
-        p.add_argument("-n", type=str, help="Shorthand for --pipeline-name")
-        p.add_argument("--pipeline-minor-version", type=int, help="Minor version")
-        p.add_argument("--label-def-file", type=str, help="Label definition CSV file")
-        p.add_argument("--max-records", type=int, default=3, help="Max records to fetch from query")
-        p.add_argument("-c", "--create", action="store_true", help="Create new  node")
-        p.add_argument("-i", "--input-artifact", type=str, help="Path to input artifact")
-        p.add_argument("-t", "--node-type", type=str, default="generic", help="Node type for new node")
-
-        # astro metadata
-        p.add_argument("--frame", type=str, default=None)
-        p.add_argument("--obstime", type=str, default=None)
-        p.add_argument("--equinox", type=str, default=None)
-
-        # runtime overrides
-        p.add_argument(
-            "--target",
-            choices=list(cls().coords.keys()) if False else None,
-            help="Target key from coords table",
-        )
-        p.add_argument(
-            "--radius-arcmin",
-            type=float,
-            help="Override target search radius (arcmin)",
-        )
-
-        return p
     
     @classmethod
-    def from_cli(cls, argv: Optional[list[str]] = None) -> "PipelineConfig":
+    def from_cli(cls, argv: Optional[list[str]] = None):
+        """ Load configuration from CLI args. """
         parser = cls.build_arg_parser()
         args = parser.parse_args(argv)
 
@@ -167,18 +99,15 @@ class AstroosConfig:
 
         # merge CLI → env
         cfg = cls(
-            dataset_dir=args.dataset_dir or base.dataset_dir,
-            dataset_name=args.dataset_name or base.dataset_name,
-            pipeline_name=args.pipeline_name or args.n,
+            dataset_dir=base.dataset_dir,
+            pipeline_dir=base.pipeline_dir,
+            dataset_name=args.dataset_name,
+            pipeline_name=args.pipeline_name,
             option_create=args.create,
             input_artifact=args.input_artifact,
             node_type=args.node_type,
-            pipeline_dir=args.pipeline_dir or base.pipeline_dir,
-            label_def_file=args.label_def_file or base.label_def_file,
-            # frame=args.frame or base.frame,
-            # obstime=args.obstime or base.obstime,
-            # equinox=args.equinox or base.equinox,
-            # coords=base.coords,  # unchanged for now
+            sky_regions_csv=base.sky_regions_csv,
+            sky_region_target_selected=args.target,
             max_records=args.max_records if args.max_records is not None else base.max_records,
         )
 
@@ -206,45 +135,89 @@ class AstroosConfig:
 
         return cfg
 
+
+    @classmethod
+    def build_arg_parser(cls) -> argparse.ArgumentParser:
+        p = argparse.ArgumentParser(
+            description="Run the astronomy pipeline",
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        )
+
+        p.add_argument("-d", "--dataset-name", type=str, help="Dataset name")
+        p.add_argument("-n", "--pipeline-name", type=str, help="Pipeline name")
+        p.add_argument("-m", "--max-records", type=int, default=3, help="Max records to fetch from query")
+        p.add_argument("-c", "--create", action="store_true", help="Create new  node")
+        p.add_argument("-i", "--input-artifact", type=str, help="Path to input artifact")
+        p.add_argument("-t", "--node-type", type=str, default="generic", help="Node type for new node")
+        p.add_argument("--target", type=str, help="Target key to override coordinates")
+        return p
+
     def __repr__(self):
         rows = [
             ("dataset_dir",            self.dataset_dir),
             ("dataset_name",           self.dataset_name),
             ("pipeline_dir",           self.pipeline_dir),
-            ("label_def_file",         self.label_def_file),
-            # ("frame",                  self.frame),
-            # ("obstime",                self.obstime),
-            # ("equinox",                self.equinox),
-            ("coords",                 f"{len(self.coords)} entries"),
+            ("pipeline_name",          self.pipeline_name),
             ("max_records",            self.max_records),
+            ("option_create",         self.option_create),
+            ("node_type",             self.node_type),
+            ("input_artifact",        self.input_artifact),
+            ("sky_regions_csv",       self.sky_regions_csv),
+            ("sky_region_target_selected", self.sky_region_target_selected),
         ]
-        return ascii_kv_table(rows, title="AstroosConfig")
+        config_str = ascii_kv_table(rows, title="Pipeline DAG Configuration")
+
+        if self.sky_region_targets:
+            specs = []
+            for _, spec in self.sky_region_targets.items():
+                specs.append(spec)
+            config_str += "\n\n" + coord_table(
+                [(s.key, s.value, s.fmt, s.radius_arcmin, s.selected) for s in specs],
+                title="Sky Region Targets (CoordSpec)"
+            )
+        return config_str
     
+    def set_target(self, key: str) -> Tuple[SkyCoord, u.Quantity]:
+        key = key.lower().replace(" ", "_").replace("(", "").replace(")", "")
+        if key not in self.sky_region_targets:
+            print()
+            raise RuntimeError(f"{key} is not in {self.sky_region_targets}")
+        
+        spec = self.sky_region_targets[key]
+        spec.selected = True
 
-import csv
-from pathlib import Path
-from typing import Dict
+        self.sky_region_target_selected = key
 
-def load_coords_from_csv(path: str | Path) -> Dict[str, CoordSpec]:
-    coords = {}
+    def load_coords_from_csv(self) -> Dict[str, CoordSpec]:
+        coords = {}
+        path = self.sky_regions_csv 
 
-    # if file doesn't exist, return empty dict (allows for optional custom label files)
-    if not Path(path).is_file():
-        print(f"Warning: Label definition file '{path}' not found. No coordinates loaded.")
+        # if file doesn't exist, return empty dict (allows for optional custom label files)
+        if not Path(path).is_file():
+            print(f"Warning: Label definition file '{path}' not found. No coordinates loaded.")
+            return coords
+
+        with open(path, newline="") as f:
+            reader = csv.DictReader(f)
+
+            for row in reader:
+                label = row["Label"].strip()
+                ra_dec = row["RA_DEC"].strip()
+                fmt = row["Format"].strip()
+                r = float(row["Size_arcmin"])
+
+                # normalize key
+                key = label.lower().replace(" ", "_").replace("(", "").replace(")", "")
+
+                if fmt not in ("hmsdms", "deg"):
+                    raise ValueError(f"Invalid format '{fmt}' for label '{label}' in CSV. Must be 'hmsdms' or 'deg'.")
+                
+                if fmt == "hmsdms":
+                    coord = SkyCoord(ra_dec, unit=(u.hourangle, u.deg))  # parse to validate
+                else:
+                    ra, dec = map(float, ra_dec.split())
+                    coord = SkyCoord(ra=ra * u.deg, dec=dec * u.deg)  # parse to validate
+
+                coords[key] = CoordSpec(key=key, value=ra_dec, sky_coord=coord, fmt=fmt, radius_arcmin=r)
+
         return coords
-
-    with open(path, newline="") as f:
-        reader = csv.DictReader(f)
-
-        for row in reader:
-            label = row["Label"].strip()
-            ra_dec = row["RA_DEC"].strip()
-            fmt = row["Format"].strip()
-            size = float(row["Size_arcmin"])
-
-            # normalize key (optional but recommended)
-            key = label.lower().replace(" ", "_").replace("(", "").replace(")", "")
-
-            coords[key] = CoordSpec(ra_dec, fmt, size)
-
-    return coords
