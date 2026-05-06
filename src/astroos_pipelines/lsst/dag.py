@@ -60,21 +60,22 @@ log = logging.getLogger(__name__)
 
 class LSSTNodeCatalog(Node):
     def __init__(self,
-            node_type="catalog_lsst",
-            node_id=None,
-            parents=[],
-            parameters=None,
-            inputs=[],
-            outputs=[]):
+                dag_dir,
+                node_type="catalog_lsst",
+                node_id=None,
+                parents=[],
+                parameters=None,
+                origin=True,
+                ):
         super().__init__(
             node_type=node_type,
+            dag_dir=dag_dir,
             label="Query LSST DP-1 TAP",
             description="Query the Table Access Protocol (TAP)<br />for photometric features",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
-            inputs=inputs,
-            outputs=outputs,
+            origin=origin,
             )
 
     def to_dict(self):
@@ -281,19 +282,24 @@ class LSSTNodeEDA(Node):
 class LSSTNodeMatchToHST(Node):
     def __init__(
             self,
+            dag_dir,
             node_type="catalog_lsst_match_hst",
             node_id=None,
             parents=[],
             parameters=None,
             inputs=[],
-            outputs=[]):
+            outputs=[],
+            ):
         super().__init__(
             node_type=node_type,
+            dag_dir=dag_dir,
             label="LSST DP-1 HST-3D Cross-match",
             description="Use Deep-field HST-3D labels for supervised learning.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
+            num_inputs=2,
+            num_outputs=1,
             inputs=inputs,
             outputs=outputs,
             )
@@ -317,6 +323,7 @@ class LSSTNodeMatchToHST(Node):
 
         # expects 2 input artifacts: LSST catalog and HST catalog (both as FITS tables with RA/Dec columns)
         if len(self.inputs) < 2:
+            print(f"LSSTNodeMatchToHST self.inputs: {self.inputs}")
             raise RuntimeError("LSSTNodeMatchToHST requires 2 input artifacts named `catalog_hst_select` and `catalog_lsst`.")
         
         hst_table = Table()
@@ -345,6 +352,7 @@ class LSSTNodeMatchToHST(Node):
 class LSSTNodePreprocess(Node):
     def __init__(
             self,
+            dag_dir,
             node_type="catalog_lsst_preprocess",
             node_id=None,
             parents=[],
@@ -353,6 +361,7 @@ class LSSTNodePreprocess(Node):
             outputs=[]):
         super().__init__(
             node_type=node_type,
+            dag_dir=dag_dir,
             label="Extract LSST Photometric features",
             description="Extract colors from photometry.",
             node_id=node_id,
@@ -621,6 +630,7 @@ class LSSTNodePreprocess(Node):
 class LSSTNodePhotoDataset(Node):
     def __init__(
             self,
+            dag_dir,
             node_type="catalog_lsst_photo_dataset",
             node_id=None,
             parents=[],
@@ -629,6 +639,7 @@ class LSSTNodePhotoDataset(Node):
             outputs=[]):
         super().__init__(
             node_type=node_type,
+            dag_dir=dag_dir,
             label="Construct FITS Dataset",
             description="Construct photometric dataset.",
             node_id=node_id,

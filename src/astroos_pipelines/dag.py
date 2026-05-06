@@ -61,13 +61,17 @@ class Node(ABC):
     def __init__(self, 
                  node_type, 
                  dag_dir,
+                 num_inputs=1, 
+                 num_outputs=1,
+                 inputs=[],
+                 outputs=[],
                  label=None,
                  description=None,
                  node_id=None,
                  parents=[],
                  parameters=None, 
-                 inputs=[], 
-                 outputs=[]):
+                 origin=False,
+                 ):
         self.dag_dir = dag_dir
         self.node_type = node_type
         self.label = label or node_type
@@ -75,9 +79,12 @@ class Node(ABC):
         self.parents = parents
         self.children = []
         self.parameters = parameters
+        self.num_inputs = num_inputs
+        self.num_outputs = num_outputs
         self.inputs = []
         self.outputs = []
         self.visited = False
+        self.origin = origin
         
         if node_id:
             self.node_id = node_id
@@ -262,6 +269,9 @@ class Artifact:
             return False
         return self.name == other.name and self.file_path == other.file_path 
 
+    def __repr__(self):
+        return self.name + " " + self.file_path
+
     @classmethod
     def from_dict(cls, d):
         print(f"Creating Artifact from dict: {d}")
@@ -412,16 +422,13 @@ class PipelineDAG(DAG):
 
     def add_node(self, node: Node):
         node_id = node.node_id
-        print(f"Adding node {node_id} with parents {[p for p in node.parents]}")
+        print(f"Adding node {node_id} {node.node_type} with parents {[p for p in node.parents]}")
         for p in node.parents: 
             if p not in self.get_nodes_ids():
                 raise ValueError("Parent must exist")
             self.children[p].append(node_id)
 
-        # if dag is empty and no parents provided, set parents to empty, else if no parents provided, set parents to [head]
-        if len(self.nodes) == 0 and len(node.parents) == 0:
-            node.parents = []
-        elif len(node.parents) == 0:
+        if not node.origin:
             node.parents = [self.head.node_id] if self.head else []
 
         self.nodes[node_id] = node
@@ -486,7 +493,7 @@ class PipelineDAG(DAG):
         # set title with extra padding around it
         # dot.attr(label=f"{self.label}\n ", labelloc="t", fontsize="20")
 
-        dot.attr(rankdir="LR")  # left to right
+        dot.attr(rankdir="TB")  # left to right
 
         # top to bottom: rankdir="TB"
         dot.attr("node", 
@@ -527,12 +534,13 @@ class PipelineDAG(DAG):
         self._run_node(node_id)
     
     def _run_node(self, node_id):
-        print(f"Running node {node_id} with children {self.children[node_id]} and parents {self.nodes[node_id].parents}")
         node = self.nodes[node_id]
+        print(f"Running node {node_id} {node.node_type} with children {self.children[node_id]} and parents {self.nodes[node_id].parents}")
         node.visited = True
         
         for p in node.parents:
             parent_node = self.nodes[p]
+            print(f"parent visited  {parent_node.visited}")
 
             if not parent_node.visited:
                 self._run_node(p)
@@ -540,6 +548,7 @@ class PipelineDAG(DAG):
 
             for output in parent_node.outputs:
                 if output not in node.inputs:
+                    print(f"adding {output} to {node.node_type} inputs")
                     node.inputs.append(output)
 
         node.run()

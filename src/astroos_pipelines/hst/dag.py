@@ -39,7 +39,8 @@ class HSTNodeCatalog(Node):
             parents=[],
             parameters=None,
             inputs=[],
-            outputs=[]):
+            outputs=[],
+            origin=True):
         super().__init__(
             node_type=node_type,
             dag_dir=dag_dir,
@@ -50,6 +51,7 @@ class HSTNodeCatalog(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
+            origin=origin,
             )
 
     def to_dict(self):
