@@ -6,6 +6,7 @@ def main():
     config = client_config()
     pipeline_name = config.pipeline_name
     input_artifact = config.input_artifact
+    parameter = config.parameter
     option_create = config.option_create
     node_type = config.node_type
 
@@ -25,6 +26,8 @@ def main():
 
     if input_artifact:
         dag.add_input_artifact(input_artifact)
+    if parameter:
+        dag.add_parameter(parameter)
 
     dag.to_yaml()
 

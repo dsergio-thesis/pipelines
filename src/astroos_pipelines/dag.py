@@ -19,9 +19,15 @@ from astropy.coordinates import SkyCoord
 from astropy.units import Quantity
 import inspect
 
+import html
+import textwrap
+from graphviz import Digraph
+
 from astroos_pipelines.utils.formatting import ascii_kv_table
+from astroos_pipelines.artifacts import *
 
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
+importlib.reload(sys.modules['astroos_pipelines.artifacts'])
 
 def to_plain_data(obj):
     if isinstance(obj, SkyCoord):
@@ -71,7 +77,9 @@ class Node(ABC):
                  parents=[],
                  parameters={}, 
                  inputs=[], 
-                 outputs=[]):
+                 outputs=[],
+                 origin=False,
+                 ):
         self.dag_dir = dag_dir
         self.node_type = node_type
         self.label = label or node_type
@@ -82,6 +90,7 @@ class Node(ABC):
         self.inputs = []
         self.outputs = []
         self.visited = False
+        self.diff = {}
         
         if node_id:
             self.node_id = node_id
@@ -110,6 +119,7 @@ class Node(ABC):
             "parameters": self.parameters,
             "inputs": [i.to_dict() for i in self.inputs],
             "outputs": [i.to_dict() for i in self.outputs],
+            "diff": self.diff,
         }
     @classmethod
     def from_dict(cls, d):
@@ -119,6 +129,7 @@ class Node(ABC):
         node_id=d["node_id"]
         node_dir=d["node_dir"]
         dag_dir=d["dag_dir"]
+        diff=d.get("diff", {})
         parameters=d.get("parameters", {})
 
         if d.get("inputs") is not None and len(d.get("inputs")) > 0:
@@ -139,6 +150,8 @@ class Node(ABC):
         ret.node_id = node_id
         ret.node_dir = node_dir
         ret.dag_dir = dag_dir
+        ret.parameters = parameters
+        ret.diff = diff
         # print(f"Created node from dict: {ret}")
         return ret
 
@@ -195,8 +208,38 @@ class Node(ABC):
         
         return ascii_kv_table(rows, title=f"Node ({self.node_id})")
 
+    def to_yaml_string(self):
+        return yaml.safe_dump(to_plain_data(self.to_dict()), sort_keys=False)
+
+    def yaml_to_html_label(self, yaml_text: str, width_chars: int = 80, width_px: int = 320) -> str:
+        html_lines = []
+
+        for line in yaml_text.splitlines():
+            indent_len = len(line) - len(line.lstrip(" "))
+            indent = "&nbsp;" * indent_len
+            content = line[indent_len:]
+
+            wrapped = textwrap.wrap(
+                content,
+                width=max(1, width_chars - indent_len),
+                break_long_words=True,
+                break_on_hyphens=False,
+            )
+
+            if not wrapped:
+                html_lines.append(indent)
+            else:
+                html_lines.append(indent + html.escape(wrapped[0]))
+
+                # continuation lines preserve same indentation
+                for extra in wrapped[1:]:
+                    html_lines.append(indent + html.escape(extra))
+        return "<br align='left'/>".join(html_lines)
     
     def node_label(self):
+        yaml_html = self.yaml_to_html_label(self.to_yaml_string())
+        
+
         return f"""
 <table border="0" cellborder="0" cellspacing="0">
 <tr>
@@ -206,13 +249,18 @@ class Node(ABC):
 </tr>
 <tr>
 <td>
-<font >#{self.node_id}</font>
+<font>#{self.node_id}</font>
 </td>
 </tr>
-<tr><td><font >{self.description}</font></td></tr>
-<tr><td align="left"><font >• {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs</font></td></tr>
+<tr><td align="left">
+<br align="left"/>{yaml_html}
+<br align="left"/>
+<br align="left"/>{self.description}
+<br align="left"/>
+<br align="left"/> • {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs
+</td></tr>
 </table>
-            """
+"""
         
 
 class DAG(ABC):
@@ -236,52 +284,6 @@ class DAG(ABC):
     def run_from_node(self, node_id):
         pass
 
-class Artifact:
-    """DAG artifact, the data that flows between nodes in the DAG."""
-
-    def __init__(self,
-                 name: str,
-                 file_path: str,
-                 columns: dict = None,
-                 ):
-        self.name = name
-        self.file_path = file_path
-        self.columns = columns
-
-        if columns is None:
-            # print(f"Columns not provided for artifact {self.name}, trying to get from file path {self.file_path}")
-            self.try_get_columns()  # attempt to populate columns if not provided
-
-    def try_get_columns(self):
-        # # print(f"Trying to get columns for artifact {self.name} from file {self.file_path}")
-        if self.file_path is not None and os.path.exists(self.file_path):
-            try:
-                table = Table.read(self.file_path)
-                self.columns = {col: str(table[col].dtype) for col in table.colnames}
-            except Exception as e:
-                # print(f"Error reading file {self.file_path}: {e}")
-                pass
-
-    def to_dict(self):
-        return {
-            "name": self.name,
-            "file_path": self.file_path,
-            "columns": self.columns,
-        }
-
-    def __eq__(self, other):
-        if not isinstance(other, Artifact):
-            return False
-        return self.name == other.name and self.file_path == other.file_path 
-
-    @classmethod
-    def from_dict(cls, d):
-        # print(f"Creating Artifact from dict: {d}")
-        return cls(
-            name=d["name"],
-            file_path=d["file_path"],
-            columns=d.get("columns", None),
-        )
 
 import numpy as np
 from astropy.coordinates import SkyCoord
@@ -468,6 +470,12 @@ class PipelineDAG(DAG):
 
         self.get_head().inputs = [artifact]
 
+    def add_parameter(self, parameter):
+        print(f"Adding parameter {parameter} to head node {self.head.node_id if self.head else None}")
+
+        print(f"{len(parameter)} type: {type(parameter)}, existing parameters: {self.get_head().parameters if self.head else None}")
+        self.get_head().parameters[parameter[0]] = parameter[1]
+
     def get_nodes_ids(self):
         ids = []
         for node_id, node in self.nodes.items():
@@ -483,10 +491,14 @@ class PipelineDAG(DAG):
             file_path = os.path.join(self.dag_dir, "dag.yaml")
         with open(file_path, "w") as file:
 
+            for node in self.nodes.values():
+                node.diff = prune_empty(node.diff)
+
             data = {
                 "head": self.head.node_id if self.head else None,
                 "nodes": [node.to_dict() for node in self.nodes.values()]
             }
+
             yaml.safe_dump(to_plain_data(data), file, sort_keys=False)
 
         # also write each node to a separate yaml file for easier debugging
@@ -502,7 +514,7 @@ class PipelineDAG(DAG):
         # set title with extra padding around it
         # dot.attr(label=f"{self.label}\n ", labelloc="t", fontsize="20")
 
-        dot.attr(rankdir="LR")  # left to right
+        dot.attr(rankdir="TB")  # left to right
 
         # top to bottom: rankdir="TB"
         dot.attr("node", 
@@ -512,7 +524,9 @@ class PipelineDAG(DAG):
                  fontcolor="#2E2E2E",
                  color="#8F3F2B",
                  penwidth="2",
-                 bgcolor="transparent")
+                 bgcolor="transparent",
+                 width="6",
+                 )
         dot.graph_attr.update(bgcolor="transparent")
         dot.attr(
             "edge",
@@ -563,7 +577,14 @@ class PipelineDAG(DAG):
                 if output not in node.inputs:
                     node.inputs.append(output)
 
+        before = snapshot(node.inputs, node.outputs)
         node.run()
+        after = snapshot(node.inputs, node.outputs)
+        changes = diff_snapshots(before, after)
+        node.diff = changes
+        print(f"Changes after running node {node_id}: {changes}")
+
+
         source_code = inspect.getsource(node.run)
         source_code_path = os.path.join(node.node_dir, f"{node.node_id}-script.py")
         with open(source_code_path, "w") as f:
@@ -644,6 +665,14 @@ class NodeGeneric(Node):
         if len(self.inputs) > 0:
             artifact = self.inputs[0] # expects one input artifact
             data = Table.read(artifact.file_path)
+            
+            df = data.to_pandas()
+            # multiply all numeric columns by 2 for testing
+            for col in df.columns:
+                if np.issubdtype(df[col].dtype, np.number):
+                    df[col] = df[col] * 2
+            data = Table.from_pandas(df)
+
             self.output_csv_table(data)
             # print(f"Passed through data with {len(data)} rows and {len(data.colnames)} columns.")
 
@@ -909,7 +938,7 @@ class NodeScript(Node):
             template_script = """# Example script for NodeScript
 # This script will be executed when the node runs. You can access input artifacts, parameters, and output artifacts to perform custom operations.
 """         
-            script_path = os.path.join(self.node_dir, f"{node_id}-script.py")
+            script_path = os.path.join(self.node_dir, f"script.py")
 
             os.makedirs(self.node_dir, exist_ok=True)
             with open(script_path, "w") as f:

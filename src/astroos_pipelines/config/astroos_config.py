@@ -46,6 +46,7 @@ class AstroosConfig:
             option_create: bool = False,
             node_type: str = "generic", # NodeGeneric default
             input_artifact: str = None,
+            parameter: (str, str) = None,
             sky_region_target_selected: str = None,
             sky_region_target_radius_arcmin: float = None,
             max_records: int = 3,
@@ -58,6 +59,7 @@ class AstroosConfig:
         self.option_create = option_create
         self.node_type = node_type
         self.input_artifact = input_artifact
+        self.parameter = parameter
 
         self.max_records = max_records
 
@@ -97,7 +99,7 @@ class AstroosConfig:
         # start from env
         base = cls.from_env()
 
-        # merge CLI → env
+        # merge CLI and env
         cfg = cls(
             dataset_dir=base.dataset_dir,
             pipeline_dir=base.pipeline_dir,
@@ -105,6 +107,7 @@ class AstroosConfig:
             pipeline_name=args.pipeline_name,
             option_create=args.create,
             input_artifact=args.input_artifact,
+            parameter=tuple(args.parameter) if args.parameter else None,
             node_type=args.node_type,
             sky_regions_csv=base.sky_regions_csv,
             sky_region_target_selected=args.target,
@@ -150,6 +153,7 @@ class AstroosConfig:
         p.add_argument("-i", "--input-artifact", type=str, help="Path to input artifact")
         p.add_argument("-t", "--node-type", type=str, default="generic", help="Node type for new node")
         p.add_argument("--target", type=str, help="Target key to override coordinates")
+        p.add_argument("-p", "--parameter", nargs=2, metavar=("KEY", "VALUE"), help="Additional parameter as key value pair")
         return p
 
     def __repr__(self):
@@ -162,6 +166,7 @@ class AstroosConfig:
             ("option_create",         self.option_create),
             ("node_type",             self.node_type),
             ("input_artifact",        self.input_artifact),
+            ("parameter",             self.parameter),
             ("sky_regions_csv",       self.sky_regions_csv),
             ("sky_region_target_selected", self.sky_region_target_selected),
         ]
