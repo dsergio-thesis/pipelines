@@ -1,5 +1,6 @@
-
 from __future__ import annotations
+
+import pprint
 from graphviz import Digraph
 from dataclasses import dataclass
 import hashlib
@@ -26,8 +27,11 @@ from graphviz import Digraph
 from astroos_pipelines.utils.formatting import ascii_kv_table
 from astroos_pipelines.artifacts import *
 
+# from astroos_pipelines.hst.dag import *
+
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 importlib.reload(sys.modules['astroos_pipelines.artifacts'])
+# importlib.reload(sys.modules['astroos_pipelines.hst.dag'])
 
 def to_plain_data(obj):
     if isinstance(obj, SkyCoord):
@@ -91,6 +95,7 @@ class Node(ABC):
         self.outputs = []
         self.visited = False
         self.diff = {}
+        self.artifact_dag = None 
         
         if node_id:
             self.node_id = node_id
@@ -134,12 +139,20 @@ class Node(ABC):
 
         if d.get("inputs") is not None and len(d.get("inputs")) > 0:
             # print(f"inputs: {len(d.get('inputs'))}")
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])]
+            # inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])]
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])]
         if d.get("outputs") is not None and len(d.get("outputs")) > 0:
             # print(f"outputs: {len(d.get('outputs'))}")
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])]
+            # outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])]
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])]
 
         parent_ids=d.get("parents", [])
+
+        if node_type not in cls.registry:
+            raise ValueError(
+                f"Unknown node type {node_type}. "
+                f"Registered types: {list(cls.registry.keys())}"
+                )
 
         subclass = cls.registry[node_type]
         # print(f"Found subclass {subclass} d: {d}")
@@ -193,6 +206,7 @@ class Node(ABC):
         )
 
         self.outputs = [artifact]
+
 
     def __repr__(self):
         rows = [("node_id", self.node_id), 
@@ -342,7 +356,9 @@ class PipelineDAG(DAG):
     """DAG Pipeline"""
 
     def __init__(self, 
-                 label=None):
+                 artifact_dag: ArtifactDAG = None,
+                 label: str = None,
+                 ):
 
         if not label:
             if not os.path.exists(os.path.join("_pipelines", "dags_index.yaml")):
@@ -383,10 +399,19 @@ class PipelineDAG(DAG):
                 for node_data in data["nodes"]:
                     # print()
                     # print(f"- Node data: {node_data}")
+                    print("Node class:", Node)
+                    print("Node module:", Node.__module__)
+                    print("registry keys:", Node.registry.keys())
                     node = Node.from_dict(node_data)
                     # print(f" ** Created node: {node}")
                     # print()
                     self.nodes[node_data["node_id"]] = node
+
+                artifact_dag_data = data["artifact_dag"]
+                if artifact_dag_data is not None:
+                    self.artifact_dag = ArtifactDAG.from_dict(artifact_dag_data)
+                else:
+                    self.artifact_dag = ArtifactDAG()
 
                 # print(f"Loaded DAG with nodes: {self.nodes}, type: {type(self.nodes)}")
                 self.children = defaultdict(list)
@@ -401,6 +426,7 @@ class PipelineDAG(DAG):
         else:
             # print("No DAG file found, initializing new DAG.")
             self.nodes = {} 
+            self.artifact_dag = ArtifactDAG()
             self.children = defaultdict(list)
 
         dags_index = os.path.join("_pipelines", "dags_index.yaml")
@@ -425,17 +451,22 @@ class PipelineDAG(DAG):
         # print(f"Initialized DAG Index with DAGs: {index_data['dags'] if os.path.exists(dags_index) else [self.dag_id]}")
 
     def add_node(self, node: Node):
+        print(f"Adding node of type {node.node_type} to DAG with label {self.label}")
         node_id = node.node_id
-        for p in node.parents: 
-            if p not in self.get_nodes_ids():
-                raise ValueError("Parent must exist")
-            self.children[p].append(node_id)
+        node.artifact_dag = self.artifact_dag
+
 
         # if dag is empty and no parents provided, set parents to empty, else if no parents provided, set parents to [head]
         if len(self.nodes) == 0 and len(node.parents) == 0:
             node.parents = []
         elif len(node.parents) == 0:
             node.parents = [self.head.node_id] if self.head else []
+
+        for p in node.parents: 
+            if p not in self.get_nodes_ids():
+                raise ValueError("Parent must exist")
+            self.children[p].append(node_id)
+            self.artifact_dag.add_edge(p, node_id)
 
         print(f"Adding node {node_id} with parents {[p for p in node.parents]}")
         print(repr(node))
@@ -459,7 +490,24 @@ class PipelineDAG(DAG):
             # print("No head node set.")
             pass
 
+    def add_input_artifact_item(self, file_path):
+        print(f"Adding input artifact item with file path {file_path} to head node {self.head.node_id if self.head else None}")
+        head = self.get_head()
+
+        if (not head or head.node_type != "input"):
+            raise ValueError("Can only add input artifact to head node of type 'input'")
+        artifact_item = ArtifactItem(
+            file_path=file_path,
+            dag=self.artifact_dag,
+            node_id=head.node_id if head else None,
+        )
+        if head.inputs is None:
+            head.inputs = []
+        head.inputs.append(artifact_item)
+        
     def add_input_artifact(self, file_path):
+        # old Artifact way, keeping for reference
+
         artifact = Artifact(
             name=os.path.basename(file_path),
             file_path=file_path,
@@ -487,16 +535,19 @@ class PipelineDAG(DAG):
 
     def to_yaml(self, file_path=None):
 
+        print(f"Saving DAG to yaml. artifact_dag: {self.artifact_dag}, nodes: {self.nodes}")
+
         if file_path is None:
             file_path = os.path.join(self.dag_dir, "dag.yaml")
         with open(file_path, "w") as file:
 
             for node in self.nodes.values():
-                node.diff = prune_empty(node.diff)
+                node.diff = Artifact.prune_empty(node.diff)
 
             data = {
                 "head": self.head.node_id if self.head else None,
-                "nodes": [node.to_dict() for node in self.nodes.values()]
+                "nodes": [node.to_dict() for node in self.nodes.values()],
+                "artifact_dag": self.artifact_dag.to_dict() if self.artifact_dag else None,
             }
 
             yaml.safe_dump(to_plain_data(data), file, sort_keys=False)
@@ -514,9 +565,8 @@ class PipelineDAG(DAG):
         # set title with extra padding around it
         # dot.attr(label=f"{self.label}\n ", labelloc="t", fontsize="20")
 
-        dot.attr(rankdir="TB")  # left to right
+        dot.attr(rankdir="TB")  # left to right (LR) or top to bottom (TB)
 
-        # top to bottom: rankdir="TB"
         dot.attr("node", 
                  shape="box", 
                  style="filled,rounded", 
@@ -562,6 +612,9 @@ class PipelineDAG(DAG):
         os.makedirs(self.nodes[node_id].node_dir, exist_ok=True)
 
         node = self.nodes[node_id]
+        node.artifact_dag = self.artifact_dag
+
+        print(f"Running node {node_id} with artifact_dag: {self.artifact_dag}")
         print(repr(node))
 
         node.visited = True
@@ -577,13 +630,18 @@ class PipelineDAG(DAG):
                 if output not in node.inputs:
                     node.inputs.append(output)
 
-        before = snapshot(node.inputs, node.outputs)
-        node.run()
-        after = snapshot(node.inputs, node.outputs)
-        changes = diff_snapshots(before, after)
-        node.diff = changes
-        print(f"Changes after running node {node_id}: {changes}")
+        # before = Artifact.snapshot(node.inputs, node.outputs)
 
+        node.run()
+
+        # for artifact in node.inputs + node.outputs:
+            # artifact.refresh()
+        # after = Artifact.snapshot(node.inputs, node.outputs)
+        # changes = Artifact.diff_snapshots(before, after)
+        # node.diff = changes
+        # print()
+        # print(f"Changes after running node {node_id}:")
+        # pprint(changes)
 
         source_code = inspect.getsource(node.run)
         source_code_path = os.path.join(node.node_dir, f"{node.node_id}-script.py")
@@ -617,6 +675,110 @@ class PipelineDAG(DAG):
                 # print(f"Selected DAG: {selected_dag}")
 
 
+class NodeInput(Node):
+    """
+    Input node for testing the pipeline. Passes through input artifacts to outputs without modification. 
+    """
+    def __init__(self,
+                 dag_dir,
+                 node_type="input",
+                 node_id=None,
+                 parents=[],
+                 parameters: dict[str, Any] | None = None,
+                 inputs=[],
+                 outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            dag_dir=dag_dir,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+        )
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "NodeInput"
+        return d
+
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            dag_dir = d["dag_dir"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+        """ Pass through inputs to outputs for testing the pipeline. """
+        if len(self.inputs) > 0:
+            artifact = self.inputs[0] # expects one input artifact
+            
+            artifact.dag = self.artifact_dag
+            node_dir = os.path.join(self.dag_dir, self.node_id)
+            artifact.file_path = os.path.join(node_dir, os.path.basename(artifact.file_path))
+            artifact.to_csv(node_id=self.node_id)
+
+            self.outputs = [artifact]
+
+
+class NodeExport(Node):
+    """
+    Export Node
+    """
+    def __init__(self,
+                 dag_dir,
+                 node_type="export",
+                 node_id=None,
+                 parents=[],
+                 parameters: dict[str, Any] | None = None,
+                 inputs=[],
+                 outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            dag_dir=dag_dir,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+        )
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "NodeExport"
+        return d
+
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            dag_dir = d["dag_dir"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+        """ Pass through inputs to outputs for testing the pipeline. """
+        if len(self.inputs) > 0:
+
+            if self.outputs is None:
+                self.outputs = []
+            for artifact in self.inputs:
+                print(f"Exporting artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
+                artifact.dag = self.artifact_dag
+                artifact.to_csv(node_id=self.node_id)
+                self.outputs.append(artifact)
+
+
+
+
 class NodeGeneric(Node):
     """
     A generic node that can be used for testing the pipeline.
@@ -627,7 +789,7 @@ class NodeGeneric(Node):
                  node_type="generic",
                  node_id=None,
                  parents=[],
-                 parameters={},
+                 parameters: dict[str, Any] | None = None,
                  inputs=[],
                  outputs=[]):
         super().__init__(
@@ -655,8 +817,10 @@ class NodeGeneric(Node):
             dag_dir = d["dag_dir"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            # inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
+            # outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
         )
 
 
@@ -668,12 +832,17 @@ class NodeGeneric(Node):
             
             df = data.to_pandas()
             # multiply all numeric columns by 2 for testing
-            for col in df.columns:
-                if np.issubdtype(df[col].dtype, np.number):
-                    df[col] = df[col] * 2
-            data = Table.from_pandas(df)
+            # for col in df.columns:
+                # if np.issubdtype(df[col].dtype, np.number):
+                    # df[col] = df[col] * 2
+            # data = Table.from_pandas(df)
 
-            self.output_csv_table(data)
+            df["colA"] *= 3
+
+            artifact.add_column("colA", self.node_id, df["colA"])
+            self.outputs = [artifact]
+
+            # self.output_csv_table(data)
             # print(f"Passed through data with {len(data)} rows and {len(data.colnames)} columns.")
 
 

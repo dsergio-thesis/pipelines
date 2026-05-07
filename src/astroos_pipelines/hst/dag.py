@@ -53,21 +53,25 @@ class HSTNodeCatalog(Node):
             outputs=outputs,
             origin=origin,
             )
+        print("HST base:", HSTNodeCatalog.__mro__)
+        print("HST module:", HSTNodeCatalog.__module__)
+        
 
     def to_dict(self):
         d = super().to_dict()
         d["type"] = "HSTNodeCatalog"
         return d
 
-    @classmethod
-    def _from_dict(cls, d):
-        return cls(
-            node_id=d["node_id"],
-            parents=d.get("parents", []),
-            parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
-        )
+    # @classmethod
+    # def _from_dict(cls, d):
+        # return cls(
+            # node_id=d["node_id"],
+            # parents=d.get("parents", []),
+            # parameters=d.get("parameters", {}),
+            # inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
+            # outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            
+        # )
 
     def run(self):
         file = "catalogs/hst/hst.fits"
