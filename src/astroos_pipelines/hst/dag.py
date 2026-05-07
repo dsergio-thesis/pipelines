@@ -73,6 +73,7 @@ class HSTNodeCatalog(Node):
             outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
             origin=d.get("origin", True),
         )
+
     def run(self):
         file = "catalogs/hst/hst.fits"
 
@@ -133,17 +134,18 @@ class HSTNodeEDA(Node):
 
     def to_dict(self):
         d = super().to_dict()
-        d["type"] = "HSTNodeEDA"
+        d["type"] = self.__class__.__name__
         return d
 
     @classmethod
     def _from_dict(cls, d):
         return cls(
+            dag_dir=d["dag_dir"],
             node_id=d["node_id"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
         )
 
     def run(self):
@@ -159,7 +161,8 @@ class HSTNodeEDA(Node):
                     save_dir=self.node_dir, 
                     title="HST")
         
-        self.output_fits_table(table, columns=columns) # pass through the table to the next node
+        self.outputs = [artifact]
+        # self.output_fits_table(table, columns=columns) # pass through the table to the next node
 
 
 class HSTNodeClean(Node):

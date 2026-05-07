@@ -495,8 +495,8 @@ class PipelineDAG(DAG):
         print(f"Adding input artifact item with file path {file_path} to head node {self.head.node_id if self.head else None}")
         head = self.get_head()
 
-        if (not head or head.node_type != "input"):
-            raise ValueError("Can only add input artifact to head node of type 'input'")
+        if (not head or head.node_type != "import"):
+            raise ValueError("Can only add artifact to head node of type 'import'")
         artifact_item = ArtifactItem(
             file_path=file_path,
             dag=self.artifact_dag,
@@ -676,13 +676,13 @@ class PipelineDAG(DAG):
                 # print(f"Selected DAG: {selected_dag}")
 
 
-class NodeInput(Node):
+class NodeImport(Node):
     """
-    Input node for testing the pipeline. Passes through input artifacts to outputs without modification. 
+    Import Node. 
     """
     def __init__(self,
                  dag_dir,
-                 node_type="input",
+                 node_type="import",
                  node_id=None,
                  parents=[],
                  parameters: dict[str, Any] | None = None,
@@ -700,7 +700,7 @@ class NodeInput(Node):
 
     def to_dict(self):
         d = super().to_dict()
-        d["type"] = "NodeInput"
+        d["type"] = "NodeImport"
         return d
 
     @classmethod
@@ -774,7 +774,7 @@ class NodeExport(Node):
             for artifact in self.inputs:
                 print(f"Exporting artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
                 artifact.dag = self.artifact_dag
-                artifact.to_csv(node_id=self.node_id)
+                artifact.materialize(node_id=self.node_id)
                 self.outputs.append(artifact)
 
 

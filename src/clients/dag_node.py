@@ -23,15 +23,19 @@ def main():
             dag_node = NodeBadToNaN(dag_dir=dag_dir)
         elif node_type == "script":
             dag_node = NodeScript(dag_dir=dag_dir)
-        elif node_type == "input":
-            dag_node = NodeInput(dag_dir=dag_dir)
+        elif node_type == "import":
+            dag_node = NodeImport(dag_dir=dag_dir)
         elif node_type == "export":
             dag_node = NodeExport(dag_dir=dag_dir)
         elif node_type == "hst-catalog":
             dag_node  = HSTNodeCatalog(
                 parameters={"max_records": max_records}, 
                 dag_dir=dag_dir) 
-
+        elif node_type == "hst-eda":
+            dag_node = HSTNodeEDA(
+                parameters={"max_records": max_records},
+                dag_dir=dag_dir,
+                )
         else: 
             dag_node = NodeGeneric(dag_dir=dag_dir)
 

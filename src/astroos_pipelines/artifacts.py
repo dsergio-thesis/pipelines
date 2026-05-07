@@ -108,8 +108,20 @@ class ArtifactCol:
             )
         )
 
-    def add_version_from_disk(self, node_id: str, file_path: str) -> None:
+    def add_version_from_disk_csv(self, node_id: str, file_path: str) -> None:
         series = pd.read_csv(file_path).iloc[:, 0]
+
+        self.versions.append(
+            ColumnVersion(
+                node_id=node_id,
+                data=series,
+                hash=int(hash_pandas_object(series, index=True).sum()),
+            )
+        )
+
+    def add_version_from_disk(self, node_id: str, file_path: str) -> None:
+        df = pd.read_parquet(file_path)
+        series = df.iloc[:, 0]
 
         self.versions.append(
             ColumnVersion(
@@ -217,6 +229,24 @@ class ArtifactItem:
         df = self.to_df(node_id)
         df.to_csv(self.file_path, index=False)
 
+    def materialize(self, node_id: str) -> None:
+        df = self.to_df(node_id)
+
+        ext = Path(self.file_path).suffix.lower()
+
+        if ext == ".csv":
+            df.to_csv(self.file_path, index=False)
+
+        elif ext == ".parquet":
+            df.to_parquet(self.file_path, index=False)
+
+        elif ext in {".fits", ".fit"}:
+            table = Table.from_pandas(df)
+            table.write(self.file_path, overwrite=True)
+
+        else:
+            raise ValueError(f"Unsupported output format: {ext}")
+
     def _load_from_file(self) -> None:
         try:
             table = Table.read(self.file_path)
@@ -230,6 +260,45 @@ class ArtifactItem:
             self.columns = {}
 
     def to_dict(self) -> dict:
+
+        # get dir from file_path and ensure it exists
+        if not self.file_path:
+            raise ValueError("file_path is required to save column versions to disk")
+        column_store_dir = os.path.dirname(self.file_path)
+        store_dir = Path(column_store_dir)
+        store_dir.mkdir(parents=True, exist_ok=True)
+
+        columns_dict = {}
+
+        for col_name, artifact_col in self.columns.items():
+            columns_dict[col_name] = []
+
+            for version in artifact_col.versions:
+                safe_col = str(col_name).replace("/", "_")
+                safe_node = str(version.node_id).replace("/", "_")
+
+                version_file = (
+                        store_dir 
+                        / f"{Path(self.file_path).stem}__{safe_col}__{safe_node}.parquet"
+                )
+
+                if version.data is not None:
+                    df = pd.DataFrame({col_name: version.data})
+                    df.to_parquet(version_file, index=False)
+
+                columns_dict[col_name].append({
+                    "node_id": version.node_id,
+                    "hash": version.hash,
+                    "file_path": str(version_file),
+                })
+
+        return {
+            "file_path": self.file_path,
+            "node_id": self.node_id,
+            "columns": columns_dict,
+        }
+
+    def to_dict_csv(self) -> dict:
 
         # get dir from file_path and ensure it exists
         if not self.file_path:
