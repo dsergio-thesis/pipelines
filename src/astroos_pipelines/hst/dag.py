@@ -59,20 +59,20 @@ class HSTNodeCatalog(Node):
 
     def to_dict(self):
         d = super().to_dict()
-        d["type"] = "HSTNodeCatalog"
+        d["type"] = self.__class__.__name__
         return d
 
-    # @classmethod
-    # def _from_dict(cls, d):
-        # return cls(
-            # node_id=d["node_id"],
-            # parents=d.get("parents", []),
-            # parameters=d.get("parameters", {}),
-            # inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            # outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
-            
-        # )
-
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            dag_dir=d["dag_dir"],
+            node_id=d["node_id"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+            origin=d.get("origin", True),
+        )
     def run(self):
         file = "catalogs/hst/hst.fits"
 

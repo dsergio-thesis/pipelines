@@ -27,9 +27,9 @@ import logging
 def client_config():
     # global configuration for development and testing
     importlib.reload(sys.modules['astroos_pipelines.pipelines'])
+    importlib.reload(sys.modules['astroos_pipelines.dag'])
     importlib.reload(sys.modules['astroos_pipelines.hst.pipelines'])
     importlib.reload(sys.modules['astroos_pipelines.hst.dag'])
-    importlib.reload(sys.modules['astroos_pipelines.dag'])
     importlib.reload(sys.modules['astroos_pipelines.datasets'])
     importlib.reload(sys.modules['astroos_pipelines.transforms'])
     importlib.reload(sys.modules['astroos_pipelines.config.astroos_config'])

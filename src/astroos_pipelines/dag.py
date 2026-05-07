@@ -148,13 +148,14 @@ class Node(ABC):
 
         parent_ids=d.get("parents", [])
 
-        if node_type not in cls.registry:
+        if node_type not in Node.registry:
             raise ValueError(
                 f"Unknown node type {node_type}. "
                 f"Registered types: {list(cls.registry.keys())}"
                 )
 
-        subclass = cls.registry[node_type]
+        # subclass = cls.registry[node_type]
+        subclass = Node.registry[node_type]
         # print(f"Found subclass {subclass} d: {d}")
         ret = subclass._from_dict(d)
         ret.inputs = inputs if 'inputs' in locals() else []
