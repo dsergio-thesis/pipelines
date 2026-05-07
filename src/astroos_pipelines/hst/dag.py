@@ -106,6 +106,10 @@ class HSTNodeCatalog(Node):
             }
         # pass parameters to next node somehow
 
+        artifact = ArtifactItem(
+            name="hst_catalog",
+            file_path=
+
         self.output_fits_table(table, columns=columns) # pass the table to the next node, only with the columns we care about for EDA
 
         
@@ -153,7 +157,7 @@ class HSTNodeEDA(Node):
         # read fits table from input artifact
         print(f"running EDA {self.inputs}")
         artifact = self.inputs[0]
-        table = Table.read(artifact.file_path, hdu=1)
+        table = Table.read(artifact.file_path, hdu=1, format="fits")
         columns = artifact.columns
 
         dataset_eda(table=table, 

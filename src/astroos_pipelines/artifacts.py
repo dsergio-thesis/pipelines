@@ -359,6 +359,22 @@ class ArtifactItem:
 
         return item
 
+    def __repr__(self) -> str:
+        lines = [f"ArtifactItem(file_path={self.file_path}, node_id={self.node_id})"]
+
+        c = 0
+        for col_name, artifact_col in self.columns.items():
+            lines.append(f"  Column: {col_name}")
+
+            for version in artifact_col.versions:
+                lines.append(f"    Version from node '{version.node_id}': hash={version.hash}")
+                lines.append(str(version.data.head()))
+            c += 1
+            if c >= 3:
+                lines.append("    ...")
+                break
+
+        return "\n".join(lines)
 
 
 
