@@ -434,7 +434,7 @@ class PipelineDAG(DAG):
                     self.head = self.nodes[data["head"]]
 
         else:
-            # print("No DAG file found, initializing new DAG.")
+            print("No pipelines file found, initializing new PipelineDAG.")
             self.nodes = {} 
             self.artifact_dag = ArtifactDAG()
             self.children = defaultdict(list)
