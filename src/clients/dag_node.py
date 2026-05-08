@@ -22,7 +22,8 @@ def main():
         elif node_type == "script":
             dag_node = NodeScript(dag_dir=dag_dir)
         elif node_type == "import":
-            dag_node = NodeImport(dag_dir=dag_dir)
+            dag_node = NodeImport(dag_dir=dag_dir,
+                                  parameters={"max_records": max_records})
         elif node_type == "export":
             dag_node = NodeExport(dag_dir=dag_dir)
         # elif node_type == "hst-catalog":
@@ -31,7 +32,6 @@ def main():
                 # dag_dir=dag_dir) 
         elif node_type == "eda":
             dag_node = NodeEDA(
-                parameters={"max_records": max_records},
                 dag_dir=dag_dir,
                 )
         else: 

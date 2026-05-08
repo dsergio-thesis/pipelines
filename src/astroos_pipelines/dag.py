@@ -276,9 +276,10 @@ class Node(ABC):
 </td>
 </tr>
 <tr><td align="left">
-<br align="left"/>{yaml_html}
-<br align="left"/>
 <br align="left"/>{desc_html}
+<br align="left"/>
+<br align="left"/><font point-size="8">{yaml_html}</font>
+<br align="left"/>
 <br align="left"/>
 <br align="left"/> • {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs
 </td></tr>
@@ -408,9 +409,9 @@ class PipelineDAG(DAG):
                 for node_data in data["nodes"]:
                     # print()
                     # print(f"- Node data: {node_data}")
-                    print("Node class:", Node)
-                    print("Node module:", Node.__module__)
-                    print("registry keys:", Node.registry.keys())
+                    # print("Node class:", Node)
+                    # print("Node module:", Node.__module__)
+                    # print("registry keys:", Node.registry.keys())
                     node = Node.from_dict(node_data)
                     # print(f" ** Created node: {node}")
                     # print()
@@ -460,7 +461,6 @@ class PipelineDAG(DAG):
         # print(f"Initialized DAG Index with DAGs: {index_data['dags'] if os.path.exists(dags_index) else [self.dag_id]}")
 
     def add_node(self, node: Node):
-        print(f"Adding node of type {node.node_type} to DAG with label {self.label}")
         node_id = node.node_id
         node.artifact_dag = self.artifact_dag
 
@@ -477,8 +477,11 @@ class PipelineDAG(DAG):
             self.children[p].append(node_id)
             self.artifact_dag.add_edge(p, node_id)
 
-        print(f"Adding node {node_id} with parents {[p for p in node.parents]}")
+        print(f"Adding node {node_id} of type {node.node_type} with parents {[p for p in node.parents]}")
         print(repr(node))
+
+        # make dir for the node
+        os.makedirs(node.node_dir, exist_ok=True)
 
         self.nodes[node_id] = node
         self.head = node
@@ -531,7 +534,21 @@ class PipelineDAG(DAG):
         print(f"Adding parameter {parameter} to head node {self.head.node_id if self.head else None}")
 
         print(f"{len(parameter)} type: {type(parameter)}, existing parameters: {self.get_head().parameters if self.head else None}")
-        self.get_head().parameters[parameter[0]] = parameter[1]
+
+        value = parameter[1]
+        # if numeric string like "10" or "3.14", convert to int or float
+        if isinstance(value, str):
+            if value.isdigit():
+                value = int(value)
+            elif value in ["true", "True", "false", "False"]:
+                value = value.lower() == "true"
+            else:
+                try:
+                    value = float(value)
+                except ValueError:
+                    pass
+        
+        self.get_head().parameters[parameter[0]] = value
 
     def get_nodes_ids(self):
         ids = []
@@ -544,7 +561,7 @@ class PipelineDAG(DAG):
 
     def to_yaml(self, file_path=None):
 
-        print(f"Saving DAG to yaml. artifact_dag: {self.artifact_dag}, nodes: {self.nodes}")
+        print(f"Saving DAG to yaml. artifact_dag: {self.artifact_dag}")
 
         if file_path is None:
             file_path = os.path.join(self.dag_dir, "dag.yaml")
@@ -620,14 +637,8 @@ class PipelineDAG(DAG):
         # make dir
         os.makedirs(self.nodes[node_id].node_dir, exist_ok=True)
 
-        # clear dir
-        os.system(f"rm -rf {self.nodes[node_id].node_dir}/*")
-
         node = self.nodes[node_id]
         node.artifact_dag = self.artifact_dag
-
-        print(f"Running node {node_id} with artifact_dag: {self.artifact_dag}")
-        print(repr(node))
 
         node.visited = True
         
@@ -644,6 +655,8 @@ class PipelineDAG(DAG):
 
         # before = Artifact.snapshot(node.inputs, node.outputs)
 
+        print(f"Running node {node_id}")
+        print(repr(node))
         node.run()
 
         # for artifact in node.inputs + node.outputs:
@@ -676,16 +689,24 @@ class PipelineDAG(DAG):
             return
         self.run_from_node(self.head.node_id)
         
-    @staticmethod
-    def list_dags():
+    def status(self):
         index_file = os.path.join("_pipelines", "dags_index.yaml")
         if os.path.exists(index_file):
             with open(index_file, "r") as file:
                 index_data = yaml.safe_load(file)
                 selected_dag = index_data.get("selected_dag")
-                # print(f"Available DAGs: {index_data['dags']}")
-                # print(f"Selected DAG: {selected_dag}")
 
+                print()
+                print(f"Pipelines:")
+                for dag in index_data["dags"]:
+                    if dag == selected_dag:
+                        print(f" * {dag}")
+                    else:
+                        print(f"   {dag}")
+                print()
+
+                if self.head:
+                    print(f"Current head node: {self.head.node_id} of type {self.head.node_type}")
 
 class NodeImport(Node):
     """
@@ -710,6 +731,41 @@ class NodeImport(Node):
             description="Import data from external source into the pipeline.",
         )
 
+        if not self.parameters or "script" not in self.parameters:
+            # write template script to node directory
+            template_script = """# Example script for NodeImport.
+
+# print(f"*** Running in NodeImport...")
+# active_columns.update({  
+    # 'ra': "Right Ascension",
+    # 'dec': "Declination",
+    # 'jh_mag': "J-H color",
+    # 'z_spec': "Spectroscopic redshift",
+    # 'z_peak_phot': "Photometric redshift (peak)",
+    # 'z_peak_grism': "Grism redshift (peak)",
+    # 'z_best': "Best redshift",
+    # 'sfr': "Star Formation Rate",
+    # 'lssfr': "Log Specific Star Formation Rate",
+    # 'sfr_IR': "Star Formation Rate from IR",
+    # 'sfr_UV': "Star Formation Rate from UV",
+    # 'lmass': "Log Stellar Mass",
+    # 'Av': "Visual Extinction",
+    # 'beta': "UV slope",
+    # 'L_IR': "Infrared Luminosity",
+    # 'chi2': "Chi-squared of SED fit",
+# })
+
+"""         
+            script_path = os.path.join(self.node_dir, f"script.py")
+
+            os.makedirs(self.node_dir, exist_ok=True)
+            with open(script_path, "w") as f:
+                f.write(template_script)
+            self.parameters = {
+                "script": script_path
+                }
+
+
     def to_dict(self):
         d = super().to_dict()
         d["type"] = "NodeImport"
@@ -730,11 +786,28 @@ class NodeImport(Node):
         """ Import artifact. """
         if len(self.inputs) > 0:
             artifact = self.inputs[0] # expects one input artifact
+            
+            print(f"Running NodeImport with artifact {artifact.file_path} and parameters {self.parameters}")
 
-            if self.parameters is not None and "max-records" in self.parameters:
-                max_records = self.parameters["max-records"]
+            active_columns = {}
+
+            script = self.parameters.get("script", "")
+            with open(script, "r") as f:
+                code = f.read()
+                exec(code, {"parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "active_columns": active_columns})
+            
+            print(f"Active columns after running script: {active_columns}")
+
+            if self.parameters is not None and "max_records" in self.parameters:
+                max_records = self.parameters["max_records"]
             else:
                 max_records = 10
+
+            if active_columns:
+                print(f"Selected columns from script: {active_columns}")
+                artifact.set_active_columns(active_columns)
+            else:
+                print("No active columns selected in script, using all columns.")
             
             artifact.dag = self.artifact_dag
             node_dir = os.path.join(self.dag_dir, self.node_id)
@@ -797,6 +870,7 @@ class NodeExport(Node):
             for artifact in self.inputs:
                 print(f"Exporting artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
                 artifact.dag = self.artifact_dag
+                artifact.file_path = os.path.join(self.dag_dir, self.node_id, os.path.basename(artifact.file_path))
                 artifact.materialize(node_id=self.node_id)
                 self.outputs.append(artifact)
 
@@ -917,7 +991,8 @@ class NodeEDA(Node):
             # print("No input artifact for EDA node.")
             return
 
-        artifact = self.inputs[0]
+        artifact = self.inputs.pop()
+        print(f"Running EDA on artifact {artifact.file_path}")
 
         ext = os.path.splitext(artifact.file_path)[1].lower()
         if ext == ".fits":
@@ -927,12 +1002,17 @@ class NodeEDA(Node):
         else:
             raise ValueError(f"Unsupported file format {ext} for EDA node.")
 
-        columns = artifact.columns
+        columns = artifact.active_columns 
+
+        if self.parameters is not None and "max_records" in self.parameters:
+            max_records = self.parameters["max_records"]
+            table = table[:max_records]
 
         dataset_eda(table=table, 
                     columns=columns, 
                     save_dir=self.node_dir, 
-                    title="Exploratory Data Analysis",)
+                    title="Exploratory Data Analysis",
+                    )
         
         self.outputs = [artifact]
         # self.output_fits_table(table, columns=columns) # pass through the table to the next node
@@ -1192,12 +1272,30 @@ class NodeScript(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
+            description="A node that runs a user-provided script. The script should be a Python file that can access input artifacts, parameters, and output artifacts.",
         )
 
         if self.parameters['script'] is None:
             # write template script to node directory
             template_script = """# Example script for NodeScript
-# This script will be executed when the node runs. You can access input artifacts, parameters, and output artifacts to perform custom operations.
+
+# bad_map = {
+    # "Av": [-1],
+    # "L_IR": [-99],
+    # "beta": [-99],
+    # "chi2": [-1],
+    # "sfr": [-99],
+    # "sfr_IR": [-99],
+    # "sfr_UV": [-99],
+    # "z_best": [-99],
+    # "z_peak_grism": [-1],
+    # "z_peak_phot": [-99],
+    # "z_spec": [-99.9],
+# }
+# for col, bad_vals in bad_map.items():
+    # if col in df.columns:
+        # df[col] = df[col].replace(bad_vals, np.nan) # replace bad values with nan
+
 """         
             script_path = os.path.join(self.node_dir, f"script.py")
 
@@ -1220,8 +1318,8 @@ class NodeScript(Node):
             dag_dir=d["dag_dir"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
         )
 
     def run(self):
@@ -1233,15 +1331,15 @@ class NodeScript(Node):
             df = data.to_pandas()
             # print(df)
 
-            if self.parameters is not None and "script" in self.parameters:
-                script = self.parameters.get("script", "")
+            columns = artifact.active_columns if artifact.active_columns else data.colnames
 
-                with open(script, "r") as f:
-                    code = f.read()
-                    exec(code, {"df": df, "parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs})
+            script = self.parameters.get("script", "")
+
+            with open(script, "r") as f:
+                code = f.read()
+                exec(code, {"df": df, "parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "columns": columns})
 
             # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
             # print(df)
 
-            data = Table.from_pandas(df)
-            self.output_csv_table(data, columns=columns)
+            self.outputs = [artifact] 

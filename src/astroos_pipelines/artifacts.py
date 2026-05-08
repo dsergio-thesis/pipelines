@@ -28,7 +28,7 @@ class ArtifactDAG:
         self.children: dict[str, set[str]] = defaultdict(set)
 
     def add_edge(self, parent: str, child: str) -> None:
-        print(f"Adding edge from '{parent}' to '{child}'")
+        # print(f"Adding edge from '{parent}' to '{child}'")
         self.children[parent].add(child)
         self.parents[child].add(parent)
 
@@ -67,12 +67,12 @@ class ArtifactDAG:
                 if parents
             }
         }
-        print("DAG to_dict:", ret)
+        # print("DAG to_dict:", ret)
         return ret
 
     @classmethod
     def from_dict(cls, d):
-        print("Creating DAG from dict:", d)
+        # print("Creating DAG from dict:", d)
         dag = cls()
 
         for child, parents in d.get("parents", {}).items():
@@ -92,14 +92,23 @@ class ColumnVersion:
     hash: int
     file_path: str | None = None
 
-    def load_data(self) -> pd.Series:
+    def load_data(self, max_records: int = None, shuffle: bool = False) -> pd.Series:
         if self.data is not None:
             return self.data
 
         if self.file_path is None:
             raise ValueError(f"No data or file_path for version at node {self.node_id}")
+        
+        # shuffle if requested
+        if shuffle:
+            df = pd.read_parquet(self.file_path)
+            df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+        else:
+            df = pd.read_parquet(self.file_path)
 
-        df = pd.read_parquet(self.file_path)
+        # Only load up to max_records
+        if max_records is not None:
+            df = df.head(max_records)
         self.data = df.iloc[:, 0].reset_index(drop=True)
 
         return self.data
@@ -159,7 +168,7 @@ class ArtifactCol:
             )
         )
 
-    def latest_at(self, target_node_id: str, dag: ArtifactDAG, max_records: int) -> pd.Series | None:
+    def latest_at(self, target_node_id: str, dag: ArtifactDAG, max_records: int = None) -> pd.Series | None:
         valid_nodes = dag.ancestors(target_node_id, include_self=True)
 
         candidates = [
@@ -205,7 +214,7 @@ class ArtifactCol:
                 f"Conflicting versions from nodes: {conflict_nodes}."
             )
 
-        return maximal[0].load_data().head(max_records)
+        return maximal[0].load_data(max_records=max_records)
 
     @staticmethod
     def _to_series(data) -> pd.Series:
@@ -241,14 +250,41 @@ class ArtifactItem:
                  file_path: str, 
                  dag: ArtifactDAG = None, 
                  node_id: str = None, 
-                 columns: dict[str, ArtifactCol] = None):
+                 columns: dict[str, ArtifactCol] = None,
+                 active_columns: dict[str, dict] | None = None,
+                 ):
         self.file_path = file_path
         self.dag = dag 
         self.columns = columns or {}
         self.node_id = node_id
 
+        self.active_columns = active_columns # None means all columns
+
         if os.path.exists(file_path) and node_id is not None and columns is None:
             self._load_from_file()
+
+    def set_active_columns(self, active_columns: dict[str, dict] | list[str] | None) -> None:
+        if active_columns is None:
+            self.active_columns = None
+        elif isinstance(active_columns, list):
+            self.active_columns = {col: {} for col in active_columns}
+        else:
+            self.active_columns = active_columns
+
+    def get_active_column_names(self) -> list[str]:
+        if self.active_columns is None:
+            return list(self.columns.keys())
+
+        return [
+            col for col in self.active_columns
+            if col in self.columns
+        ]
+
+    def get_active_column_metadata(self, col_name: str) -> dict:
+        if self.active_columns is None:
+            return {}
+
+        return self.active_columns.get(col_name, {})
 
     def add_column_version(self, col_name: str, node_id: str, data) -> None:
         if col_name not in self.columns:
@@ -272,14 +308,15 @@ class ArtifactItem:
         return self.columns[col_name].latest_at(target_node_id, self.dag)
 
 
-    def to_df(self, node_id: str, max_records: int) -> pd.DataFrame:
+    def to_df(self, node_id: str, max_records: int = None) -> pd.DataFrame:
         if self.dag is None: 
             raise ValueError("DAG is required to convert to DataFrame")
         combined = {}
 
         # print(f"self.columns: {self.columns}"
 
-        for col_name, artifact_col in self.columns.items():
+        for col_name in self.get_active_column_names():
+            artifact_col = self.columns[col_name]
             series = artifact_col.latest_at(node_id, self.dag, max_records=max_records)
             # print(f"series: {series.head()}")
 
@@ -292,7 +329,7 @@ class ArtifactItem:
         df = self.to_df(node_id)
         df.to_csv(self.file_path, index=False)
 
-    def materialize(self, node_id: str, max_records: int) -> None:
+    def materialize(self, node_id: str, max_records: int = None) -> None:
         print(f"Materializing artifact to {self.file_path} at node {node_id}")
         df = self.to_df(node_id, max_records=max_records)
 
@@ -383,6 +420,7 @@ class ArtifactItem:
             "file_path": self.file_path,
             "node_id": self.node_id,
             "column_index_path":  str(column_index_path),
+            "active_columns": self.active_columns,
         }
 
     def to_dict_csv(self) -> dict:
@@ -430,6 +468,7 @@ class ArtifactItem:
             dag=dag,
             node_id=d.get("node_id"),
             columns={},  # prevents _load_from_file()
+            active_columns=d.get("active_columns"),
         )
 
         index_df = pd.read_parquet(d["column_index_path"])

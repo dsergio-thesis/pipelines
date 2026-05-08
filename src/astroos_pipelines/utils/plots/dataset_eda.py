@@ -15,7 +15,8 @@ def dataset_eda(table: astropy.table.Table,
                 columns: dict, 
                 save_dir: str,
                 title: str = None, 
-                sky_regions: dict = None
+                sky_regions: dict = None,
+                sample_size: int = None,
                 ):
     """
     Perform exploratory data analysis on the given dataset.
@@ -25,7 +26,9 @@ def dataset_eda(table: astropy.table.Table,
     - columns: A dictionary where keys are column names and values are their descriptions.
     - save_dir: Path to save the generated plots.
     - title: Optional title for the EDA plots.
-
+    - sky_regions: Optional dictionary defining known sky regions with their RA/Dec boundaries. 
+                   Format: { "Region Name": (ra_min, ra_max, dec_min, dec_max) }
+    - max_records: Maximum number of records to use for plotting (for large datasets).
     """
 
     os.makedirs(save_dir, exist_ok=True)
@@ -42,7 +45,13 @@ def dataset_eda(table: astropy.table.Table,
     
     print(f"\n{title}\nPlotting distributions for columns: {columns}")
 
+    print(f"Total records in table: {len(table)}.")
+
     df = table.to_pandas()
+    
+    if (sample_size is not None and sample_size < len(df)):
+        print(f"Sampling {sample_size} records for plotting (out of {len(df)})...")
+        df = df.sample(sample_size, random_state=42)
 
     if ('ra' in columns and 'dec' in columns):
         ra_col = 'ra'
@@ -54,6 +63,8 @@ def dataset_eda(table: astropy.table.Table,
         print("No RA/Dec columns found for sky distribution plot.")
         ra_col = None
         dec_col = None
+
+    print(f"RA column: {ra_col}, Dec column: {dec_col}")
 
 
     if (ra_col in df.columns and dec_col in df.columns): 
@@ -154,6 +165,9 @@ def dataset_eda(table: astropy.table.Table,
         print(f"Saved sky distribution plot to {file_name}")
         plt.close()
 
+    # remove all c in columns that are not in df.columns
+    columns = {c: desc for c, desc in columns.items() if c in df.columns}
+
     n_cols = 3  # number of subplot columns
     n_rows = int(np.ceil(len(columns) / n_cols))
 
@@ -168,6 +182,8 @@ def dataset_eda(table: astropy.table.Table,
         width_ratios=[1.0] * n_cols,
         height_ratios=[1.0] * n_rows,
     )
+
+
 
     for i, col in enumerate(columns):
         r = i // n_cols
