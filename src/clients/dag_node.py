@@ -1,8 +1,6 @@
 
 from clients._local import *
 
-from astroos_pipelines.hst.dag import HSTNodeCatalog
-
 def main():
 
     config = client_config()
@@ -27,12 +25,12 @@ def main():
             dag_node = NodeImport(dag_dir=dag_dir)
         elif node_type == "export":
             dag_node = NodeExport(dag_dir=dag_dir)
-        elif node_type == "hst-catalog":
-            dag_node  = HSTNodeCatalog(
-                parameters={"max_records": max_records}, 
-                dag_dir=dag_dir) 
-        elif node_type == "hst-eda":
-            dag_node = HSTNodeEDA(
+        # elif node_type == "hst-catalog":
+            # dag_node  = HSTNodeCatalog(
+                # parameters={"max_records": max_records}, 
+                # dag_dir=dag_dir) 
+        elif node_type == "eda":
+            dag_node = NodeEDA(
                 parameters={"max_records": max_records},
                 dag_dir=dag_dir,
                 )

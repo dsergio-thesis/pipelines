@@ -88,8 +88,21 @@ class ArtifactDAG:
 @dataclass
 class ColumnVersion:
     node_id: str
-    data: pd.Series
+    data: pd.Series | None
     hash: int
+    file_path: str | None = None
+
+    def load_data(self) -> pd.Series:
+        if self.data is not None:
+            return self.data
+
+        if self.file_path is None:
+            raise ValueError(f"No data or file_path for version at node {self.node_id}")
+
+        df = pd.read_parquet(self.file_path)
+        self.data = df.iloc[:, 0].reset_index(drop=True)
+
+        return self.data
 
 
 class ArtifactCol:
@@ -105,6 +118,21 @@ class ArtifactCol:
                 node_id=node_id,
                 data=series,
                 hash=int(hash_pandas_object(series, index=True).sum()),
+            )
+        )
+
+    def add_version_metadata(
+        self,
+        node_id: str,
+        col_hash: int,
+        file_path: str,
+        ) -> None:
+        self.versions.append(
+            ColumnVersion(
+                node_id=node_id,
+                data=None,
+                hash=col_hash,
+                file_path=file_path,
             )
         )
 
@@ -131,7 +159,7 @@ class ArtifactCol:
             )
         )
 
-    def latest_at(self, target_node_id: str, dag: ArtifactDAG) -> pd.Series | None:
+    def latest_at(self, target_node_id: str, dag: ArtifactDAG, max_records: int) -> pd.Series | None:
         valid_nodes = dag.ancestors(target_node_id, include_self=True)
 
         candidates = [
@@ -143,8 +171,6 @@ class ArtifactCol:
         if not candidates:
             return None
 
-        # Remove candidates that are older ancestors of another candidate.
-        # Example: n1 and n3 both exist; n1 is ancestor of n3, so n3 supersedes n1.
         maximal = []
 
         for candidate in candidates:
@@ -154,6 +180,10 @@ class ArtifactCol:
                 if candidate is other:
                     continue
 
+                # Do not let same-node versions supersede each other
+                if candidate.node_id == other.node_id:
+                    continue
+
                 if dag.is_ancestor(candidate.node_id, other.node_id):
                     is_superseded = True
                     break
@@ -161,17 +191,21 @@ class ArtifactCol:
             if not is_superseded:
                 maximal.append(candidate)
 
+        if not maximal:
+            raise ValueError(
+                f"No maximal version found for column '{self.name}' at node '{target_node_id}'. "
+                f"Candidates: {[v.node_id for v in candidates]}"
+            )
+
         if len(maximal) > 1:
             conflict_nodes = [v.node_id for v in maximal]
 
             raise ArtifactMergeConflict(
                 f"Merge conflict for column '{self.name}' at node '{target_node_id}'. "
-                f"Conflicting versions from nodes: {conflict_nodes}. "
-                f"Add an explicit merged version of column '{self.name}' at '{target_node_id}' "
-                f"or before it."
+                f"Conflicting versions from nodes: {conflict_nodes}."
             )
 
-        return maximal[0].data
+        return maximal[0].load_data().head(max_records)
 
     @staticmethod
     def _to_series(data) -> pd.Series:
@@ -190,35 +224,64 @@ class ArtifactCol:
         lines = [f"ArtifactCol({self.name})"]
 
         for version in self.versions:
-            lines.append(f"  {version.node_id}: hash={version.hash}")
-            lines.append(str(version.data.head()))
+            lines.append(
+                f"  {version.node_id}: "
+                f"hash={version.hash}, "
+                f"file_path={version.file_path}, "
+                f"loaded={version.data is not None}"
+            )
+
+            if version.data is not None:
+                lines.append(str(version.data.head()))
 
         return "\n".join(lines)
 
-
 class ArtifactItem:
-    def __init__(self, file_path: str, dag: ArtifactDAG = None, node_id: str = None):
+    def __init__(self, 
+                 file_path: str, 
+                 dag: ArtifactDAG = None, 
+                 node_id: str = None, 
+                 columns: dict[str, ArtifactCol] = None):
         self.file_path = file_path
         self.dag = dag 
-        self.columns: dict[str, ArtifactCol] = {}
+        self.columns = columns or {}
         self.node_id = node_id
 
-        if os.path.exists(file_path) and node_id is not None:
+        if os.path.exists(file_path) and node_id is not None and columns is None:
             self._load_from_file()
 
-    def add_column(self, col_name: str, node_id: str, data) -> None:
+    def add_column_version(self, col_name: str, node_id: str, data) -> None:
         if col_name not in self.columns:
             self.columns[col_name] = ArtifactCol(col_name)
 
         self.columns[col_name].add_version(node_id, data)
 
-    def to_df(self, node_id: str) -> pd.DataFrame:
+    def add_column_version_metadata(self, col_name: str, node_id: str, data) -> None:
+        if col_name not in self.columns:
+            self.columns[col_name] = ArtifactCol(col_name)
+
+        self.columns[col_name].add_version_metadata(node_id, data)
+
+    def get_latest_column_version(self, col_name: str, target_node_id: str) -> pd.Series | None:
+        if self.dag is None:
+            raise ValueError("DAG is required to get latest column version")
+
+        if col_name not in self.columns:
+            return None
+
+        return self.columns[col_name].latest_at(target_node_id, self.dag)
+
+
+    def to_df(self, node_id: str, max_records: int) -> pd.DataFrame:
         if self.dag is None: 
             raise ValueError("DAG is required to convert to DataFrame")
         combined = {}
 
+        # print(f"self.columns: {self.columns}"
+
         for col_name, artifact_col in self.columns.items():
-            series = artifact_col.latest_at(node_id, self.dag)
+            series = artifact_col.latest_at(node_id, self.dag, max_records=max_records)
+            # print(f"series: {series.head()}")
 
             if series is not None:
                 combined[col_name] = series
@@ -229,8 +292,9 @@ class ArtifactItem:
         df = self.to_df(node_id)
         df.to_csv(self.file_path, index=False)
 
-    def materialize(self, node_id: str) -> None:
-        df = self.to_df(node_id)
+    def materialize(self, node_id: str, max_records: int) -> None:
+        print(f"Materializing artifact to {self.file_path} at node {node_id}")
+        df = self.to_df(node_id, max_records=max_records)
 
         ext = Path(self.file_path).suffix.lower()
 
@@ -242,22 +306,34 @@ class ArtifactItem:
 
         elif ext in {".fits", ".fit"}:
             table = Table.from_pandas(df)
-            table.write(self.file_path, overwrite=True)
+            table.write(self.file_path, format="fits", overwrite=True)
 
         else:
             raise ValueError(f"Unsupported output format: {ext}")
 
     def _load_from_file(self) -> None:
         try:
-            table = Table.read(self.file_path)
-            df = table.to_pandas()
+
+            ext = Path(self.file_path).suffix.lower()
+
+            if ext not in {".csv", ".parquet", ".fits", ".fit"}:
+                raise ValueError(f"Unsupported file format: {ext}")
+
+            if ext == ".csv":
+                df = pd.read_csv(self.file_path)
+            elif ext == ".parquet":
+                df = pd.read_parquet(self.file_path)
+            elif ext in {".fits", ".fit"}:
+                table = Table.read(self.file_path, format="fits", hdu=1)
+                df = table.to_pandas()
 
             for col in df.columns:
-                self.add_column(col, node_id=self.node_id, data=df[col])
+                self.add_column_version(col, node_id=self.node_id, data=df[col])
 
         except Exception as e:
             print(f"Error reading file {self.file_path}: {e}")
             self.columns = {}
+            raise e
 
     def to_dict(self) -> dict:
 
@@ -268,7 +344,10 @@ class ArtifactItem:
         store_dir = Path(column_store_dir)
         store_dir.mkdir(parents=True, exist_ok=True)
 
+        column_index_path = Path(column_store_dir) / f"{Path(self.file_path).stem}__column_index.parquet"
+
         columns_dict = {}
+        columns_rows = []
 
         for col_name, artifact_col in self.columns.items():
             columns_dict[col_name] = []
@@ -291,11 +370,19 @@ class ArtifactItem:
                     "hash": version.hash,
                     "file_path": str(version_file),
                 })
+                columns_rows.append({
+                    "column": col_name,
+                    "node_id": version.node_id,
+                    "hash": version.hash,
+                    "data_path": str(version_file),
+                })
+        
+        pd.DataFrame(columns_rows).to_parquet(column_index_path, index=False)
 
         return {
             "file_path": self.file_path,
             "node_id": self.node_id,
-            "columns": columns_dict,
+            "column_index_path":  str(column_index_path),
         }
 
     def to_dict_csv(self) -> dict:
@@ -342,20 +429,22 @@ class ArtifactItem:
             file_path=d["file_path"],
             dag=dag,
             node_id=d.get("node_id"),
+            columns={},  # prevents _load_from_file()
         )
 
-        item.columns = {}
+        index_df = pd.read_parquet(d["column_index_path"])
 
-        for col_name, versions in d.get("columns", {}).items():
-            artifact_col = ArtifactCol(col_name)
+        for _, row in index_df.iterrows():
+            col_name = row["column"]
 
-            for version in versions:
-                artifact_col.add_version_from_disk(
-                    node_id=version["node_id"],
-                    file_path=version["file_path"],
-                )
+            if col_name not in item.columns:
+                item.columns[col_name] = ArtifactCol(col_name)
 
-            item.columns[col_name] = artifact_col
+            item.columns[col_name].add_version_metadata(
+                node_id=row["node_id"],
+                col_hash=int(row["hash"]),
+                file_path=row["data_path"],
+            )
 
         return item
 
@@ -368,7 +457,9 @@ class ArtifactItem:
 
             for version in artifact_col.versions:
                 lines.append(f"    Version from node '{version.node_id}': hash={version.hash}")
-                lines.append(str(version.data.head()))
+
+                if version.data is not None:
+                    lines.append(str(version.data.head()))
             c += 1
             if c >= 3:
                 lines.append("    ...")

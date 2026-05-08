@@ -50,6 +50,10 @@ def dataset_eda(table: astropy.table.Table,
     elif ('coord_ra' in columns and 'coord_dec' in columns):
         ra_col = 'coord_ra'
         dec_col = 'coord_dec'
+    else:
+        print("No RA/Dec columns found for sky distribution plot.")
+        ra_col = None
+        dec_col = None
 
 
     if (ra_col in df.columns and dec_col in df.columns): 

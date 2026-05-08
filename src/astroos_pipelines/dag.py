@@ -25,12 +25,14 @@ import textwrap
 from graphviz import Digraph
 
 from astroos_pipelines.utils.formatting import ascii_kv_table
+from astroos_pipelines.utils.plots.dataset_eda import *
 from astroos_pipelines.artifacts import *
 
 # from astroos_pipelines.hst.dag import *
 
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 importlib.reload(sys.modules['astroos_pipelines.artifacts'])
+importlib.reload(sys.modules['astroos_pipelines.utils.plots.dataset_eda'])
 # importlib.reload(sys.modules['astroos_pipelines.hst.dag'])
 
 def to_plain_data(obj):
@@ -253,6 +255,12 @@ class Node(ABC):
     
     def node_label(self):
         yaml_html = self.yaml_to_html_label(self.to_yaml_string())
+
+        # wrap description to fit within the node width
+        # desc_wrapped = textwrap.fill(self.description, width=40)
+        
+        # then convert to <br align='left'/> for html label
+        desc_html = self.yaml_to_html_label(self.description, width_chars=40)
         
 
         return f"""
@@ -270,7 +278,7 @@ class Node(ABC):
 <tr><td align="left">
 <br align="left"/>{yaml_html}
 <br align="left"/>
-<br align="left"/>{self.description}
+<br align="left"/>{desc_html}
 <br align="left"/>
 <br align="left"/> • {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs
 </td></tr>
@@ -612,6 +620,9 @@ class PipelineDAG(DAG):
         # make dir
         os.makedirs(self.nodes[node_id].node_dir, exist_ok=True)
 
+        # clear dir
+        os.system(f"rm -rf {self.nodes[node_id].node_dir}/*")
+
         node = self.nodes[node_id]
         node.artifact_dag = self.artifact_dag
 
@@ -696,6 +707,7 @@ class NodeImport(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
+            description="Import data from external source into the pipeline.",
         )
 
     def to_dict(self):
@@ -715,14 +727,24 @@ class NodeImport(Node):
         )
 
     def run(self):
-        """ Pass through inputs to outputs for testing the pipeline. """
+        """ Import artifact. """
         if len(self.inputs) > 0:
             artifact = self.inputs[0] # expects one input artifact
+
+            if self.parameters is not None and "max-records" in self.parameters:
+                max_records = self.parameters["max-records"]
+            else:
+                max_records = 10
             
             artifact.dag = self.artifact_dag
             node_dir = os.path.join(self.dag_dir, self.node_id)
             artifact.file_path = os.path.join(node_dir, os.path.basename(artifact.file_path))
-            artifact.to_csv(node_id=self.node_id)
+
+            print(f"Importing artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
+
+            if not os.path.exists(artifact.file_path):
+                os.makedirs(node_dir, exist_ok=True)
+                artifact.materialize(node_id=self.node_id, max_records=max_records)
 
             self.outputs = [artifact]
 
@@ -747,6 +769,7 @@ class NodeExport(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
+            description="Export data by materializing the input artifacts to their file paths.",
         )
 
     def to_dict(self):
@@ -801,6 +824,7 @@ class NodeGeneric(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
+            description="A generic node that can be used for testing the pipeline. It simply passes through the input artifacts to the output without modification.",
         )
 
 
@@ -838,13 +862,80 @@ class NodeGeneric(Node):
                     # df[col] = df[col] * 2
             # data = Table.from_pandas(df)
 
-            df["colA"] *= 3
+            # df["colA"] *= 3
+            # artifact.add_column("colA", self.node_id, df["colA"])
 
-            artifact.add_column("colA", self.node_id, df["colA"])
             self.outputs = [artifact]
 
             # self.output_csv_table(data)
             # print(f"Passed through data with {len(data)} rows and {len(data.colnames)} columns.")
+
+
+class NodeEDA(Node):
+    def __init__(
+            self,
+            dag_dir,
+            node_type="eda",
+            node_id=None,
+            parents=[],
+            parameters=None,
+            inputs=[],
+            outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            dag_dir=dag_dir,
+            label="EDA",
+            description="Exploratory Data Analysis",
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            )
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = self.__class__.__name__
+        return d
+
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            dag_dir=d["dag_dir"],
+            node_id=d["node_id"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+
+        print(f"running EDA {self.inputs}")
+
+        if len(self.inputs) == 0:
+            # print("No input artifact for EDA node.")
+            return
+
+        artifact = self.inputs[0]
+
+        ext = os.path.splitext(artifact.file_path)[1].lower()
+        if ext == ".fits":
+            table = Table.read(artifact.file_path, hdu=1, format="fits")
+        elif ext == ".csv":
+            table = Table.read(artifact.file_path, format="csv")
+        else:
+            raise ValueError(f"Unsupported file format {ext} for EDA node.")
+
+        columns = artifact.columns
+
+        dataset_eda(table=table, 
+                    columns=columns, 
+                    save_dir=self.node_dir, 
+                    title="Exploratory Data Analysis",)
+        
+        self.outputs = [artifact]
+        # self.output_fits_table(table, columns=columns) # pass through the table to the next node
 
 
 class NodeCatalogRandom(Node):
