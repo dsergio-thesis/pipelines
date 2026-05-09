@@ -466,7 +466,6 @@ class PipelineDAG(DAG):
         print(f"Adding node {node_id}")
         node.artifact_dag = self.artifact_dag
        
-        self.head = node
         head = self.head
 
         # if dag is empty and no parents provided, set parents to empty, else if no parents provided, set parents to [head]
@@ -477,7 +476,7 @@ class PipelineDAG(DAG):
 
         for p in node.parents: 
             if p not in self.get_nodes_ids():
-                raise ValueError(f"Parent must exist p={p}, self.get_nodes_ids(): {self.get_nodes_ids()}")
+                raise ValueError(f"Parent must exist p={p}, self.get_nodes_ids(): {self.get_nodes_ids()}. Hint: you need to set parents in Node() constructor if running in a script. ")
             self.children[p].append(node_id)
             self.artifact_dag.add_edge(p, node_id)
 
@@ -496,6 +495,7 @@ class PipelineDAG(DAG):
 
         # make dir for the node
         os.makedirs(node.node_dir, exist_ok=True)
+        print(f"Node {node_id} directory created at: ", node.node_dir)
 
         self.nodes[node_id] = node
         self.head = node
@@ -647,10 +647,6 @@ class PipelineDAG(DAG):
         self._run_node(node_id)
     
     def _run_node(self, node_id):
-
-        # make dir
-        full_node_dir = os.path.join(self.dag_dir, self.nodes[node_id].node_dir)
-        os.makedirs(full_node_dir, exist_ok=True)
 
         node = self.nodes[node_id]
         node.artifact_dag = self.artifact_dag
@@ -908,7 +904,7 @@ class NodeGeneric(Node):
     """
 
     def __init__(self,
-                 dag_dir,
+                 dag_dir=None,
                  node_type="generic",
                  node_id=None,
                  parents=[],
