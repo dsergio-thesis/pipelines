@@ -231,6 +231,7 @@ class AstroosConfig:
                 ra_dec = row["RA_DEC"].strip()
                 fmt = row["Format"].strip()
                 r = float(row["Size_arcmin"])
+                r = r * u.arcmin
 
                 # normalize key
                 key = label.lower().replace(" ", "_").replace("(", "").replace(")", "")

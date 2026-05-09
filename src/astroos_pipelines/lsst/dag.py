@@ -60,7 +60,7 @@ log = logging.getLogger(__name__)
 
 class LSSTNodeCatalog(Node):
     def __init__(self,
-                dag_dir,
+                dag_dir=None,
                 node_type="catalog_lsst",
                 node_id=None,
                 parents=[],
@@ -89,8 +89,8 @@ class LSSTNodeCatalog(Node):
             node_id=d["node_id"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
         )
 
     def run(self):
@@ -216,6 +216,7 @@ class LSSTNodeCatalog(Node):
         # table = client.query(query)
 
         # async
+        print("Running TAP ADQL Query on LSST...")
         table = client.query_async(query)
 
 
@@ -225,9 +226,15 @@ class LSSTNodeCatalog(Node):
         columns.pop("objectId", None)
 
 
-        self.output_fits_table(table, columns=columns)
+        if len(self.inputs) > 0:
+            artifact = self.inputs[0]
+            artifact.load_from_table(table, columns)
 
-        print(f"number of results: {len(table)}")
+            self.outputs = [artifact]
+
+
+        # self.output_fits_table(table, columns=columns)
+        # print(f"number of results: {len(table)}")
 
 
 class LSSTNodeEDA(Node):

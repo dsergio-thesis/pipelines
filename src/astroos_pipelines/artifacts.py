@@ -252,6 +252,7 @@ class ArtifactItem:
                  node_id: str = None, 
                  columns: dict[str, ArtifactCol] = None,
                  active_columns: dict[str, dict] | None = None,
+                 load_from_file: bool = True
                  ):
         self.file_path = file_path
         self.dag = dag 
@@ -260,7 +261,7 @@ class ArtifactItem:
 
         self.active_columns = active_columns # None means all columns
 
-        if os.path.exists(file_path) and node_id is not None and columns is None:
+        if os.path.exists(file_path) and node_id is not None and columns is None and load_from_file:
             self._load_from_file()
 
     def set_active_columns(self, active_columns: dict[str, dict] | list[str] | None) -> None:
@@ -371,6 +372,26 @@ class ArtifactItem:
             print(f"Error reading file {self.file_path}: {e}")
             self.columns = {}
             raise e
+
+    def load_from_table(self, table, columns):
+
+        try:
+
+            ext = Path(self.file_path).suffix.lower()
+
+            if ext not in {".csv", ".parquet", ".fits", ".fit"}:
+                raise ValueError(f"Unsupported file format: {ext}")
+
+            df = table.to_pandas()
+
+            for col in df.columns:
+                self.add_column_version(col, node_id=self.node_id, data=df[col])
+
+        except Exception as e:
+            print(f"Error reading file {self.file_path}: {e}")
+            self.columns = {}
+            raise e
+
 
     def to_dict(self) -> dict:
 

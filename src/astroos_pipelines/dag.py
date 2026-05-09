@@ -108,10 +108,16 @@ class Node(ABC):
                 params=self.parameters,
                 artifact_hashes=[a.output_path for a in self.inputs + self.outputs],
             )
-        self.node_dir = os.path.join(dag_dir, self.node_id)
+
+        self.set_dag_dir(dag_dir)
 
         # print(f"Creating {self.node_id} with parents {parents}")
-        
+    
+    def set_dag_dir(self, dag_dir = None):
+        self.dag_dir = dag_dir
+        if dag_dir is not None:
+            self.node_dir = os.path.join(dag_dir, self.node_id)
+
     @abstractmethod
     def run(self):
         pass
@@ -453,10 +459,15 @@ class PipelineDAG(DAG):
     def is_initialized(self):
         return self.dag_id is not None
         
-    def add_node(self, node: Node):
-        node_id = node.node_id
-        node.artifact_dag = self.artifact_dag
+    def add_node(self, node: Node, new_artifact: bool = False):
 
+        node.set_dag_dir(self.dag_dir)
+        node_id = node.node_id
+        print(f"Adding node {node_id}")
+        node.artifact_dag = self.artifact_dag
+       
+        self.head = node
+        head = self.head
 
         # if dag is empty and no parents provided, set parents to empty, else if no parents provided, set parents to [head]
         if len(self.nodes) == 0 and len(node.parents) == 0:
@@ -466,9 +477,19 @@ class PipelineDAG(DAG):
 
         for p in node.parents: 
             if p not in self.get_nodes_ids():
-                raise ValueError("Parent must exist")
+                raise ValueError(f"Parent must exist p={p}, self.get_nodes_ids(): {self.get_nodes_ids()}")
             self.children[p].append(node_id)
             self.artifact_dag.add_edge(p, node_id)
+
+        if new_artifact:
+            artifact_item = ArtifactItem(
+                file_path = os.path.join(self.dag_dir, node.node_id, "catalog.fits"),
+                dag=self.artifact_dag,
+                node_id=head.node_id if head else None,
+            )
+            if head.inputs is None:
+                head.inputs = []
+            head.inputs.append(artifact_item)
 
         print(f"Adding node {node_id} of type {node.node_type} with parents {[p for p in node.parents]}")
         print(repr(node))
@@ -628,7 +649,8 @@ class PipelineDAG(DAG):
     def _run_node(self, node_id):
 
         # make dir
-        os.makedirs(self.nodes[node_id].node_dir, exist_ok=True)
+        full_node_dir = os.path.join(self.dag_dir, self.nodes[node_id].node_dir)
+        os.makedirs(full_node_dir, exist_ok=True)
 
         node = self.nodes[node_id]
         node.artifact_dag = self.artifact_dag
@@ -830,7 +852,7 @@ class NodeExport(Node):
     Export Node
     """
     def __init__(self,
-                 dag_dir,
+                 dag_dir=None,
                  node_type="export",
                  node_id=None,
                  parents=[],
@@ -951,7 +973,7 @@ class NodeGeneric(Node):
 class NodeEDA(Node):
     def __init__(
             self,
-            dag_dir,
+            dag_dir=None,
             node_type="eda",
             node_id=None,
             parents=[],
