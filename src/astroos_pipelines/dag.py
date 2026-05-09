@@ -368,7 +368,16 @@ class PipelineDAG(DAG):
     def __init__(self, 
                  artifact_dag: ArtifactDAG = None,
                  label: str = None,
+                 new: bool = False,
                  ):
+
+        self.head = None
+        self.dag_id = None
+        self.dag_dir = None
+        self.artifact_dag = artifact_dag
+        os.makedirs("_pipelines", exist_ok=True)
+        self.nodes = {} 
+        self.children = defaultdict(list)
 
         if not label:
             if not os.path.exists(os.path.join("_pipelines", "dags_index.yaml")):
@@ -378,11 +387,14 @@ class PipelineDAG(DAG):
             with open(os.path.join("_pipelines", "dags_index.yaml"), "r") as file:
                 index_data = yaml.safe_load(file)
                 selected_dag = index_data.get("selected_dag")
-                if selected_dag:
+                if selected_dag and not new:
                     label = selected_dag
-                else:
+                elif new:
                     # set to random hash if no label provided and there is no selected DAG in the index
                     label = hashlib.sha256(os.urandom(16)).hexdigest()[:8]
+
+        if not label:
+            return
 
         # set dag_id to label lower case and replace any non-alphanumeric characters with underscores
         self.label = label
@@ -390,31 +402,18 @@ class PipelineDAG(DAG):
         self.dag_dir = os.path.join("_pipelines", self.dag_id)
 
         # create directory for the DAG if it doesn't exist
-        os.makedirs("_pipelines", exist_ok=True)
         os.makedirs(self.dag_dir, exist_ok=True)
 
         dag_exists = os.path.exists(os.path.join(self.dag_dir, "dag.yaml"))
         self.dag_file_path = os.path.join(self.dag_dir, "dag.yaml")
 
-        self.head = None
-
         if dag_exists:
-            # print("DAG file found, loading DAG from file.")
             with open(self.dag_file_path, "r") as file:
                 data = yaml.safe_load(file)
-                # print(f"Loaded DAG data: {data}")
                 self.nodes = {}
-                        # node_data["node_id"]: Node.from_dict(node_data) for node_data in data["nodes"]}
 
                 for node_data in data["nodes"]:
-                    # print()
-                    # print(f"- Node data: {node_data}")
-                    # print("Node class:", Node)
-                    # print("Node module:", Node.__module__)
-                    # print("registry keys:", Node.registry.keys())
                     node = Node.from_dict(node_data)
-                    # print(f" ** Created node: {node}")
-                    # print()
                     self.nodes[node_data["node_id"]] = node
 
                 artifact_dag_data = data["artifact_dag"]
@@ -423,21 +422,15 @@ class PipelineDAG(DAG):
                 else:
                     self.artifact_dag = ArtifactDAG()
 
-                # print(f"Loaded DAG with nodes: {self.nodes}, type: {type(self.nodes)}")
                 self.children = defaultdict(list)
                 for node in self.nodes.values():
-                    # print(f"Node {node}, num inputs: {len(node.inputs)}, num outputs: {len(node.outputs)}, parents: {node.parents}")
                     for parent in node.parents:
                         self.children[parent].append(node.node_id)
                 if data["head"] is not None:
-                    # print(f"Head node: {data['head']}")
                     self.head = self.nodes[data["head"]]
-
         else:
-            print("No pipelines file found, initializing new PipelineDAG.")
-            self.nodes = {} 
+            print("No pipelines found, initializing new PipelineDAG...")
             self.artifact_dag = ArtifactDAG()
-            self.children = defaultdict(list)
 
         dags_index = os.path.join("_pipelines", "dags_index.yaml")
         index_data = {
@@ -457,9 +450,9 @@ class PipelineDAG(DAG):
                 index_data["dags"].append(self.dag_id)
                 yaml.safe_dump(index_data, file, sort_keys=False)
         
-        # print(f"Initialized DAG with nodes: {self.nodes}, type: {type(self.nodes)}")
-        # print(f"Initialized DAG Index with DAGs: {index_data['dags'] if os.path.exists(dags_index) else [self.dag_id]}")
-
+    def is_initialized(self):
+        return self.dag_id is not None
+        
     def add_node(self, node: Node):
         node_id = node.node_id
         node.artifact_dag = self.artifact_dag
@@ -689,12 +682,22 @@ class PipelineDAG(DAG):
             return
         self.run_from_node(self.head.node_id)
         
+    @staticmethod
+    def usage():
+        print("Usage:")
+        print("  rad init [Optional -n <name>] - Initialize a new pipeline with an optional name.")
+
     def status(self):
         index_file = os.path.join("_pipelines", "dags_index.yaml")
         if os.path.exists(index_file):
             with open(index_file, "r") as file:
                 index_data = yaml.safe_load(file)
                 selected_dag = index_data.get("selected_dag")
+                
+                if len(index_data["dags"]) == 0:
+                    print("No pipelines found.")
+                    PipelineDAG.usage()
+                    return
 
                 print()
                 print(f"Pipelines:")

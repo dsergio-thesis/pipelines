@@ -13,7 +13,7 @@ import csv
 from pathlib import Path
 from typing import Dict
 
-from astroos_pipelines.utils.formatting import ascii_kv_table, coord_table
+from astroos_pipelines.utils.formatting import *
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
 CoordFormat = Literal["hmsdms", "deg"]
@@ -41,6 +41,7 @@ class AstroosConfig:
             dataset_dir: Path,
             pipeline_dir: Path,
             sky_regions_csv: Path,
+            max_records: int,
             dataset_name: str = None,
             pipeline_name: str = None,
             option_create: bool = False,
@@ -49,7 +50,6 @@ class AstroosConfig:
             parameter: (str, str) = None,
             sky_region_target_selected: str = None,
             sky_region_target_radius_arcmin: float = None,
-            max_records: int = 3,
             ):
         self.dataset_dir = dataset_dir
         self.pipeline_dir = pipeline_dir
@@ -86,6 +86,7 @@ class AstroosConfig:
         return cls(
             dataset_dir=cls.clean_path(env("DATASET_DIR")).expanduser(),
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
+            max_records=int(env("MAX_RECORDS", "6")),
             sky_regions_csv=cls.clean_path(env("SKY_REGIONS_CSV")).expanduser(),
         )
 
@@ -116,24 +117,10 @@ class AstroosConfig:
 
         # optional runtime coord override
         if args.target:
-            if args.target not in cfg.coords:
+            if args.target not in cfg.sky_region_targets:
                 raise ValueError(
                     f"Unknown target '{args.target}'. "
-                    f"Valid targets: {list(cfg.coords)}"
-                )
-
-            if args.radius_arcmin is not None:
-                spec = cfg.coords[args.target]
-                cfg = cls(
-                    **{**cfg.__dict__,
-                    "coords": {
-                        **cfg.coords,
-                        args.target: CoordSpec(
-                            value=spec.value,
-                            fmt=spec.fmt,
-                            radius_arcmin=args.radius_arcmin,
-                        ),
-                    }}
+                    f"Valid targets: {list(cfg.sky_region_targets)}"
                 )
 
         return cfg
@@ -148,7 +135,7 @@ class AstroosConfig:
 
         p.add_argument("-d", "--dataset-name", type=str, help="Dataset name")
         p.add_argument("-n", "--pipeline-name", type=str, help="Pipeline name")
-        p.add_argument("-m", "--max-records", type=int, default=3, help="Max records to fetch from query")
+        p.add_argument("-m", "--max-records", type=int, help="Max records to fetch from query")
         p.add_argument("-c", "--create", action="store_true", help="Create new  node")
         p.add_argument("-i", "--input-artifact", type=str, help="Path to input artifact")
         p.add_argument("-t", "--node-type", type=str, default="generic", help="Node type for new node")
@@ -157,20 +144,21 @@ class AstroosConfig:
         return p
 
     def __repr__(self):
+
         rows = [
-            ("dataset_dir",            self.dataset_dir),
-            ("dataset_name",           self.dataset_name),
-            ("pipeline_dir",           self.pipeline_dir),
-            ("pipeline_name",          self.pipeline_name),
-            ("max_records",            self.max_records),
-            ("option_create",         self.option_create),
-            ("node_type",             self.node_type),
-            ("input_artifact",        self.input_artifact),
-            ("parameter",             self.parameter),
-            ("sky_regions_csv",       self.sky_regions_csv),
-            ("sky_region_target_selected", self.sky_region_target_selected),
-        ]
-        config_str = ascii_kv_table(rows, title="Pipeline DAG Configuration")
+            ("dataset_dir", "", "DATASET_DIR", self.dataset_dir),
+            ("pipeline_dir", "", "PIPELINE_DIR", self.pipeline_dir),
+            ("dataset_name", "-d / --dataset-name", "", self.dataset_name),
+            ("pipeline_name", "-n / --pipeline-name", "", self.pipeline_name),
+            ("max_records", "-m / --max-records", "MAX_RECORDS", self.max_records),
+            ("option_create", "-c / --create", "", self.option_create),
+            ("node_type", "-t / --node-type", "", self.node_type),
+            ("input_artifact", "-i / --input-artifact", "", self.input_artifact),
+            ("parameter", "-p / --parameter", "", self.parameter),
+            ("sky_regions_csv", "", "SKY_REGION_LABELS", self.sky_regions_csv),
+            ("sky_region_target_selected", "--target", "", self.sky_region_target_selected),        
+            ]
+        config_str = ascii_config_table(rows, title="Pipeline Configuration")
 
         if self.sky_region_targets:
             specs = []
@@ -192,6 +180,39 @@ class AstroosConfig:
         spec.selected = True
 
         self.sky_region_target_selected = key
+
+    from pathlib import Path
+
+    def set_env_var(self, key: str, value: str):
+        env_path = Path("env.sh")
+        value = str(value).strip().strip('"').strip("'")  # clean value
+
+        lines = []
+        found = False
+
+        if env_path.exists():
+            lines = env_path.read_text().splitlines()
+
+        new_lines = []
+
+        for line in lines:
+            stripped = line.strip()
+
+            # preserve comments/blank lines
+            if not stripped or stripped.startswith("#"):
+                new_lines.append(line)
+                continue
+
+            if stripped.startswith(f"export {key}="):
+                new_lines.append(f'export {key}="{value}"')
+                found = True
+            else:
+                new_lines.append(line)
+
+        if not found:
+            new_lines.append(f'export {key}="{value}"')
+
+        env_path.write_text("\n".join(new_lines) + "\n")
 
     def load_coords_from_csv(self) -> Dict[str, CoordSpec]:
         coords = {}

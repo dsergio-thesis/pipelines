@@ -11,8 +11,12 @@ def main():
     node_type = config.node_type
     max_records = config.max_records
     
-    print("registry keys", Node.registry.keys())
     dag = PipelineDAG(label=pipeline_name)
+    if not dag.is_initialized():
+        print("No pipelines found.")
+        PipelineDAG.usage()
+        return
+
     dag_dir = dag.dag_dir
 
     if option_create:

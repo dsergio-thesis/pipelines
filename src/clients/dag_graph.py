@@ -7,6 +7,11 @@ def main():
     pipeline_name = config.pipeline_name
 
     dag = PipelineDAG(label=pipeline_name)
+    if not dag.is_initialized():
+        print("No pipelines found.")
+        PipelineDAG.usage()
+        return
+
     dag.to_graphviz()
 
 if __name__ == "__main__":

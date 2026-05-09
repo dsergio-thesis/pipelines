@@ -6,6 +6,7 @@ def main():
     config = client_config()
 
     dag = PipelineDAG()
+
     dag.status()
 
 if __name__ == "__main__":

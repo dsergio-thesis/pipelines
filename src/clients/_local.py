@@ -41,10 +41,10 @@ def client_config():
     log = logging.getLogger(__name__)
     
     config = AstroosConfig.from_cli()
-    config.set_target("Extended Chandra Deep Field South (ECDFS)");
     
-    print()
-    print(config)
+    # config.set_target("Extended Chandra Deep Field South (ECDFS)");
+    # print()
+    # print(config)
 
     return config
 
