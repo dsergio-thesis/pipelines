@@ -112,6 +112,10 @@ class Node(ABC):
         self.set_dag_dir(dag_dir)
 
         # print(f"Creating {self.node_id} with parents {parents}")
+
+    def node_configure(self):
+        """Configure the node before running. This can be used to set default parameters or perform setup tasks."""
+        pass
     
     def set_dag_dir(self, dag_dir = None):
         self.dag_dir = dag_dir
@@ -462,6 +466,9 @@ class PipelineDAG(DAG):
     def add_node(self, node: Node, new_artifact: bool = False):
 
         node.set_dag_dir(self.dag_dir)
+
+        node.node_configure()
+
         node_id = node.node_id
         print(f"Adding node {node_id}")
         node.artifact_dag = self.artifact_dag
@@ -734,7 +741,7 @@ class NodeImport(Node):
     Import Node. 
     """
     def __init__(self,
-                 dag_dir,
+                 dag_dir=None,
                  node_type="import",
                  node_id=None,
                  parents=[],
@@ -752,6 +759,8 @@ class NodeImport(Node):
             description="Import data from external source into the pipeline.",
         )
 
+
+    def node_configure(self):
         if not self.parameters or "script" not in self.parameters:
             # write template script to node directory
             template_script = """# Example script for NodeImport.
@@ -785,7 +794,6 @@ class NodeImport(Node):
             self.parameters = {
                 "script": script_path
                 }
-
 
     def to_dict(self):
         d = super().to_dict()
@@ -1278,7 +1286,7 @@ class NodeScript(Node):
     """
 
     def __init__(self,
-                 dag_dir,
+                 dag_dir=None,
                  node_type="script",
                  node_id=None,
                  parents=[],
@@ -1295,7 +1303,8 @@ class NodeScript(Node):
             outputs=outputs,
             description="A node that runs a user-provided script. The script should be a Python file that can access input artifacts, parameters, and output artifacts.",
         )
-
+    
+    def node_configure(self):
         if self.parameters['script'] is None:
             # write template script to node directory
             template_script = """# Example script for NodeScript

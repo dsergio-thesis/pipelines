@@ -21,25 +21,20 @@ def main():
 
     if option_create:
 
-        if node_type == "bad_to_nan":
-            dag_node = NodeBadToNaN(dag_dir=dag_dir)
-        elif node_type == "script":
-            dag_node = NodeScript(dag_dir=dag_dir)
+        if node_type == "script":
+            dag_node = NodeScript()
         elif node_type == "import":
-            dag_node = NodeImport(dag_dir=dag_dir,
-                                  parameters={"max_records": max_records})
+            dag_node = NodeImport(parameters={"max_records": max_records})
         elif node_type == "export":
-            dag_node = NodeExport(dag_dir=dag_dir)
+            dag_node = NodeExport()
         # elif node_type == "hst-catalog":
             # dag_node  = HSTNodeCatalog(
                 # parameters={"max_records": max_records}, 
                 # dag_dir=dag_dir) 
         elif node_type == "eda":
-            dag_node = NodeEDA(
-                dag_dir=dag_dir,
-                )
+            dag_node = NodeEDA()
         else: 
-            dag_node = NodeGeneric(dag_dir=dag_dir)
+            dag_node = NodeGeneric()
 
         dag.add_node(dag_node)
 
