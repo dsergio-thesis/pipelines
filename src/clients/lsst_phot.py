@@ -87,9 +87,9 @@ def main():
             )
 
 
-    lsst_hst_match = NodeScript(
+    lsst_hst_match = NodeJoin(
             parameters={
-                "script": "catalogs/collections/lsst-hst/scripts/merge.py",},
+                "max_sep_arcsec": 0.8,},
             parents=[lsst_select.node_id, hst_select.node_id],
             )
 

@@ -927,7 +927,7 @@ class NodeExport(Node):
 
 class NodeGeneric(Node):
     """
-    A generic node that can be used for testing the pipeline.
+    Generic dummy node.
     """
 
     def __init__(self,
@@ -949,7 +949,6 @@ class NodeGeneric(Node):
             description="A generic node that can be used for testing the pipeline. It simply passes through the input artifacts to the output without modification.",
         )
 
-
     def to_dict(self):
         d = super().to_dict()
         d["type"] = "NodeGeneric"
@@ -957,19 +956,14 @@ class NodeGeneric(Node):
 
     @classmethod
     def _from_dict(cls, d):
-        # print(f"Creating NodeGeneric from dict: {d}")
-
         return cls(
             node_id=d["node_id"],
             dag_dir = d["dag_dir"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
-            # inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            # outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
             inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
             outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
         )
-
 
     def run(self):
         """ Pass through inputs to outputs for testing the pipeline. """
@@ -978,19 +972,9 @@ class NodeGeneric(Node):
             data = Table.read(artifact.file_path)
             
             df = data.to_pandas()
-            # multiply all numeric columns by 2 for testing
-            # for col in df.columns:
-                # if np.issubdtype(df[col].dtype, np.number):
-                    # df[col] = df[col] * 2
-            # data = Table.from_pandas(df)
-
-            # df["colA"] *= 3
-            # artifact.add_column("colA", self.node_id, df["colA"])
 
             self.outputs = [artifact]
 
-            # self.output_csv_table(data)
-            # print(f"Passed through data with {len(data)} rows and {len(data.colnames)} columns.")
 
 
 class NodeEDA(Node):
@@ -1394,3 +1378,87 @@ class NodeScript(Node):
             self.outputs = [artifact] 
 
 
+
+class NodeJoin(Node):
+    """
+    Join dataframes by celestial position.
+    """
+
+    def __init__(self,
+                 dag_dir=None,
+                 node_type="join",
+                 node_id=None,
+                 parents=[],
+                 parameters: dict[str, Any] | None = None,
+                 inputs=[],
+                 outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            dag_dir=dag_dir,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            description="Join two Dataframes by RA and DEC. Requires two input artifacts with columns 'ra' and 'dec'. The output artifact will be the result of a Astropy match. Requires minimum separation parameter.",
+        )
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "NodeJoin"
+        return d
+
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            dag_dir = d["dag_dir"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+        """ Join dataframes. """
+        if len(self.inputs) == 2:
+            artifact1 = self.inputs[0]
+            artifact2 = self.inputs[1]
+
+            data1 = Table.read(artifact1.file_path)
+            data2 = Table.read(artifact2.file_path)
+            df1 = data.to_pandas()
+            df2 = data.to_pandas()
+
+            c1 = SkyCoord(df1["ra"].to_numpy() * u.deg,
+                            df1["dec"].to_numpy() * u.deg)
+            c2 = SkyCoord(df2["ra"].to_numpy() * u.deg,
+                            df2["dec"].to_numpy() * u.deg)
+            idx, d2d, _ = c1.match_to_catalog_sky(c2)
+            sep_arcsec = sep2d.to(u.arcsec).value
+
+            m = (sep_arcsec < self.parameters.get("max_sep_arcsec", 1))
+            df_matched = df1[m].copy()
+            df_matched["matched_idx"] = idx[m]
+            df_matched["sep_arcsec"] = sep_arcsec[m]
+
+            df1_columns = artifact1.active_columns if artifact1.active_columns else {}
+            df2_columns = artifact2.active_columns if artifact2.active_columns else {}
+
+            matched_columns = {}
+            for col in df1_columns:
+                matched_columns[col] = df1_columns[col]
+            for col in df2_columns:
+                if col in matched_columns:
+                    matched_columns[col + "_2"] = df2_columns[col]
+                else:
+                    matched_columns[col] = df2_columns[col]
+
+            output_artifact = ArtifactItem(
+                path=os.path.join(self.dag_dir, self.node_id, "joined.fits"),
+                dag=self.artifact_dag,
+                node_id=self.node_id,
+                active_columns=matched_columns,
+            )
+
+            self.outputs = [output_artifact]
