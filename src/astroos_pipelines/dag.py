@@ -472,7 +472,7 @@ class PipelineDAG(DAG):
     def is_initialized(self):
         return self.dag_id is not None
         
-    def add_node(self, node: Node, new_artifact: bool = False):
+    def add_node(self, node: Node, new_artifact: str = None):
 
         node.set_dag_dir(self.dag_dir)
 
@@ -504,7 +504,7 @@ class PipelineDAG(DAG):
 
         if new_artifact:
             artifact_item = ArtifactItem(
-                file_path = os.path.join(self.dag_dir, node.node_id, "catalog.fits"),
+                file_path = new_artifact,
                 dag=self.artifact_dag,
                 node_id=head.node_id if head else None,
             )
@@ -840,6 +840,7 @@ active_columns.update({
             active_columns = {}
 
             script = self.parameters.get("script", "")
+
             with open(script, "r") as f:
                 code = f.read()
                 exec(code, {"parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "active_columns": active_columns})
@@ -918,6 +919,8 @@ class NodeExport(Node):
             for artifact in self.inputs:
                 print(f"Exporting artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
                 artifact.dag = self.artifact_dag
+                
+                # artifact._load_from_file()
                 artifact.file_path = os.path.join(self.dag_dir, self.node_id, os.path.basename(artifact.file_path))
                 artifact.materialize(node_id=self.node_id)
                 self.outputs.append(artifact)

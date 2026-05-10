@@ -1,5 +1,5 @@
 
-from clients._rsp import *
+from clients._local import *
 
 def main():
 
@@ -94,9 +94,9 @@ def main():
             # )
 
 
-    dag.add_node(hst_catalog, new_artifact=True)
-    # dag.add_node(hst_clean)
-    # dag.add_node(hst_select)
+    dag.add_node(hst_catalog, new_artifact="catalogs/collections/lsst-hst/hst/hst.fits")
+    dag.add_node(hst_clean)
+    dag.add_node(hst_select)
     dag.add_node(hst_export)
 
     # dag.add_node(lsst_catalog, new_artifact=True)
