@@ -1427,8 +1427,8 @@ class NodeJoin(Node):
 
             data1 = Table.read(artifact1.file_path)
             data2 = Table.read(artifact2.file_path)
-            df1 = data.to_pandas()
-            df2 = data.to_pandas()
+            df1 = data1.to_pandas()
+            df2 = data2.to_pandas()
 
             c1 = SkyCoord(df1["ra"].to_numpy() * u.deg,
                             df1["dec"].to_numpy() * u.deg)
