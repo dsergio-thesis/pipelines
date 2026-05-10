@@ -1430,10 +1430,36 @@ class NodeJoin(Node):
             df1 = data1.to_pandas()
             df2 = data2.to_pandas()
 
-            c1 = SkyCoord(df1["ra"].to_numpy() * u.deg,
-                            df1["dec"].to_numpy() * u.deg)
-            c2 = SkyCoord(df2["ra"].to_numpy() * u.deg,
-                            df2["dec"].to_numpy() * u.deg)
+            # check for variations on RA and DEC column names
+            if "ra" not in df1.columns or "dec" not in df1.columns:
+                ra_col1 = None
+                dec_col1 = None
+                for col in df1.columns:
+                    if col.lower() in ["coord_ra", "ra_deg", "ra_j2000", "ra"]:
+                        ra_col1 = col
+                    if col.lower() in ["coord_dec", "dec_deg", "dec_j2000", "dec"]:
+                        dec_col1 = col
+                if ra_col1 and dec_col1:
+                    df1 = df1.rename(columns={ra_col1: "ra", dec_col1: "dec"})
+                else:
+                    raise ValueError("Input artifact 1 must have columns 'ra' and 'dec' or variations thereof.")
+            if "ra" not in df2.columns or "dec" not in df2.columns:
+                ra_col2 = None
+                dec_col2 = None
+                for col in df2.columns:
+                    if col.lower() in ["coord_ra", "ra_deg", "ra_j2000", "ra"]:
+                        ra_col2 = col
+                    if col.lower() in ["coord_dec", "dec_deg", "dec_j2000", "dec"]:
+                        dec_col2 = col
+                if ra_col2 and dec_col2:
+                    df2 = df2.rename(columns={ra_col2: "ra", dec_col2: "dec"})
+                else:
+                    raise ValueError("Input artifact 2 must have columns 'ra' and 'dec' or variations thereof.")
+
+            c1 = SkyCoord(df1[ra_col1].to_numpy() * u.deg,
+                            df1[dec_col1].to_numpy() * u.deg)
+            c2 = SkyCoord(df2[ra_col2].to_numpy() * u.deg,
+                            df2[dec_col2].to_numpy() * u.deg)
             idx, d2d, _ = c1.match_to_catalog_sky(c2)
             sep_arcsec = sep2d.to(u.arcsec).value
 
