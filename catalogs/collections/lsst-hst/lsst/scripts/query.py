@@ -18,7 +18,7 @@ if query_radius > 0:
 
 
     # Query for objects within the RA/Dec box defined by the center and radius.
-    query = \
+    query["adql"] = \
     """
     SELECT TOP {max_records}
     objectId,
@@ -61,7 +61,7 @@ if query_radius > 0:
         AND coord_dec BETWEEN {dec_min} AND {dec_max}
 
     """
-    query["adql"] = query.format(
+    query["adql"] = query["adql"].format(
             max_records=max_records,
             ra_min=ra_min,
             ra_max=ra_max,
@@ -71,7 +71,7 @@ if query_radius > 0:
 else:
 
     # Query for all objects (up to max_records limit)
-    query = \
+    query["adql"] = \
     """
     SELECT TOP {max_records}
     objectId,
@@ -111,6 +111,6 @@ else:
     FROM dp1.Object
     """
 
-    query["adql"] = query.format(
+    query["adql"] = query["adql"].format(
             max_records=max_records,
             )
