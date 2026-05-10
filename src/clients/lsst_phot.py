@@ -90,7 +90,10 @@ def main():
             parents=[lsst_select.node_id, hst_export.node_id],
             )
     lsst_hst_export = NodeExport(
-            parents = [lsst_hst_match.node_id]
+            parents = [lsst_hst_match.node_id],
+            )
+    lsst_hst_eda = NodeEDA(
+            parents = [lsst_hst_export.node_id],
             )
 
 
@@ -105,6 +108,7 @@ def main():
     dag.add_node(lsst_select)
     dag.add_node(lsst_hst_match)
     dag.add_node(lsst_hst_export)
+    dag.add_node(lsst_hst_eda)
 
 
 
