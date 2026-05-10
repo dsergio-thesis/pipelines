@@ -225,7 +225,7 @@ for col in df.columns:
     del df[col]
 
 for col in clean_df.columns:
-    df[col] = other_df[col].values
+    df[col] = clean_df[col].values
 
 df.index = clean_df.index
 # 
