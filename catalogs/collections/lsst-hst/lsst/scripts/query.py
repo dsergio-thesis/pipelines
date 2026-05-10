@@ -3,17 +3,26 @@ import numpy as np
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 
-query_coords = parameters.get('query_coords')
-query_radius = parameters.get('query_radius')
-max_records = parameters.get('max_records')
+query_coords = parameters.get("query_coords")
+query_radius = parameters.get("query_radius")
+max_records = parameters.get("max_records")
 
-if query_coords is dict
-query_coords = SkyCoord(
+# Deserialize SkyCoord if needed
+if isinstance(query_coords, dict):
+    query_coords = SkyCoord(
         ra=query_coords["ra_deg"] * u.deg,
         dec=query_coords["dec_deg"] * u.deg,
-        frame=query_coord["frame"]
-        )
-query_radius = 
+        frame=query_coords.get("frame", "icrs")
+    )
+
+# Deserialize radius if needed
+if isinstance(query_radius, (int, float)):
+    query_radius = query_radius * u.deg
+
+elif isinstance(query_radius, dict):
+    query_radius = query_radius["value"] * u.Unit(
+        query_radius.get("unit", "deg")
+    )
 
 
 if query_radius > 0:

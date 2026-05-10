@@ -910,7 +910,7 @@ class NodeExport(Node):
         )
 
     def run(self):
-        """ Pass through inputs to outputs for testing the pipeline. """
+        """ Export Node inputs to node_dir as full files. """
         if len(self.inputs) > 0:
 
             if self.outputs is None:

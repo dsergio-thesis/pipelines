@@ -31,37 +31,30 @@ def main():
     print(f"dag_dir={dag_dir}, Target: {target}, Radius (arcmin): {radius}, SkyCoord: ")
     print(coords)
 
-    # lsst_catalog = LSSTNodeCatalog(
+    # lsst_catalog = NodeTAPQuery(
             # parameters={
                 # "max_records": max_records,
                 # "query_coords": coords,
                 # "query_radius": radius,
+                # "script": "catalogs/collections/lsst-hst/lsst/scripts/query.py",
                 # },
+            # origin=True
             # )
-    lsst_catalog = NodeTAPQuery(
-            parameters={
-                "max_records": max_records,
-                "query_coords": coords,
-                "query_radius": radius,
-                "script": "catalogs/collections/lsst-hst/lsst/scripts/query.py",
-                },
-            origin=True
-            )
-    lsst_export = NodeExport(
-            parents = [lsst_catalog.node_id],
-            )
-    lsst_clean = NodeScript(
-            parameters = {
-                "script": "catalogs/collections/lsst-hst/lsst/scripts/clean.py"
-                },
-            parents = [lsst_export.node_id],
-            )
-    lsst_select = NodeScript(
-            parameters = {
-                "script": "catalogs/collections/lsst-hst/lsst/scripts/select.py"
-                },
-            parents = [lsst_clean.node_id],
-            )
+    # lsst_export = NodeExport(
+            # parents = [lsst_catalog.node_id],
+            # )
+    # lsst_clean = NodeScript(
+            # parameters = {
+                # "script": "catalogs/collections/lsst-hst/lsst/scripts/clean.py"
+                # },
+            # parents = [lsst_export.node_id],
+            # )
+    # lsst_select = NodeScript(
+            # parameters = {
+                # "script": "catalogs/collections/lsst-hst/lsst/scripts/select.py"
+                # },
+            # parents = [lsst_clean.node_id],
+            # )
 
     
     # we usually want the whole catalog for matching. adjust just for testing this
@@ -90,33 +83,14 @@ def main():
             )
 
 
-    lsst_hst_match = NodeJoin(
-            parameters={
-                "max_sep_arcsec": 0.8,},
-            parents=[lsst_select.node_id, hst_export.node_id],
-            )
 
-    lsst_hst_export = NodeExport(
-            parents = [lsst_hst_match.node_id]
-            )
-
-    # lsst_hst_match = LSSTNodeMatchToHST(
+    # lsst_hst_match = NodeJoin(
             # parameters={
-                # "max_records": max_records,},
-            # parents=[lsst_select.node_id, hst_select.node_id],
+                # "max_sep_arcsec": 0.8,},
+            # parents=[lsst_select.node_id, hst_export.node_id],
             # )
-
-    # lsst_hst_preprocess = LSSTNodePreprocess(
-            # parameters={
-                # "max_records": max_records,},
-            # parents=[lsst_hst_match.node_id],
-            # dag_dir=dag_dir
-            # )
-    # lsst_hst_data = LSSTNodePhotoDataset(
-            # parameters={
-                # "dataset": dataset_cart_phot.to_dict()},
-            # parents=[lsst_hst_preprocess.node_id],
-            # dag_dir=dag_dir
+    # lsst_hst_export = NodeExport(
+            # parents = [lsst_hst_match.node_id]
             # )
 
 
@@ -125,17 +99,27 @@ def main():
     dag.add_node(hst_select)
     dag.add_node(hst_export)
 
-    dag.add_node(lsst_catalog, new_artifact=True)
-    dag.add_node(lsst_export)
-    dag.add_node(lsst_clean)
-    dag.add_node(lsst_select)
-    dag.add_node(lsst_hst_match)
-    dag.add_node(lsst_hst_export)
+    # dag.add_node(lsst_catalog, new_artifact=True)
+    # dag.add_node(lsst_export)
+    # dag.add_node(lsst_clean)
+    # dag.add_node(lsst_select)
+    # dag.add_node(lsst_hst_match)
+    # dag.add_node(lsst_hst_export)
 
-    # dag.add_node(lsst_hst_preprocess)
+
+
+
+    # lsst_hst_data = LSSTNodePhotoDataset(
+            # parameters={
+                # "dataset": dataset_cart_phot.to_dict()},
+            # parents=[lsst_hst_preprocess.node_id],
+            # dag_dir=dag_dir
+            # )
     # dag.add_node(lsst_hst_data)
 
-    # dag.run()
+
+
+    dag.run()
     dag.to_graphviz()
     dag.to_yaml()
 
