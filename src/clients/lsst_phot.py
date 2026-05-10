@@ -31,11 +31,19 @@ def main():
     print(f"dag_dir={dag_dir}, Target: {target}, Radius (arcmin): {radius}, SkyCoord: ")
     print(coords)
 
-    lsst_catalog = LSSTNodeCatalog(
+    # lsst_catalog = LSSTNodeCatalog(
+            # parameters={
+                # "max_records": max_records,
+                # "query_coords": coords,
+                # "query_radius": radius,
+                # },
+            # )
+    lsst_catalog = NodeTAPQuery(
             parameters={
                 "max_records": max_records,
                 "query_coords": coords,
                 "query_radius": radius,
+                "script": "catalogs/collections/lsst-hst/lsst/scripts/query.py",
                 },
             )
     lsst_export = NodeExport(

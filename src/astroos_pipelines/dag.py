@@ -1423,7 +1423,7 @@ class NodeTAPQuery(Node):
             # write template script to node directory
             template_script = """# Example script for NodeTAPQuery
 
-query["descriptoin"] = "Get 10 random objects"
+query["description"] = "Get 10 random objects"
 query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
 
 """         
@@ -1433,12 +1433,12 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
             with open(script_path, "w") as f:
                 f.write(template_script)
             self.parameters = {
-                "script": script_path
+                    "script": script_path
                 }
     
     def to_dict(self):
         d = super().to_dict()
-        d["type"] = "NodeScript"
+        d["type"] = "NodeTAPQuery"
         return d
     
     @classmethod
@@ -1454,20 +1454,29 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
 
     def run(self):
 
-        if len(self.inputs) > 0:
-            artifact = self.inputs[0] # expects one input artifact
-            columns = artifact.columns if artifact.columns else None
-            data = Table.read(artifact.file_path)
-            df = data.to_pandas()
-            # print(df)
+        script = self.parameters.get("script", "")
 
-            columns = artifact.active_columns if artifact.active_columns else data.colnames
+        with open(script, "r") as f:
+            code = f.read()
+            exec(code, {"query": query, 
+                        "parameters": self.parameters, 
+                        })
 
-            script = self.parameters.get("script", "")
+        client = AstroosQueryLSST(root_dir=f"_pipelines/{self.node_id}", 
+                      credentials_file=None,
+                      max_records=max_records)
 
-            with open(script, "r") as f:
-                code = f.read()
-                exec(code, {"query": query, "parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "columns": columns})
+        print("Running TAP ADQL Query on LSST...")
+        table = client.query_async(query["adql"])
 
-            self.outputs = [artifact]
+        columns = {}
+        for col in table.colnames:
+            columns[col] = col
+        columns.pop("objectId", None)
+
+
+        artifact = ArtifactItem()
+        artifact.load_from_table(table, columns)
+
+        self.outputs = [artifact]
 
