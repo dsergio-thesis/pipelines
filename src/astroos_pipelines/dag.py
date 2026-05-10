@@ -1376,9 +1376,14 @@ class NodeScript(Node):
 
             script = self.parameters.get("script", "")
 
-            with open(script, "r") as f:
-                code = f.read()
-                exec(code, {"df": df, "parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "columns": columns})
+            try:
+                with open(script, "r") as f:
+                    code = f.read()
+                    exec(code, {"df": df, "parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "columns": columns})
+
+            except Exception as e:
+                print(f"NodeScript failed to execute script {script} with error: {e}")
+                # raise e
 
             # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
             # print(df)
