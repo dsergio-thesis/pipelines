@@ -84,8 +84,8 @@ flux_scale = 1.0
 err_scale = 1.0
 
 for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"):
-    target_ra = row.ra
-    target_dec = row.dec
+    target_ra = row.coord_ra
+    target_dec = row.coord_dec
 
     if hasattr(row, "label"):
         if (str(row.label) in label_counts):
