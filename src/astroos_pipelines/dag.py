@@ -1430,6 +1430,11 @@ class NodeJoin(Node):
             df1 = data1.to_pandas()
             df2 = data2.to_pandas()
 
+            print("df1", df1)
+            print("df2", df2)
+
+            return
+
             # check for variations on RA and DEC column names
             if "ra" not in df1.columns or "dec" not in df1.columns:
                 ra_col1 = None
@@ -1442,7 +1447,7 @@ class NodeJoin(Node):
                 if ra_col1 and dec_col1:
                     df1 = df1.rename(columns={ra_col1: "ra", dec_col1: "dec"})
                 else:
-                    raise ValueError("Input artifact 1 must have columns 'ra' and 'dec' or variations thereof.")
+                    raise ValueError(f"Input artifact 1 must have columns 'ra' and 'dec' or variations thereof. Columns: {df1.columns}")
             if "ra" not in df2.columns or "dec" not in df2.columns:
                 ra_col2 = None
                 dec_col2 = None
@@ -1454,7 +1459,7 @@ class NodeJoin(Node):
                 if ra_col2 and dec_col2:
                     df2 = df2.rename(columns={ra_col2: "ra", dec_col2: "dec"})
                 else:
-                    raise ValueError("Input artifact 2 must have columns 'ra' and 'dec' or variations thereof.")
+                    raise ValueError(f"Input artifact 2 must have columns 'ra' and 'dec' or variations thereof. Columns: {df2.columns}")
 
             c1 = SkyCoord(df1[ra_col1].to_numpy() * u.deg,
                             df1[dec_col1].to_numpy() * u.deg)

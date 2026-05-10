@@ -85,12 +85,15 @@ def main():
                 },
             parents = [hst_clean.node_id],
             )
+    hst_export = NodeExport(
+            parents = [hst_select.node_id],
+            )
 
 
     lsst_hst_match = NodeJoin(
             parameters={
                 "max_sep_arcsec": 0.8,},
-            parents=[lsst_select.node_id, hst_select.node_id],
+            parents=[lsst_select.node_id, hst_export.node_id],
             )
 
     lsst_hst_export = NodeExport(
@@ -120,6 +123,7 @@ def main():
     dag.add_node(hst_catalog, new_artifact=True)
     dag.add_node(hst_clean)
     dag.add_node(hst_select)
+    dag.add_node(hst_export)
 
     dag.add_node(lsst_catalog, new_artifact=True)
     dag.add_node(lsst_export)
