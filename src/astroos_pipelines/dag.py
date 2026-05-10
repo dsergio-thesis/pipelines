@@ -1477,7 +1477,29 @@ class NodeJoin(Node):
             sep_arcsec = sep2d.to(u.arcsec).value
 
             m = (sep_arcsec < self.parameters.get("max_sep_arcsec", 1))
-            df_matched = df1[m].copy()
+
+            # matched rows from df1
+            df1_matched = df1[m].reset_index(drop=True)
+
+            # corresponding matched rows from df2
+            df2_matched = df2.iloc[idx[m]].reset_index(drop=True)
+
+            # avoid duplicate column names
+            duplicate_cols = set(df1_matched.columns) & set(df2_matched.columns)
+
+            # keep ra/dec from df1 unchanged, suffix df2 duplicates
+            rename_map = {
+                col: f"{col}_2"
+                for col in duplicate_cols
+                if col not in ["ra", "dec"]
+            }
+
+            df2_matched = df2_matched.rename(columns=rename_map)
+
+            # combine horizontally
+            df_matched = pd.concat([df1_matched, df2_matched], axis=1)
+
+            # metadata columns
             df_matched["matched_idx"] = idx[m]
             df_matched["sep_arcsec"] = sep_arcsec[m]
 
