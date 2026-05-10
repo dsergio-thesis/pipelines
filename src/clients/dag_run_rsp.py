@@ -6,6 +6,7 @@ def main():
     config = client_config()
     pipeline_name = config.pipeline_name
 
+
     dag = PipelineDAG(label=pipeline_name)
     if not dag.is_initialized():
         print("No pipelines found.")

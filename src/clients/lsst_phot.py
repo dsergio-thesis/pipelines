@@ -135,7 +135,7 @@ def main():
     # dag.add_node(lsst_hst_preprocess)
     # dag.add_node(lsst_hst_data)
 
-    dag.run()
+    # dag.run()
     dag.to_graphviz()
     dag.to_yaml()
 

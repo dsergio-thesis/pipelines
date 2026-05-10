@@ -246,7 +246,7 @@ class NodeTAPQuery(Node):
 
     def __init__(self,
                  dag_dir=None,
-                 node_type="TAPQuery",
+                 node_type="NodeTAPQuery",
                  node_id=None,
                  parents=[],
                  parameters={"script": None},
