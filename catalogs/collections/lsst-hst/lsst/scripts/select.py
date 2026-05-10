@@ -78,8 +78,10 @@ label_counts = dict()
 num_bands = len(bands)
 
 # precompute safe scales (dataset-level)
-flux_scale = self.median_r_psfFlux if getattr(self, "median_r_psfFlux", 0) and self.median_r_psfFlux > 0 else 1.0
-err_scale  = self.median_r_psfFluxErr if getattr(self, "median_r_psfFluxErr", 0) and self.median_r_psfFluxErr > 0 else 1.0
+# flux_scale = self.median_r_psfFlux if getattr(self, "median_r_psfFlux", 0) and self.median_r_psfFlux > 0 else 1.0
+# err_scale  = self.median_r_psfFluxErr if getattr(self, "median_r_psfFluxErr", 0) and self.median_r_psfFluxErr > 0 else 1.0
+flux_scale = 1.0
+err_scale = 1.0
 
 for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"):
     target_ra = row.ra
