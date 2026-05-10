@@ -1383,7 +1383,7 @@ class NodeScript(Node):
 
             except Exception as e:
                 print(f"NodeScript failed to execute script {script} with error: {e}")
-                # raise e
+                raise e
 
             # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
             # print(df)
