@@ -224,10 +224,10 @@ df.drop(df.index, inplace=True)
 for col in df.columns:
     del df[col]
 
-for col in clean_df.columns:
-    df[col] = clean_df[col].values
+for col in df_clean.columns:
+    df[col] = df_clean[col].values
 
-df.index = clean_df.index
+df.index = df_clean.index
 # 
 
 
