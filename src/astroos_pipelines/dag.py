@@ -1476,28 +1476,21 @@ class NodeJoin(Node):
             idx, sep2d, _ = c1.match_to_catalog_sky(c2)
             sep_arcsec = sep2d.to(u.arcsec).value
 
-            m = (sep_arcsec < self.parameters.get("max_sep_arcsec", 1))
+            m = sep_arcsec < self.parameters.get("max_sep_arcsec", 1)
 
-            # matched rows from df1
             df1_matched = df1[m].reset_index(drop=True)
-
-            # corresponding matched rows from df2
             df2_matched = df2.iloc[idx[m]].reset_index(drop=True)
 
-            # avoid duplicate column names
             duplicate_cols = set(df1_matched.columns) & set(df2_matched.columns)
 
-            # keep ra/dec from df1 unchanged, suffix df2 duplicates
-            rename_map = {
-                col: f"{col}_2"
-                for col in duplicate_cols
-                if col not in ["ra", "dec"]
-            }
+            df2_matched = df2_matched.rename(
+                columns={col: f"{col}_2" for col in duplicate_cols}
+            )
 
-            df2_matched = df2_matched.rename(columns=rename_map)
-
-            # combine horizontally
             df_matched = pd.concat([df1_matched, df2_matched], axis=1)
+
+            df_matched["matched_idx"] = idx[m]
+            df_matched["sep_arcsec"] = sep_arcsec[m]
 
             # metadata columns
             df_matched["matched_idx"] = idx[m]
@@ -1519,6 +1512,8 @@ class NodeJoin(Node):
                 node_id=self.node_id,
                 active_columns=matched_columns,
             )
+
+            print("df_matched", df_matched)
 
             table = Table.from_pandas(df_matched)
             output_artifact.load_from_table(table, matched_columns)
