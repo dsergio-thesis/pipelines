@@ -20,6 +20,8 @@ from astropy.coordinates import SkyCoord
 from astropy.units import Quantity
 import inspect
 
+from astropy import units as u
+
 import html
 import textwrap
 from graphviz import Digraph
@@ -472,7 +474,7 @@ class PipelineDAG(DAG):
     def is_initialized(self):
         return self.dag_id is not None
         
-    def add_node(self, node: Node, new_artifact: str = None):
+    def add_node(self, node: Node, new_artifact: bool = False, new_artifact_path: str = None):
 
         node.set_dag_dir(self.dag_dir)
 
@@ -501,10 +503,13 @@ class PipelineDAG(DAG):
                 raise ValueError(f"Parent must exist p={p}, self.get_nodes_ids(): {self.get_nodes_ids()}. Hint: you need to set parents in Node() constructor if running in a script. ")
             self.children[p].append(node_id)
             self.artifact_dag.add_edge(p, node_id)
+    
+        if not new_artifact_path:
+            new_artifact_path = os.path.join(node.node_dir, "catalog.fits")
 
         if new_artifact:
             artifact_item = ArtifactItem(
-                file_path = new_artifact,
+                file_path = new_artifact_path,
                 dag=self.artifact_dag,
                 node_id=head.node_id if head else None,
             )
@@ -1436,7 +1441,7 @@ class NodeJoin(Node):
             print("df1", df1)
             print("df2", df2)
 
-            return
+            # return
 
             # check for variations on RA and DEC column names
             if "ra" not in df1.columns or "dec" not in df1.columns:
@@ -1464,11 +1469,11 @@ class NodeJoin(Node):
                 else:
                     raise ValueError(f"Input artifact 2 must have columns 'ra' and 'dec' or variations thereof. Columns: {df2.columns}")
 
-            c1 = SkyCoord(df1[ra_col1].to_numpy() * u.deg,
-                            df1[dec_col1].to_numpy() * u.deg)
-            c2 = SkyCoord(df2[ra_col2].to_numpy() * u.deg,
-                            df2[dec_col2].to_numpy() * u.deg)
-            idx, d2d, _ = c1.match_to_catalog_sky(c2)
+            c1 = SkyCoord(df1["ra"].to_numpy() * u.deg,
+                            df1["dec"].to_numpy() * u.deg)
+            c2 = SkyCoord(df2["ra"].to_numpy() * u.deg,
+                            df2["dec"].to_numpy() * u.deg)
+            idx, sep2d, _ = c1.match_to_catalog_sky(c2)
             sep_arcsec = sep2d.to(u.arcsec).value
 
             m = (sep_arcsec < self.parameters.get("max_sep_arcsec", 1))
@@ -1483,16 +1488,17 @@ class NodeJoin(Node):
             for col in df1_columns:
                 matched_columns[col] = df1_columns[col]
             for col in df2_columns:
-                if col in matched_columns:
-                    matched_columns[col + "_2"] = df2_columns[col]
-                else:
+                if col not in matched_columns:
                     matched_columns[col] = df2_columns[col]
 
             output_artifact = ArtifactItem(
-                path=os.path.join(self.dag_dir, self.node_id, "joined.fits"),
+                file_path=os.path.join(self.dag_dir, self.node_id, "joined.fits"),
                 dag=self.artifact_dag,
                 node_id=self.node_id,
                 active_columns=matched_columns,
             )
+
+            table = Table.from_pandas(df_matched)
+            output_artifact.load_from_table(table, matched_columns)
 
             self.outputs = [output_artifact]

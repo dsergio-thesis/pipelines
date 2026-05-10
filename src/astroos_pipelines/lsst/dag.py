@@ -331,6 +331,7 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
                 node_id=self.node_id,
                 )
         artifact.load_from_table(table, columns)
+        artifact.materialize(self.node_id)
 
         self.outputs = [artifact]
 
