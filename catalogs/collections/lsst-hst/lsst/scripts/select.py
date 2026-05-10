@@ -47,8 +47,8 @@ Next: add diff/ratio PSF and cModel for morphology
 
 df_clean = pd.DataFrame()  # will hold cleaned data with new features
 # df_clean['objectId'] = df['objectId']
-# df_clean['ra'] = df['coord_ra']
-# df_clean['dec'] = df['coord_dec']
+df_clean['ra'] = df['coord_ra']
+df_clean['dec'] = df['coord_dec']
 df_clean['tract'] = df['tract']
 df_clean['patch'] = df['patch']
 df_clean['detect_fromBlend'] = df['detect_fromBlend']
