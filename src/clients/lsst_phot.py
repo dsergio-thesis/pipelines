@@ -55,6 +55,9 @@ def main():
                 },
             parents = [lsst_clean.node_id],
             )
+    lsst_select_export = NodeExport(
+            parents = [lsst_select.node_id],
+            )
 
     
     # we usually want the whole catalog for matching. adjust just for testing this
@@ -106,6 +109,8 @@ def main():
     dag.add_node(lsst_export)
     dag.add_node(lsst_clean)
     dag.add_node(lsst_select)
+    dag.add_node(lsst_select_export)
+
     dag.add_node(lsst_hst_match)
     dag.add_node(lsst_hst_export)
     dag.add_node(lsst_hst_eda)
