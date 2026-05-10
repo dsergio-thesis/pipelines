@@ -45,6 +45,7 @@ def main():
                 "query_radius": radius,
                 "script": "catalogs/collections/lsst-hst/lsst/scripts/query.py",
                 },
+            origin=True
             )
     lsst_export = NodeExport(
             parents = [lsst_catalog.node_id],
@@ -130,9 +131,9 @@ def main():
     # dag.add_node(lsst_hst_preprocess)
     # dag.add_node(lsst_hst_data)
 
-    # dag.run()
+    dag.run()
     dag.to_graphviz()
-    # dag.to_yaml()
+    dag.to_yaml()
 
 if __name__ == "__main__":
     main()

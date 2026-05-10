@@ -721,6 +721,7 @@ class PipelineDAG(DAG):
             # print("No head node set, cannot run DAG.")
             return
         self.run_from_node(self.head.node_id)
+
         
     @staticmethod
     def usage():
@@ -1405,6 +1406,7 @@ class NodeTAPQuery(Node):
                  node_id=None,
                  parents=[],
                  parameters={"script": None},
+                 origin=True,
                  inputs=[],
                  outputs=[]):
         super().__init__(
@@ -1415,6 +1417,7 @@ class NodeTAPQuery(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
+            origin=origin,
             description="A node that connects to a TAP service.",
         )
     
@@ -1455,6 +1458,8 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
     def run(self):
 
         script = self.parameters.get("script", "")
+
+        query = {"adql": "", "description": ""}
 
         with open(script, "r") as f:
             code = f.read()
