@@ -1385,6 +1385,11 @@ class NodeScript(Node):
                 print(f"NodeScript failed to execute script {script} with error: {e}")
                 raise e
 
+            for col in df.columns:
+                if col not in artifact.active_columns:
+                    artifact.active_columns[col] = {}
+                artifact.add_column_version(col, self.node_id, df[col])
+
             # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
             # print(df)
 
