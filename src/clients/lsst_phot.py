@@ -3,82 +3,128 @@ from clients._rsp import *
 
 def main():
 
-    config, pipeline_metadata = client_config()
+    config = client_config()
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name
     pipeline_name = config.pipeline_name
-    label_def_file = config.label_def_file
+    labels_def_file = config.labels_def_file
     max_records = config.max_records
-    print("Configuration loaded successfully.")
+
+    target = config.sky_region_target_selected
+
+    if not target:
+        print("--target required to run LSST pipeline")
+        return
+
+    coords = config.sky_region_targets[target].sky_coord
+    radius = config.sky_region_targets[target].radius_arcmin
 
     dataset_cart_phot = FITS_Image_Morphometry_Photometry_Dataset(
             dataset_dir=os.path.join(dataset_dir, dataset_name),
-            labels_init_file=label_def_file,
+            labels_init_file=labels_def_file,
             )
     
-    dag = PipelineDAG(label=pipeline_name)
+    new_dag = True if pipeline_name is None else False
+    dag = PipelineDAG(label=pipeline_name, new=new_dag)
     dag_dir = dag.dag_dir
+
+    print(f"dag_dir={dag_dir}, Target: {target}, Radius (arcmin): {radius}, SkyCoord: ")
+    print(coords)
 
     lsst_catalog = LSSTNodeCatalog(
             parameters={
                 "max_records": max_records,
-                "query_coords": pipeline_metadata.get("query_coords", None),
-                "query_radius": pipeline_metadata.get("query_radius", None),},
-            dag_dir=dag_dir,
-            origin=True)
+                "query_coords": coords,
+                "query_radius": radius,
+                },
+            )
+    lsst_export = NodeExport(
+            parents = [lsst_catalog.node_id],
+            )
+    lsst_clean = NodeScript(
+            parameters = {
+                "script": "catalogs/collections/lsst-hst/lsst/scripts/clean.py"
+                },
+            parents = [lsst_export.node_id],
+            )
+    lsst_select = NodeScript(
+            parameters = {
+                "script": "catalogs/collections/lsst-hst/lsst/scripts/select.py"
+                },
+            parents = [lsst_clean.node_id],
+            )
 
-
+    
     # we usually want the whole catalog for matching. adjust just for testing this
-    hst_max_records = 300000
-    hst_catalog = HSTNodeCatalog(
-            parameters={"max_records": hst_max_records},
-            dag_dir=dag_dir,
-            origin=True) 
-    hst_clean = HSTNodeClean(
-            parameters={"max_records": hst_max_records},
-            parents=[hst_catalog.node_id],
-            dag_dir=dag_dir)
-    hst_select_clean = HSTNodeSelect(
-            parameters={"max_records": hst_max_records},
-            parents=[hst_clean.node_id],
-            dag_dir=dag_dir)
-
-    lsst_hst_match = LSSTNodeMatchToHST(
-            parameters={
-                "max_records": max_records,},
-            parents=[lsst_catalog.node_id, hst_select_clean.node_id],
-            dag_dir=dag_dir,
+    hst_max_records = 1000 # 300000
+    hst_catalog = NodeImport(
+            parameters = {
+                "max_records": hst_max_records,
+                "script": "catalogs/collections/lsst-hst/hst/scripts/import.py",
+                },
+            origin=True,
             )
-
-    lsst_hst_preprocess = LSSTNodePreprocess(
-            parameters={
-                "max_records": max_records,},
-            parents=[lsst_hst_match.node_id],
-            dag_dir=dag_dir
+    hst_clean = NodeScript(
+            parameters = {
+                "script": "catalogs/collections/lsst-hst/hst/scripts/clean.py"
+                },
+            parents = [hst_catalog.node_id],
             )
-    lsst_hst_data = LSSTNodePhotoDataset(
-            parameters={
-                "dataset": dataset_cart_phot.to_dict()},
-            parents=[lsst_hst_preprocess.node_id],
-            dag_dir=dag_dir
+    hst_select = NodeScript(
+            parameters = {
+                "script": "catalogs/collections/lsst-hst/hst/scripts/select.py"
+                },
+            parents = [hst_clean.node_id],
             )
 
 
-    dag.add_node(hst_catalog)
+    lsst_hst_match = NodeScript(
+            parameters={
+                "script": "catalogs/collections/lsst-hst/scripts/merge.py",},
+            parents=[lsst_select.node_id, hst_select.node_id],
+            )
+
+    lsst_hst_export = NodeExport(
+            parents = [lsst_hst_match.node_id]
+            )
+
+    # lsst_hst_match = LSSTNodeMatchToHST(
+            # parameters={
+                # "max_records": max_records,},
+            # parents=[lsst_select.node_id, hst_select.node_id],
+            # )
+
+    # lsst_hst_preprocess = LSSTNodePreprocess(
+            # parameters={
+                # "max_records": max_records,},
+            # parents=[lsst_hst_match.node_id],
+            # dag_dir=dag_dir
+            # )
+    # lsst_hst_data = LSSTNodePhotoDataset(
+            # parameters={
+                # "dataset": dataset_cart_phot.to_dict()},
+            # parents=[lsst_hst_preprocess.node_id],
+            # dag_dir=dag_dir
+            # )
+
+
+    dag.add_node(hst_catalog, new_artifact=True)
     dag.add_node(hst_clean)
-    dag.add_node(hst_select_clean)
+    dag.add_node(hst_select)
 
-    dag.add_node(lsst_catalog)
+    dag.add_node(lsst_catalog, new_artifact=True)
+    dag.add_node(lsst_export)
+    dag.add_node(lsst_clean)
+    dag.add_node(lsst_select)
     dag.add_node(lsst_hst_match)
-    dag.add_node(lsst_hst_preprocess)
-    dag.add_node(lsst_hst_data)
+    dag.add_node(lsst_hst_export)
 
-    # dag.run_from_node(lsst_catalog.node_id)
-    dag.run()
+    # dag.add_node(lsst_hst_preprocess)
+    # dag.add_node(lsst_hst_data)
 
+    # dag.run()
     dag.to_graphviz()
-
-    dag.to_yaml()
+    # dag.to_yaml()
 
 if __name__ == "__main__":
     main()

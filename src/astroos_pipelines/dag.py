@@ -85,6 +85,8 @@ class Node(ABC):
                  inputs=[], 
                  outputs=[],
                  origin=False,
+                 num_inputs=0,
+                 num_outputs=0,
                  ):
         self.dag_dir = dag_dir
         self.node_type = node_type
@@ -98,6 +100,10 @@ class Node(ABC):
         self.visited = False
         self.diff = {}
         self.artifact_dag = None 
+        self.origin = origin
+        self.num_inputs = num_inputs
+        self.num_outputs = num_outputs
+        
         
         if node_id:
             self.node_id = node_id
@@ -109,6 +115,7 @@ class Node(ABC):
                 artifact_hashes=[a.output_path for a in self.inputs + self.outputs],
             )
 
+        print(f"setting dag_dir in constructor")
         self.set_dag_dir(dag_dir)
 
         # print(f"Creating {self.node_id} with parents {parents}")
@@ -121,6 +128,8 @@ class Node(ABC):
         self.dag_dir = dag_dir
         if dag_dir is not None:
             self.node_dir = os.path.join(dag_dir, self.node_id)
+        else:
+            print(f"dag_dir is None. Cannot set self.node_dir for {self.node_id}")
 
     @abstractmethod
     def run(self):
@@ -478,8 +487,14 @@ class PipelineDAG(DAG):
         # if dag is empty and no parents provided, set parents to empty, else if no parents provided, set parents to [head]
         if len(self.nodes) == 0 and len(node.parents) == 0:
             node.parents = []
-        elif len(node.parents) == 0:
+            self.head = node
+        elif len(node.parents) == 0 and not node.origin:
             node.parents = [self.head.node_id] if self.head else []
+        elif node.origin:
+            node.parents = []
+            self.head = node
+
+        head = self.head
 
         for p in node.parents: 
             if p not in self.get_nodes_ids():
@@ -747,7 +762,9 @@ class NodeImport(Node):
                  parents=[],
                  parameters: dict[str, Any] | None = None,
                  inputs=[],
-                 outputs=[]):
+                 outputs=[],
+                 origin=False,
+                 ):
         super().__init__(
             node_type=node_type,
             dag_dir=dag_dir,
@@ -756,6 +773,7 @@ class NodeImport(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
+            origin=origin,
             description="Import data from external source into the pipeline.",
         )
 
@@ -766,24 +784,24 @@ class NodeImport(Node):
             template_script = """# Example script for NodeImport.
 
 # print(f"*** Running in NodeImport...")
-# active_columns.update({  
-    # 'ra': "Right Ascension",
-    # 'dec': "Declination",
-    # 'jh_mag': "J-H color",
-    # 'z_spec': "Spectroscopic redshift",
-    # 'z_peak_phot': "Photometric redshift (peak)",
-    # 'z_peak_grism': "Grism redshift (peak)",
-    # 'z_best': "Best redshift",
-    # 'sfr': "Star Formation Rate",
-    # 'lssfr': "Log Specific Star Formation Rate",
-    # 'sfr_IR': "Star Formation Rate from IR",
-    # 'sfr_UV': "Star Formation Rate from UV",
-    # 'lmass': "Log Stellar Mass",
-    # 'Av': "Visual Extinction",
-    # 'beta': "UV slope",
-    # 'L_IR': "Infrared Luminosity",
-    # 'chi2': "Chi-squared of SED fit",
-# })
+active_columns.update({  
+    'ra': "Right Ascension",
+    'dec': "Declination",
+    'jh_mag': "J-H color",
+    'z_spec': "Spectroscopic redshift",
+    'z_peak_phot': "Photometric redshift (peak)",
+    'z_peak_grism': "Grism redshift (peak)",
+    'z_best': "Best redshift",
+    'sfr': "Star Formation Rate",
+    'lssfr': "Log Specific Star Formation Rate",
+    'sfr_IR': "Star Formation Rate from IR",
+    'sfr_UV': "Star Formation Rate from UV",
+    'lmass': "Log Stellar Mass",
+    'Av': "Visual Extinction",
+    'beta': "UV slope",
+    'L_IR': "Infrared Luminosity",
+    'chi2': "Chi-squared of SED fit",
+})
 
 """         
             script_path = os.path.join(self.node_dir, f"script.py")
@@ -1373,3 +1391,83 @@ class NodeScript(Node):
             # print(df)
 
             self.outputs = [artifact] 
+
+
+class NodeTAPQuery(Node):
+    """
+    A node that connects to a TAP service.
+
+    """
+
+    def __init__(self,
+                 dag_dir=None,
+                 node_type="TAPQuery",
+                 node_id=None,
+                 parents=[],
+                 parameters={"script": None},
+                 inputs=[],
+                 outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            dag_dir=dag_dir,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            description="A node that connects to a TAP service.",
+        )
+    
+    def node_configure(self):
+        if self.parameters['script'] is None:
+            # write template script to node directory
+            template_script = """# Example script for NodeTAPQuery
+
+query["descriptoin"] = "Get 10 random objects"
+query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
+
+"""         
+            script_path = os.path.join(self.node_dir, f"script.py")
+
+            os.makedirs(self.node_dir, exist_ok=True)
+            with open(script_path, "w") as f:
+                f.write(template_script)
+            self.parameters = {
+                "script": script_path
+                }
+    
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "NodeScript"
+        return d
+    
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            dag_dir=d["dag_dir"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+
+        if len(self.inputs) > 0:
+            artifact = self.inputs[0] # expects one input artifact
+            columns = artifact.columns if artifact.columns else None
+            data = Table.read(artifact.file_path)
+            df = data.to_pandas()
+            # print(df)
+
+            columns = artifact.active_columns if artifact.active_columns else data.colnames
+
+            script = self.parameters.get("script", "")
+
+            with open(script, "r") as f:
+                code = f.read()
+                exec(code, {"query": query, "parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "columns": columns})
+
+            self.outputs = [artifact]
+

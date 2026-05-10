@@ -289,7 +289,7 @@ class LSSTNodeEDA(Node):
 class LSSTNodeMatchToHST(Node):
     def __init__(
             self,
-            dag_dir,
+            dag_dir=None,
             node_type="catalog_lsst_match_hst",
             node_id=None,
             parents=[],
@@ -322,11 +322,13 @@ class LSSTNodeMatchToHST(Node):
             node_id=d["node_id"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
         )
 
     def run(self):
+
+        return
 
         # expects 2 input artifacts: LSST catalog and HST catalog (both as FITS tables with RA/Dec columns)
         if len(self.inputs) < 2:

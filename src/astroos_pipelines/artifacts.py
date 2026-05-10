@@ -383,6 +383,12 @@ class ArtifactItem:
                 raise ValueError(f"Unsupported file format: {ext}")
 
             df = table.to_pandas()
+            
+            
+            active_columns = {}
+            for col in df.columns:
+                active_columns[col] = {}
+            self.active_columns = columns
 
             for col in df.columns:
                 self.add_column_version(col, node_id=self.node_id, data=df[col])

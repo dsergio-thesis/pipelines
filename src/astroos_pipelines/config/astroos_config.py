@@ -50,6 +50,7 @@ class AstroosConfig:
             parameter: (str, str) = None,
             sky_region_target_selected: str = None,
             sky_region_target_radius_arcmin: float = None,
+            labels_def_file: Path = None,
             ):
         self.dataset_dir = dataset_dir
         self.pipeline_dir = pipeline_dir
@@ -65,6 +66,8 @@ class AstroosConfig:
 
         self.sky_region_targets = self.load_coords_from_csv()
         self.sky_region_target_selected = sky_region_target_selected
+
+        self.labels_def_file = labels_def_file
     
     @staticmethod
     def clean_path(value: str) -> Path:
@@ -88,6 +91,7 @@ class AstroosConfig:
             pipeline_dir=Path(env("PIPELINE_DIR")).expanduser(),
             max_records=int(env("MAX_RECORDS", "6")),
             sky_regions_csv=cls.clean_path(env("SKY_REGIONS_CSV")).expanduser(),
+            labels_def_file=cls.clean_path(env("LABELS_DEF_FILE")).expanduser(),
         )
 
     
