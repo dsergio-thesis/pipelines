@@ -21,7 +21,7 @@ importlib.reload(sys.modules['astroos_pipelines.utils.plots.dataset_eda'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.pipelines'])
-importlib.reload(sys.modules['astroos_pipelines.dag'])
+# importlib.reload(sys.modules['astroos_pipelines.dag'])
 
 from astroos_pipelines.logger.logger import setup_logging
 importlib.reload(sys.modules['astroos_pipelines.logger.logger'])

@@ -1,11 +1,19 @@
 
 import numpy as np
 from astropy import units as u
-
+from astropy.coordinates import SkyCoord
 
 query_coords = parameters.get('query_coords')
 query_radius = parameters.get('query_radius')
 max_records = parameters.get('max_records')
+
+if query_coords is dict
+query_coords = SkyCoord(
+        ra=query_coords["ra_deg"] * u.deg,
+        dec=query_coords["dec_deg"] * u.deg,
+        frame=query_coord["frame"]
+        )
+query_radius = 
 
 
 if query_radius > 0:

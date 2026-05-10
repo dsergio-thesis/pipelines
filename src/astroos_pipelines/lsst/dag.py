@@ -18,7 +18,7 @@ from astroos_pipelines.utils.rsp import get_cutout_bands
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.utils.plots.dataset_eda import dataset_eda
 
-importlib.reload(sys.modules['astroos_pipelines.dag'])
+# importlib.reload(sys.modules['astroos_pipelines.dag'])
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 importlib.reload(sys.modules['astroos_pipelines.utils.rsp'])
 importlib.reload(sys.modules['astroos_pipelines.utils.plots.dataset_eda'])
