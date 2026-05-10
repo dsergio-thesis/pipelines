@@ -302,6 +302,7 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
     def run(self):
 
         script = self.parameters.get("script", "")
+        max_records = self.parameters.get("max_records", 3)
 
         query = {"adql": "", "description": ""}
 
@@ -324,7 +325,11 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
         columns.pop("objectId", None)
 
 
-        artifact = ArtifactItem()
+        artifact = ArtifactItem(
+                file_path=os.path.join(self.node_dir, "tap.fits"),
+                dag=self.artifact_dag,
+                node_id=self.node_id,
+                )
         artifact.load_from_table(table, columns)
 
         self.outputs = [artifact]
