@@ -92,12 +92,17 @@ class ColumnVersion:
     hash: int
     file_path: str | None = None
 
-    def load_data(self, max_records: int = None, shuffle: bool = False) -> pd.Series:
+    def load_data(self, file_path: str, max_records: int = None, shuffle: bool = False) -> pd.Series:
+        print(f"calling load_data for node_id={self.node_id}, max_records={max_records}, shuffle={shuffle}")
+
+        self.file_path = self.file_path or file_path
+
+        # only use cache for full unshuffled dataset
         if self.data is not None:
-            return self.data
+            return self.data[:max_records] if max_records is not None else self.data
 
         if self.file_path is None:
-            raise ValueError(f"No data or file_path for version at node {self.node_id}")
+            raise ValueError(f"No data or file_path for version at node {self.node_id} {self.file_path}")
         
         # shuffle if requested
         if shuffle:
@@ -115,9 +120,10 @@ class ColumnVersion:
 
 
 class ArtifactCol:
-    def __init__(self, name: str):
+    def __init__(self, name: str, file_path: str = None):
         self.name = name
         self.versions: list[ColumnVersion] = []
+        self.file_path = file_path
 
     def add_version(self, node_id: str, data) -> None:
         series = self._to_series(data)
@@ -127,6 +133,7 @@ class ArtifactCol:
                 node_id=node_id,
                 data=series,
                 hash=int(hash_pandas_object(series, index=True).sum()),
+                file_path=self.file_path,
             )
         )
 
@@ -214,7 +221,7 @@ class ArtifactCol:
                 f"Conflicting versions from nodes: {conflict_nodes}."
             )
 
-        return maximal[0].load_data(max_records=max_records)
+        return maximal[0].load_data(file_path=self.file_path, max_records=max_records)
 
     @staticmethod
     def _to_series(data) -> pd.Series:
@@ -252,23 +259,28 @@ class ArtifactItem:
                  node_id: str = None, 
                  columns: dict[str, ArtifactCol] = None,
                  active_columns: dict[str, dict] | None = None,
-                 load_from_file: bool = True
+                 load_from_file: bool = True,
+                 max_records: int = None,
                  ):
         self.file_path = file_path
+        self.file_type = Path(file_path).suffix.lower()
         self.dag = dag 
         self.columns = columns or {}
         self.node_id = node_id
+        self.max_records = max_records
 
-        self.active_columns = active_columns # None means all columns
+        self.active_columns = active_columns 
 
         if os.path.exists(file_path) and node_id is not None and columns is None and load_from_file:
             self._load_from_file()
+            for col in self.columns.values(): 
+                col.file_path = file_path
 
     def set_active_columns(self, active_columns: dict[str, dict] | list[str] | None) -> None:
         if active_columns is None:
             self.active_columns = None
         elif isinstance(active_columns, list):
-            self.active_columns = {col: {} for col in active_columns}
+            self.active_columns = {col: {col} for col in active_columns}
         else:
             self.active_columns = active_columns
 
@@ -289,7 +301,7 @@ class ArtifactItem:
 
     def add_column_version(self, col_name: str, node_id: str, data) -> None:
         if col_name not in self.columns:
-            self.columns[col_name] = ArtifactCol(col_name)
+            self.columns[col_name] = ArtifactCol(col_name, file_path=self.file_path)
 
         self.columns[col_name].add_version(node_id, data)
 
@@ -309,16 +321,19 @@ class ArtifactItem:
         return self.columns[col_name].latest_at(target_node_id, self.dag)
 
 
-    def to_df(self, node_id: str, max_records: int = None) -> pd.DataFrame:
+    def to_df(self, node_id: str, col_names: list[str] = None) -> pd.DataFrame:
         if self.dag is None: 
             raise ValueError("DAG is required to convert to DataFrame")
+
+        if col_names is not None:
+            df_columns = col_names
+        else:
+            df_columns = self.get_active_column_names()
+
         combined = {}
-
-        # print(f"self.columns: {self.columns}"
-
-        for col_name in self.get_active_column_names():
+        for col_name in df_columns:
             artifact_col = self.columns[col_name]
-            series = artifact_col.latest_at(node_id, self.dag, max_records=max_records)
+            series = artifact_col.latest_at(node_id, self.dag, max_records=self.max_records)
             # print(f"series: {series.head()}")
 
             if series is not None:
@@ -326,22 +341,29 @@ class ArtifactItem:
 
         return pd.DataFrame(combined)
 
-    def to_csv(self, node_id: str) -> None:
-        df = self.to_df(node_id)
-        df.to_csv(self.file_path, index=False)
+    def to_table(self, node_id: str, col_names: list[str] = None) -> Table:
+        df = self.to_df(node_id, col_names)
+        return Table.from_pandas(df)
 
-    def materialize(self, node_id: str, max_records: int = None) -> None:
-        print(f"Materializing artifact to {self.file_path} at node {node_id}")
-        df = self.to_df(node_id, max_records=max_records)
+    def materialize(self, node_id: str) -> None:
+        first_col = next(iter(self.columns.values()), None)
+
+        if (self.max_records is not None 
+            and self.max_records < first_col.latest_at(node_id, self.dag).shape[0]
+            ):
+            print(f" --> max_records={self.max_records} is less than the number of records in the first column.")
+            print(f"Increase max_records or set it to None to materialize all records for this node.")
+            
+
+        print(f"Materializing artifact to {self.file_path} at node {node_id}, max_records={self.max_records}...")
+        df = self.to_df(node_id)
 
         ext = Path(self.file_path).suffix.lower()
 
         if ext == ".csv":
             df.to_csv(self.file_path, index=False)
-
         elif ext == ".parquet":
             df.to_parquet(self.file_path, index=False)
-
         elif ext in {".fits", ".fit"}:
             table = Table.from_pandas(df)
             table.write(self.file_path, format="fits", overwrite=True)
@@ -351,7 +373,6 @@ class ArtifactItem:
 
     def _load_from_file(self) -> None:
         try:
-
             ext = Path(self.file_path).suffix.lower()
 
             if ext not in {".csv", ".parquet", ".fits", ".fit"}:
@@ -374,7 +395,6 @@ class ArtifactItem:
             raise e
 
     def load_from_table(self, table, columns):
-
         try:
 
             ext = Path(self.file_path).suffix.lower()
@@ -400,7 +420,6 @@ class ArtifactItem:
 
 
     def to_dict(self) -> dict:
-
         # get dir from file_path and ensure it exists
         if not self.file_path:
             raise ValueError("file_path is required to save column versions to disk")
@@ -448,10 +467,10 @@ class ArtifactItem:
             "node_id": self.node_id,
             "column_index_path":  str(column_index_path),
             "active_columns": self.active_columns,
+            "max_records": self.max_records,
         }
 
     def to_dict_csv(self) -> dict:
-
         # get dir from file_path and ensure it exists
         if not self.file_path:
             raise ValueError("file_path is required to save column versions to disk")
@@ -496,6 +515,7 @@ class ArtifactItem:
             node_id=d.get("node_id"),
             columns={},  # prevents _load_from_file()
             active_columns=d.get("active_columns"),
+            max_records=d.get("max_records"),
         )
 
         index_df = pd.read_parquet(d["column_index_path"])
@@ -533,216 +553,3 @@ class ArtifactItem:
 
         return "\n".join(lines)
 
-
-
-
-class Artifact:
-    """DAG artifact, the data that flows between nodes in the DAG."""
-
-    SUPPORTED_EXTENSIONS = {
-        ".csv": "csv",
-        ".fits": "fits",
-        ".fit": "fits",
-    }
-
-    def __init__(
-        self,
-        name: str,
-        file_path: str,
-        columns: dict[str, Any] | None = None,
-    ):
-        self.name = name
-        self.file_path = file_path
-        self.file_type = self._infer_file_type(file_path)
-
-        if columns is None:
-            self.columns = {}
-            self.set_columns()
-        else:
-            self.columns = columns
-
-    @classmethod
-    def _infer_file_type(cls, file_path: str) -> str:
-        file_ext = os.path.splitext(file_path)[1].lower()
-
-        if file_ext not in cls.SUPPORTED_EXTENSIONS:
-            raise ValueError(
-                f"Unsupported file type {file_ext}. Only csv and fits are supported."
-            )
-
-        return cls.SUPPORTED_EXTENSIONS[file_ext]
-
-    def set_columns(self) -> None:
-        """Read the artifact file and store column metadata + hashes."""
-        self.columns = {}
-
-        if not self.file_path or not os.path.exists(self.file_path):
-            return
-
-        try:
-            table = Table.read(self.file_path)
-            df = table.to_pandas()
-
-            column_hashes = []
-
-            for col in df.columns:
-                col_hash = self._hash_column(df[col])
-                column_hashes.append(col_hash)
-
-                self.columns[col] = {
-                    "type": str(df[col].dtype),
-                    "hash": col_hash,
-                }
-
-            self.columns["_file"] = {
-                "type": self.file_type,
-                "hash": self._hash_values(column_hashes),
-            }
-
-        except Exception as e:
-            print(f"Error reading file {self.file_path}: {e}")
-            self.columns = {}
-
-    @staticmethod
-    def _hash_column(column) -> int:
-        return int(hash_pandas_object(column, index=True).sum())
-
-    @staticmethod
-    def _hash_values(values: list[int]) -> int:
-        return hash(tuple(values))
-
-    def refresh(self) -> None:
-        """Re-read the file and update stored hashes."""
-        self.set_columns()
-
-    def to_dict(self) -> dict:
-        return {
-            "name": self.name,
-            "file_path": self.file_path,
-            "file_type": self.file_type,
-            "columns": self.columns,
-        }
-
-    @classmethod
-    def from_dict(cls, d: dict) -> "Artifact":
-        return cls(
-            name=d["name"],
-            file_path=d["file_path"],
-            columns=d.get("columns"),
-        )
-
-    def __eq__(self, other) -> bool:
-        if not isinstance(other, Artifact):
-            return False
-
-        return (
-            self.file_path == other.file_path
-            )
-
-    def __hash__(self) -> int:
-        return hash((self.file_path))
-    
-        # file_hash = None
-
-        # if self.columns:
-            # file_hash = self.columns.get("_file", {}).get("hash")
-
-        # return hash((self.name, self.file_path, file_hash))
-
-    @staticmethod
-    def snapshot(inputs: list["Artifact"], outputs: list["Artifact"]) -> dict:
-        return {
-            "inputs": {
-                artifact.name: artifact.to_dict()
-                for artifact in inputs
-            },
-            "outputs": {
-                artifact.name: artifact.to_dict()
-                for artifact in outputs
-            },
-        }
-
-    @staticmethod
-    def diff_snapshots(before: dict, after: dict) -> dict:
-        return {
-            "inputs": Artifact.diff_artifact_group(
-                before.get("inputs", {}),
-                after.get("inputs", {}),
-            ),
-            "outputs": Artifact.diff_artifact_group(
-                before.get("outputs", {}),
-                after.get("outputs", {}),
-            ),
-        }
-
-    @staticmethod
-    def diff_artifact_group(before_group: dict, after_group: dict) -> dict:
-        before_names = set(before_group)
-        after_names = set(after_group)
-
-        added_artifacts = after_names - before_names
-        removed_artifacts = before_names - after_names
-        common_artifacts = before_names & after_names
-
-        changed_artifacts = {}
-
-        for name in common_artifacts:
-            before_cols = before_group[name].get("columns", {})
-            after_cols = after_group[name].get("columns", {})
-
-            col_diff = Artifact.diff_columns(before_cols, after_cols)
-
-            if col_diff:
-                changed_artifacts[name] = col_diff
-
-        return Artifact.prune_empty({
-            "added_artifacts": added_artifacts,
-            "removed_artifacts": removed_artifacts,
-            "changed_artifacts": changed_artifacts,
-        })
-
-    @staticmethod
-    def diff_columns(before_cols: dict | None, after_cols: dict | None) -> dict:
-        before_cols = before_cols or {}
-        after_cols = after_cols or {}
-
-        before_names = set(before_cols)
-        after_names = set(after_cols)
-
-        added = after_names - before_names
-        removed = before_names - after_names
-        common = before_names & after_names
-
-        changed = {
-            col
-            for col in common
-            if before_cols[col] != after_cols[col]
-        }
-
-        return Artifact.prune_empty({
-            "added": added,
-            "removed": removed,
-            "changed": changed,
-        })
-
-    @staticmethod
-    def prune_empty(obj):
-        if isinstance(obj, dict):
-            cleaned = {
-                k: Artifact.prune_empty(v)
-                for k, v in obj.items()
-            }
-
-            return {
-                k: v
-                for k, v in cleaned.items()
-                if v not in ({}, [], set(), None)
-            }
-
-        if isinstance(obj, list):
-            return [Artifact.prune_empty(v) for v in obj]
-
-        if isinstance(obj, set):
-            return sorted(obj)
-
-        return obj

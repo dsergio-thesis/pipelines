@@ -20,17 +20,12 @@ def main():
     dag_dir = dag.dag_dir
 
     if option_create:
-
         if node_type == "script":
             dag_node = NodeScript()
         elif node_type == "import":
             dag_node = NodeImport(parameters={"max_records": max_records})
         elif node_type == "export":
             dag_node = NodeExport()
-        # elif node_type == "hst-catalog":
-            # dag_node  = HSTNodeCatalog(
-                # parameters={"max_records": max_records}, 
-                # dag_dir=dag_dir) 
         elif node_type == "eda":
             dag_node = NodeEDA()
         else: 
@@ -44,7 +39,7 @@ def main():
         dag.add_parameter(parameter)
 
     dag.to_yaml()
-
+    dag.to_graphviz()
 
 if __name__ == "__main__":
     main()

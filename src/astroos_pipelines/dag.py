@@ -530,47 +530,36 @@ class PipelineDAG(DAG):
     
     def get_head(self):
         """ Get the head node of the DAG"""
-        # print(f"Getting head node: {self.head}")
         return self.head
-
-    def print_head(self):
-        if self.head:
-            # print(f"Head node: {self.head.node_id}, type: {self.head.node_type}, parameters: {self.head.parameters}")
-            # print(f"Head node inputs: {[i.file_path for i in self.head.inputs]}")
-            # print(f"Head node outputs: {[o.file_path for o in self.head.outputs]}")
-            pass
-        else:
-            # print("No head node set.")
-            pass
 
     def add_input_artifact_item(self, file_path):
         print(f"Adding input artifact item with file path {file_path} to head node {self.head.node_id if self.head else None}")
         head = self.get_head()
-
         if (not head or head.node_type != "import"):
+            print(f"Current head node type: {head.node_type if head else None}")
             raise ValueError("Can only add artifact to head node of type 'import'")
+
+        # first copy file as-is to node dir
+        os.makedirs(head.node_dir, exist_ok=True)
+        with open(file_path, "rb") as src_file:
+            dest_path = os.path.join(head.node_dir, os.path.basename(file_path))
+            with open(dest_path, "wb") as dest_file:
+                dest_file.write(src_file.read())
+        
+        file_path = dest_path
+        parameters = head.parameters if head.parameters else {}
+        max_records = parameters.get("max_records", None)
+
         artifact_item = ArtifactItem(
             file_path=file_path,
             dag=self.artifact_dag,
+            max_records=max_records,
             node_id=head.node_id if head else None,
         )
         if head.inputs is None:
             head.inputs = []
         head.inputs.append(artifact_item)
         
-    def add_input_artifact(self, file_path):
-        # old Artifact way, keeping for reference
-
-        artifact = Artifact(
-            name=os.path.basename(file_path),
-            file_path=file_path,
-        )
-        # print(f"Head node: {self.get_head()}")
-        # print(f"existing inputs: {[i.file_path for i in self.head.inputs]}")
-        # print(f"Adding input artifact {artifact} to head node {self.head.node_id if self.head else None}")
-
-        self.get_head().inputs = [artifact]
-
     def add_parameter(self, parameter):
         print(f"Adding parameter {parameter} to head node {self.head.node_id if self.head else None}")
 
@@ -608,8 +597,8 @@ class PipelineDAG(DAG):
             file_path = os.path.join(self.dag_dir, "dag.yaml")
         with open(file_path, "w") as file:
 
-            for node in self.nodes.values():
-                node.diff = Artifact.prune_empty(node.diff)
+            # for node in self.nodes.values():
+                # node.diff = Artifact.prune_empty(node.diff)
 
             data = {
                 "head": self.head.node_id if self.head else None,
@@ -838,7 +827,7 @@ active_columns.update({
     def run(self):
         """ Import artifact. """
         if len(self.inputs) > 0:
-            artifact = self.inputs[0] # expects one input artifact
+            artifact = self.inputs.pop() # expects one input artifact
             
             print(f"Running NodeImport with artifact {artifact.file_path} and parameters {self.parameters}")
 
@@ -866,6 +855,7 @@ active_columns.update({
             artifact.dag = self.artifact_dag
             node_dir = os.path.join(self.dag_dir, self.node_id)
             artifact.file_path = os.path.join(node_dir, os.path.basename(artifact.file_path))
+            artifact.max_records = max_records
 
             print(f"Importing artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
 
@@ -1028,25 +1018,14 @@ class NodeEDA(Node):
         print(f"running EDA {self.inputs}")
 
         if len(self.inputs) == 0:
-            # print("No input artifact for EDA node.")
+            print("No input artifact for EDA node.")
             return
 
         artifact = self.inputs.pop()
-        print(f"Running EDA on artifact {artifact.file_path}")
 
-        ext = os.path.splitext(artifact.file_path)[1].lower()
-        if ext == ".fits":
-            table = Table.read(artifact.file_path, hdu=1, format="fits")
-        elif ext == ".csv":
-            table = Table.read(artifact.file_path, format="csv")
-        else:
-            raise ValueError(f"Unsupported file format {ext} for EDA node.")
+        table = artifact.to_table(self.node_id)
 
         columns = artifact.active_columns 
-
-        if self.parameters is not None and "max_records" in self.parameters:
-            max_records = self.parameters["max_records"]
-            table = table[:max_records]
 
         dataset_eda(table=table, 
                     columns=columns, 

@@ -11,7 +11,7 @@ install:
 	@zsh install.sh 
 
 clean:
-	rm -rf _pipelines/* log/* /tmp/pipelines_exports/ catalogs/collections/lsst-hst/hst/*.parquet
+	rm -rf _pipelines/* log/* /tmp/pipelines_exports/ 
 
 
 
