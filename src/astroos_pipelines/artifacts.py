@@ -254,20 +254,25 @@ class ArtifactCol:
 
 class ArtifactItem:
     def __init__(self, 
-                 file_path: str, 
-                 dag: ArtifactDAG = None, 
-                 node_id: str = None, 
-                 columns: dict[str, ArtifactCol] = None,
-                 active_columns: dict[str, dict] | None = None,
-                 load_from_file: bool = True,
-                 max_records: int = None,
-                 ):
+                file_path: str, 
+                dag: ArtifactDAG = None, 
+                node_id: str = None, 
+                columns: dict[str, ArtifactCol] = None,
+                active_columns: dict[str, dict] | None = None,
+                load_from_file: bool = True,
+                max_records: int = None,
+                columns_index_path: str = None,
+                active_columns_index_path: str = None,
+                ):
         self.file_path = file_path
         self.file_type = Path(file_path).suffix.lower()
         self.dag = dag 
         self.columns = columns or {}
         self.node_id = node_id
         self.max_records = max_records
+
+        self.columns_index_path = columns_index_path
+        self.active_columns_index_path = active_columns_index_path
 
         self.active_columns = active_columns 
 
@@ -431,6 +436,8 @@ class ArtifactItem:
         active_columns_index_path = Path(column_store_dir) / f"{Path(self.file_path).stem}__active_columns.parquet"
 
         columns_dict = {}
+        active_columns_dict = {}
+        active_columns_rows = []
         columns_rows = []
 
         for col_name, artifact_col in self.columns.items():
@@ -462,7 +469,10 @@ class ArtifactItem:
                 })
 
         for col_name, artifact_col in self.columns.items():
-            active_columns_dict[col_name] = metadata
+
+            if self.active_columns is not None and col_name not in self.active_columns:
+                continue
+            active_columns_dict[col_name] = col_name 
 
             for version in artifact_col.versions:
                 active_columns_rows.append({
@@ -484,43 +494,6 @@ class ArtifactItem:
             "max_records": self.max_records,
         }
 
-    def to_dict_csv(self) -> dict:
-        # get dir from file_path and ensure it exists
-        if not self.file_path:
-            raise ValueError("file_path is required to save column versions to disk")
-        column_store_dir = os.path.dirname(self.file_path)
-
-        store_dir = Path(column_store_dir)
-        store_dir.mkdir(parents=True, exist_ok=True)
-
-        columns_dict = {}
-
-        for col_name, artifact_col in self.columns.items():
-            columns_dict[col_name] = []
-
-            for version in artifact_col.versions:
-                safe_col = str(col_name).replace("/", "_")
-                safe_node = str(version.node_id).replace("/", "_")
-
-                version_file = store_dir / f"{Path(self.file_path).stem}__{safe_col}__{safe_node}.csv"
-
-                if version.data is not None:
-                    pd.DataFrame({col_name: version.data}).to_csv(version_file, index=False)
-
-                columns_dict[col_name].append(
-                    {
-                        "node_id": version.node_id,
-                        "hash": version.hash,
-                        "file_path": str(version_file),
-                    }
-                )
-
-        return {
-            "file_path": self.file_path,
-            "node_id": self.node_id,
-            "columns": columns_dict,
-        }
-
     @classmethod
     def from_dict(cls, d: dict, dag: ArtifactDAG = None) -> "ArtifactItem":
         item = cls(
@@ -528,12 +501,19 @@ class ArtifactItem:
             dag=dag,
             node_id=d.get("node_id"),
             columns={},  # prevents _load_from_file()
-            active_columns=d.get("active_columns"),
+            columns_index_path=d.get("column_index_path"),
+            # active_columns=d.get("active_columns"),
+            active_columns={},
             active_columns_index_path=d.get("active_columns_index_path"),
             max_records=d.get("max_records"),
         )
 
         index_df = pd.read_parquet(d["column_index_path"])
+        active_columns_index_df = pd.read_parquet(d["active_columns_index_path"])
+
+        for _, row in active_columns_index_df.iterrows():
+            col_name = row["column"]
+            item.active_columns[col_name] = {}
 
         for _, row in index_df.iterrows():
             col_name = row["column"]

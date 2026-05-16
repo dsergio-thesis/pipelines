@@ -46,6 +46,7 @@ class AstroosConfig:
             pipeline_name: str = None,
             option_create: bool = False,
             node_type: str = "generic", # NodeGeneric default
+            node_label: str = None,
             input_artifact: str = None,
             parameter: (str, str) = None,
             sky_region_target_selected: str = None,
@@ -59,6 +60,7 @@ class AstroosConfig:
         self.pipeline_name = pipeline_name
         self.option_create = option_create
         self.node_type = node_type
+        self.node_label = node_label
         self.input_artifact = input_artifact
         self.parameter = parameter
 
@@ -114,6 +116,7 @@ class AstroosConfig:
             input_artifact=args.input_artifact,
             parameter=tuple(args.parameter) if args.parameter else None,
             node_type=args.node_type,
+            node_label=args.node_label,
             sky_regions_csv=base.sky_regions_csv,
             sky_region_target_selected=args.target,
             max_records=args.max_records if args.max_records is not None else base.max_records,
@@ -143,6 +146,7 @@ class AstroosConfig:
         p.add_argument("-c", "--create", action="store_true", help="Create new  node")
         p.add_argument("-i", "--input-artifact", type=str, help="Path to input artifact")
         p.add_argument("-t", "--node-type", type=str, default="generic", help="Node type for new node")
+        p.add_argument("-l", "--node-label", type=str, help="Label for new node (defaults to node type)")
         p.add_argument("--target", type=str, help="Target key to override coordinates")
         p.add_argument("-p", "--parameter", nargs=2, metavar=("KEY", "VALUE"), help="Additional parameter as key value pair")
         return p
@@ -157,6 +161,7 @@ class AstroosConfig:
             ("max_records", "-m / --max-records", "MAX_RECORDS", self.max_records),
             ("option_create", "-c / --create", "", self.option_create),
             ("node_type", "-t / --node-type", "", self.node_type),
+            ("node_label", "-l / --node-label", "", self.node_label),
             ("input_artifact", "-i / --input-artifact", "", self.input_artifact),
             ("parameter", "-p / --parameter", "", self.parameter),
             ("sky_regions_csv", "", "SKY_REGION_LABELS", self.sky_regions_csv),

@@ -92,7 +92,7 @@ class Node(ABC):
                  ):
         self.dag_dir = dag_dir
         self.node_type = node_type
-        self.label = label or node_type
+        self.label = label
         self.description = description or "Default node description."
         self.parents = parents
         self.children = []
@@ -100,7 +100,6 @@ class Node(ABC):
         self.inputs = []
         self.outputs = []
         self.visited = False
-        self.diff = {}
         self.artifact_dag = None 
         self.origin = origin
         self.num_inputs = num_inputs
@@ -142,22 +141,22 @@ class Node(ABC):
             "node_id": self.node_id,
             "parents": [p for p in self.parents],
             "node_type": self.node_type,
+            "label": self.label,
             "dag_dir": self.dag_dir,
             "node_dir": self.node_dir,
             "parameters": self.parameters,
             "inputs": [i.to_dict() for i in self.inputs],
             "outputs": [i.to_dict() for i in self.outputs],
-            "diff": self.diff,
         }
     @classmethod
     def from_dict(cls, d):
         # print("Getting node from dict")
         # print(f"Node dict: {d}")
         node_type = d["type"]
+        label = d["label"]
         node_id=d["node_id"]
         node_dir=d["node_dir"]
         dag_dir=d["dag_dir"]
-        diff=d.get("diff", {})
         parameters=d.get("parameters", {})
 
         if d.get("inputs") is not None and len(d.get("inputs")) > 0:
@@ -185,51 +184,52 @@ class Node(ABC):
         ret.outputs = outputs if 'outputs' in locals() else []
         ret.parents = parent_ids if 'parent_ids' in locals() else []
         ret.node_id = node_id
+        ret.label = label
         ret.node_dir = node_dir
         ret.dag_dir = dag_dir
         ret.parameters = parameters
-        ret.diff = diff
+        # ret.diff = diff
         # print(f"Created node from dict: {ret}")
         return ret
 
 
-    def output_fits_table(self, table: Table, columns=None):
+    # def output_fits_table(self, table: Table, columns=None):
 
-        file_path = os.path.join(
-                self.node_dir, 
-                f"{self.node_type}.fits")
+        # file_path = os.path.join(
+                # self.node_dir, 
+                # f"{self.node_type}.fits")
 
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        table.write(file_path, format="fits", overwrite=True)
+        # os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        # table.write(file_path, format="fits", overwrite=True)
 
-        artifact = Artifact(
-            name=self.node_type,
-            file_path=file_path,
-            columns=columns,
-        )
+        # artifact = Artifact(
+            # name=self.node_type,
+            # file_path=file_path,
+            # columns=columns,
+        # )
 
-        self.outputs = [artifact]
+        # self.outputs = [artifact]
     
-    def output_csv_table(self, table: Table, columns=None):
+    # def output_csv_table(self, table: Table, columns=None):
 
-        # generate a unique random id for the file name
-        file_id = hashlib.sha256(os.urandom(16)).hexdigest()[:8]
-        file_path = os.path.join(
-                self.node_dir,
-                f"{self.node_type}.csv")
+        # # generate a unique random id for the file name
+        # file_id = hashlib.sha256(os.urandom(16)).hexdigest()[:8]
+        # file_path = os.path.join(
+                # self.node_dir,
+                # f"{self.node_type}.csv")
         
-        # print(f"output_csv_table. dag_dir: {self.dag_dir}, node_dir: {self.node_dir}, file_path: {file_path}")
+        # # print(f"output_csv_table. dag_dir: {self.dag_dir}, node_dir: {self.node_dir}, file_path: {file_path}")
 
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        table.write(file_path, format="csv", overwrite=True)
+        # os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        # table.write(file_path, format="csv", overwrite=True)
 
-        artifact = Artifact(
-            name=self.node_type,
-            file_path=file_path,
-            columns=columns if columns else None,
-        )
+        # artifact = Artifact(
+            # name=self.node_type,
+            # file_path=file_path,
+            # columns=columns if columns else None,
+        # )
 
-        self.outputs = [artifact]
+        # self.outputs = [artifact]
 
 
     def __repr__(self):
@@ -753,6 +753,7 @@ class NodeImport(Node):
     def __init__(self,
                  dag_dir=None,
                  node_type="import",
+                 label="Import Data",
                  node_id=None,
                  parents=[],
                  parameters: dict[str, Any] | None = None,
@@ -762,6 +763,7 @@ class NodeImport(Node):
                  ):
         super().__init__(
             node_type=node_type,
+            label=label,
             dag_dir=dag_dir,
             node_id=node_id,
             parents=parents,
@@ -818,6 +820,7 @@ active_columns.update({
         return cls(
             node_id=d["node_id"],
             dag_dir = d["dag_dir"],
+            label=d["label"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
             inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
@@ -873,6 +876,7 @@ class NodeExport(Node):
     def __init__(self,
                  dag_dir=None,
                  node_type="export",
+                 label="Export Data",
                  node_id=None,
                  parents=[],
                  parameters: dict[str, Any] | None = None,
@@ -880,6 +884,7 @@ class NodeExport(Node):
                  outputs=[]):
         super().__init__(
             node_type=node_type,
+            label=label,
             dag_dir=dag_dir,
             node_id=node_id,
             parents=parents,
@@ -931,6 +936,7 @@ class NodeGeneric(Node):
     def __init__(self,
                  dag_dir=None,
                  node_type="generic",
+                 label="Generic Node",
                  node_id=None,
                  parents=[],
                  parameters: dict[str, Any] | None = None,
@@ -938,6 +944,7 @@ class NodeGeneric(Node):
                  outputs=[]):
         super().__init__(
             node_type=node_type,
+            label=label,
             dag_dir=dag_dir,
             node_id=node_id,
             parents=parents,
@@ -966,7 +973,7 @@ class NodeGeneric(Node):
     def run(self):
         """ Pass through inputs to outputs for testing the pipeline. """
         if len(self.inputs) > 0:
-            artifact = self.inputs[0] # expects one input artifact
+            artifact = self.inputs.pop()
             data = Table.read(artifact.file_path)
             
             df = data.to_pandas()
@@ -980,6 +987,7 @@ class NodeEDA(Node):
             self,
             dag_dir=None,
             node_type="eda",
+            label="Exploratory Data Analysis",
             node_id=None,
             parents=[],
             parameters=None,
@@ -988,7 +996,7 @@ class NodeEDA(Node):
         super().__init__(
             node_type=node_type,
             dag_dir=dag_dir,
-            label="EDA",
+            label=label,
             description="Exploratory Data Analysis",
             node_id=node_id,
             parents=parents,
@@ -1018,14 +1026,25 @@ class NodeEDA(Node):
         print(f"running EDA {self.inputs}")
 
         if len(self.inputs) == 0:
-            print("No input artifact for EDA node.")
+            # print("No input artifact for EDA node.")
             return
 
         artifact = self.inputs.pop()
+        print(f"Running EDA on artifact {artifact.file_path}")
 
-        table = artifact.to_table(self.node_id)
+        ext = os.path.splitext(artifact.file_path)[1].lower()
+        if ext == ".fits":
+            table = Table.read(artifact.file_path, hdu=1, format="fits")
+        elif ext == ".csv":
+            table = Table.read(artifact.file_path, format="csv")
+        else:
+            raise ValueError(f"Unsupported file format {ext} for EDA node.")
 
         columns = artifact.active_columns 
+
+        if self.parameters is not None and "max_records" in self.parameters:
+            max_records = self.parameters["max_records"]
+            table = table[:max_records]
 
         dataset_eda(table=table, 
                     columns=columns, 
@@ -1037,238 +1056,6 @@ class NodeEDA(Node):
         # self.output_fits_table(table, columns=columns) # pass through the table to the next node
 
 
-class NodeCatalogRandom(Node):
-    """
-    Generate random data for testing the pipeline.
-    """
-
-    def __init__(self,
-                 node_type="catalog_random",
-                 node_id=None,
-                 parents=[],
-                 parameters={},
-                 inputs=[],
-                 outputs=[]):
-        super().__init__(
-            node_type=node_type,
-            node_id=node_id,
-            parents=parents,
-            parameters=parameters,
-            inputs=inputs,
-            outputs=outputs,
-        )
-
-    def to_dict(self):
-        d = super().to_dict()
-        d["type"] = "NodeCatalogRandom"
-        return d
-
-    @classmethod
-    def _from_dict(cls, d):
-        return cls(
-            node_id=d["node_id"],
-            parents=d.get("parents", []),
-            parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
-        )
-
-    def run(self):
-
-        n = self.parameters.get("n", 10)
-        max_value = self.parameters.get("max_value", 10)
-
-        np.random.seed(0)
-        data = Table({
-            "objectId": np.arange(n),
-            "feature1": np.random.rand(n) * max_value,
-            "feature2": np.random.rand(n) * max_value,
-            "label": np.random.randint(0, 2, n),
-        })
-
-        self.output_csv_table(data)
-        # print(f"Generated random data with {len(data)} rows.")
-
-
-class NodeTransformRandom(Node):
-    """
-    Apply random transformations to the data for testing the pipeline.
-    """
-
-    def __init__(self,
-                 node_type="transform_random",
-                 node_id=None,
-                 parents=[],
-                 parameters={},
-                 inputs=[],
-                 outputs=[]):
-        super().__init__(
-            node_type=node_type,
-            node_id=node_id,
-            parents=parents,
-            parameters=parameters,
-            inputs=inputs,
-            outputs=outputs,
-        )
-    
-    def to_dict(self):
-        d = super().to_dict()
-        d["type"] = "NodeTransformRandom"
-        return d
-    
-    @classmethod
-    def _from_dict(cls, d):
-        return cls(
-            node_id=d["node_id"],
-            parents=d.get("parents", []),
-            parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
-        )
-
-    def run(self):
-
-        if len(self.inputs) > 0:
-            artifact = self.inputs[0] # expects one input artifact
-            data = Table.read(artifact.file_path)
-
-            columns = artifact.columns if artifact.columns else data.colnames
-            for col in columns:
-                if col in data.colnames and np.issubdtype(data[col].dtype, np.number):
-                    data[col] = data[col] * self.parameters.get("multiplier", 2)
-
-            self.output_csv_table(data, columns=columns)
-            # print(f"Transformed data with multiplier {self.parameters.get('multiplier', 2)}.")
-
-
-class NodeMergeRandom(Node):
-    """
-    Merge for testing the pipeline.
-    """
-
-    def __init__(self,
-                 node_type="merge_random",
-                 node_id=None,
-                 parents=[],
-                 parameters={},
-                 inputs=[],
-                 outputs=[]):
-        super().__init__(
-            node_type=node_type,
-            node_id=node_id,
-            parents=parents,
-            parameters=parameters,
-            inputs=inputs,
-            outputs=outputs,
-        )
-    
-    def to_dict(self):
-        d = super().to_dict()
-        d["type"] = "NodeMergeRandom"
-        return d
-    
-    @classmethod
-    def _from_dict(cls, d):
-        return cls(
-            node_id=d["node_id"],
-            parents=d.get("parents", []),
-            parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
-        )
-
-    def run(self):
-
-        # expects two input artifacts
-        if len(self.inputs) < 2:
-            raise ValueError(f"NodeMergeRandom expects at least two input artifacts, got {len(self.inputs)}")
-        artifact1 = self.inputs[0]
-        artifact2 = self.inputs[1]
-        data1 = Table.read(artifact1.file_path)
-        data2 = Table.read(artifact2.file_path)
-
-        columns1 = artifact1.columns if artifact1.columns else data1.colnames
-        columns2 = artifact2.columns if artifact2.columns else data2.colnames
-
-        merged = data1[columns1].copy()
-        for col in columns2:
-            if col in merged.colnames:
-                merged[col + "_2"] = data2[col]
-            else:
-                merged[col] = data2[col]
-
-        self.output_csv_table(merged)
-        # print(f"Merged data with {len(merged)} rows and {len(merged.colnames)} columns.")
-
-
-class NodeBadToNaN(Node):
-    """
-    A node that introduces NaN values for testing the pipeline's handling of missing data.
-    """
-
-    def __init__(self,
-                 dag_dir,
-                 node_type="bad_to_nan",
-                 node_id=None,
-                 parents=[],
-                 parameters={},
-                 inputs=[],
-                 outputs=[]):
-        super().__init__(
-            node_type=node_type,
-            dag_dir=dag_dir,
-            node_id=node_id,
-            parents=parents,
-            parameters=parameters,
-            inputs=inputs,
-            outputs=outputs,
-        )
-        if self.parameters is None:
-            self.parameters = {
-                "bad_map": {
-                    "Av": [-1],
-                    "z_best": [-99],
-                }
-            }
-
-    
-    def to_dict(self):
-        d = super().to_dict()
-        d["type"] = "NodeBadToNaN"
-        return d
-    
-    @classmethod
-    def _from_dict(cls, d):
-        return cls(
-            node_id=d["node_id"],
-            dag_dir=d["dag_dir"],
-            parents=d.get("parents", []),
-            parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
-        )
-
-    def run(self):
-
-        if len(self.inputs) > 0:
-            artifact = self.inputs[0] # expects one input artifact
-            columns = artifact.columns if artifact.columns else None
-            data = Table.read(artifact.file_path)
-            df = data.to_pandas()
-            # print(df)
-
-            bad_map = self.parameters.get("bad_map", {})
-
-            for col, bad_vals in bad_map.items():
-                if col in df.columns:
-                    df[col] = df[col].replace(bad_vals, np.nan) # replace bad values with nan
-            
-            # print(df)
-            data = Table.from_pandas(df)
-            # print(f"Replaced bad values with NaN in columns {list(bad_map.keys())}.")
-            self.output_csv_table(data, columns=columns)
-
-
 class NodeScript(Node):
     """
     A node that runs a user-provided script for testing the pipeline's ability to run arbitrary code.
@@ -1278,6 +1065,7 @@ class NodeScript(Node):
     def __init__(self,
                  dag_dir=None,
                  node_type="script",
+                 label="Script Node",
                  node_id=None,
                  parents=[],
                  parameters={"script": None},
@@ -1285,6 +1073,7 @@ class NodeScript(Node):
                  outputs=[]):
         super().__init__(
             node_type=node_type,
+            label=label,
             dag_dir=dag_dir,
             node_id=node_id,
             parents=parents,

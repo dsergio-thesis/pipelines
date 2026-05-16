@@ -9,7 +9,10 @@ def main():
     parameter = config.parameter
     option_create = config.option_create
     node_type = config.node_type
+    node_label = config.node_label
     max_records = config.max_records
+
+    print(f"Label: {node_label}")
     
     dag = PipelineDAG(label=pipeline_name)
     if not dag.is_initialized():
@@ -21,15 +24,15 @@ def main():
 
     if option_create:
         if node_type == "script":
-            dag_node = NodeScript()
+            dag_node = NodeScript(label=node_label)
         elif node_type == "import":
-            dag_node = NodeImport(parameters={"max_records": max_records})
+            dag_node = NodeImport(label=node_label, parameters={"max_records": max_records})
         elif node_type == "export":
-            dag_node = NodeExport()
+            dag_node = NodeExport(label=node_label)
         elif node_type == "eda":
-            dag_node = NodeEDA()
+            dag_node = NodeEDA(label=node_label)
         else: 
-            dag_node = NodeGeneric()
+            dag_node = NodeGeneric(label=node_label)
 
         dag.add_node(dag_node)
 
