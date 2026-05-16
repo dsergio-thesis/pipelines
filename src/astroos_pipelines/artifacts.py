@@ -428,6 +428,7 @@ class ArtifactItem:
         store_dir.mkdir(parents=True, exist_ok=True)
 
         column_index_path = Path(column_store_dir) / f"{Path(self.file_path).stem}__column_index.parquet"
+        active_columns_index_path = Path(column_store_dir) / f"{Path(self.file_path).stem}__active_columns.parquet"
 
         columns_dict = {}
         columns_rows = []
@@ -459,14 +460,27 @@ class ArtifactItem:
                     "hash": version.hash,
                     "data_path": str(version_file),
                 })
-        
+
+        for col_name, artifact_col in self.columns.items():
+            active_columns_dict[col_name] = metadata
+
+            for version in artifact_col.versions:
+                active_columns_rows.append({
+                    "column": col_name,
+                    "node_id": version.node_id,
+                    "hash": version.hash,
+                    "data_path": str(version_file),
+                })
+
+        pd.DataFrame(active_columns_rows).to_parquet(active_columns_index_path, index=False)
         pd.DataFrame(columns_rows).to_parquet(column_index_path, index=False)
 
         return {
             "file_path": self.file_path,
             "node_id": self.node_id,
             "column_index_path":  str(column_index_path),
-            "active_columns": self.active_columns,
+            # "active_columns": self.active_columns,
+            "active_columns_index_path": str(active_columns_index_path),
             "max_records": self.max_records,
         }
 
@@ -515,6 +529,7 @@ class ArtifactItem:
             node_id=d.get("node_id"),
             columns={},  # prevents _load_from_file()
             active_columns=d.get("active_columns"),
+            active_columns_index_path=d.get("active_columns_index_path"),
             max_records=d.get("max_records"),
         )
 
