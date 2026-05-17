@@ -2,17 +2,28 @@
 make clean
 rad init
 
-rad node -c -l "HST data processing pipeline"
+rad node -c -l "Exploratory analysis pipeline on the 3D-HST catalog"
 
-rad node -ct import -l "Import HST data from FITS file"
+rad node -ct import -l "Import catalog"
 rad node -i catalogs/collections/lsst-hst/hst/hst.fits
-rad node -p max_records 1000
+rad node -p max_records 300000
 rad node -p script catalogs/collections/lsst-hst/hst/scripts/import.py
 
-rad node -ct script -l "Clean HST data"
+#rad run
+
+rad node -ct script -l "Clean catalog"
 rad node -p script catalogs/collections/lsst-hst/hst/scripts/clean.py
 
-rad node -ct export -l "Export HST data to FITS file"
-#rad node -ct eda
+rad node -ct script -l "Select catalog"
+rad node -p script catalogs/collections/lsst-hst/hst/scripts/select.py
+
+rad node -ct export -l "Export processed catalog"
+
+rad node -ct eda -l "Analyze catalog distributions"
+rad node -p title "Exploratory analysis of the 3D-HST catalog"
 
 rad run
+
+cp "_pipelines/$(rad id)/dag.svg" ~/thesis-org/reports/paper/report/figures/dag_hst_eda/
+cp "_pipelines/$(rad id)/dag.yaml" ~/thesis-org/reports/paper/report/code/dag_hst_eda/
+

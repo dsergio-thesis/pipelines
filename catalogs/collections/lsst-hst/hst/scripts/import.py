@@ -1,5 +1,4 @@
-
-print(f"*** Running in NodeImport...")
+print("*** 3D-HST Catalog Import ***")
 
 active_columns.update({  
     'ra': "Right Ascension",

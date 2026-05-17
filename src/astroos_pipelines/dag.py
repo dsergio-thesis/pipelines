@@ -92,7 +92,7 @@ class Node(ABC):
                  ):
         self.dag_dir = dag_dir
         self.node_type = node_type
-        self.label = label
+        self.label = label or node_type
         self.description = description or "Default node description."
         self.parents = parents
         self.children = []
@@ -116,10 +116,10 @@ class Node(ABC):
                 artifact_hashes=[a.output_path for a in self.inputs + self.outputs],
             )
 
-        print(f"setting dag_dir in constructor")
+        # # print(f"setting dag_dir in constructor")
         self.set_dag_dir(dag_dir)
 
-        # print(f"Creating {self.node_id} with parents {parents}")
+        # # print(f"Creating {self.node_id} with parents {parents}")
 
     def node_configure(self):
         """Configure the node before running. This can be used to set default parameters or perform setup tasks."""
@@ -130,7 +130,8 @@ class Node(ABC):
         if dag_dir is not None:
             self.node_dir = os.path.join(dag_dir, self.node_id)
         else:
-            print(f"dag_dir is None. Cannot set self.node_dir for {self.node_id}")
+            # print(f"dag_dir is None. Cannot set self.node_dir for {self.node_id}")
+            pass
 
     @abstractmethod
     def run(self):
@@ -142,6 +143,7 @@ class Node(ABC):
             "parents": [p for p in self.parents],
             "node_type": self.node_type,
             "label": self.label,
+            "description": self.description,
             "dag_dir": self.dag_dir,
             "node_dir": self.node_dir,
             "parameters": self.parameters,
@@ -150,22 +152,21 @@ class Node(ABC):
         }
     @classmethod
     def from_dict(cls, d):
-        # print("Getting node from dict")
-        # print(f"Node dict: {d}")
+        # # print("Getting node from dict")
+        # # print(f"Node dict: {d}")
         node_type = d["type"]
         label = d["label"]
+        description = d.get("description", "")
         node_id=d["node_id"]
         node_dir=d["node_dir"]
         dag_dir=d["dag_dir"]
         parameters=d.get("parameters", {})
 
         if d.get("inputs") is not None and len(d.get("inputs")) > 0:
-            # print(f"inputs: {len(d.get('inputs'))}")
-            # inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])]
+            # # print(f"inputs: {len(d.get('inputs'))}")
             inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])]
         if d.get("outputs") is not None and len(d.get("outputs")) > 0:
-            # print(f"outputs: {len(d.get('outputs'))}")
-            # outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])]
+            # # print(f"outputs: {len(d.get('outputs'))}")
             outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])]
 
         parent_ids=d.get("parents", [])
@@ -178,59 +179,19 @@ class Node(ABC):
 
         # subclass = cls.registry[node_type]
         subclass = Node.registry[node_type]
-        # print(f"Found subclass {subclass} d: {d}")
+        # # print(f"Found subclass {subclass} d: {d}")
         ret = subclass._from_dict(d)
         ret.inputs = inputs if 'inputs' in locals() else []
         ret.outputs = outputs if 'outputs' in locals() else []
         ret.parents = parent_ids if 'parent_ids' in locals() else []
         ret.node_id = node_id
         ret.label = label
+        ret.description = description
         ret.node_dir = node_dir
         ret.dag_dir = dag_dir
         ret.parameters = parameters
-        # ret.diff = diff
-        # print(f"Created node from dict: {ret}")
+        # # print(f"Created node from dict: {ret}")
         return ret
-
-
-    # def output_fits_table(self, table: Table, columns=None):
-
-        # file_path = os.path.join(
-                # self.node_dir, 
-                # f"{self.node_type}.fits")
-
-        # os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        # table.write(file_path, format="fits", overwrite=True)
-
-        # artifact = Artifact(
-            # name=self.node_type,
-            # file_path=file_path,
-            # columns=columns,
-        # )
-
-        # self.outputs = [artifact]
-    
-    # def output_csv_table(self, table: Table, columns=None):
-
-        # # generate a unique random id for the file name
-        # file_id = hashlib.sha256(os.urandom(16)).hexdigest()[:8]
-        # file_path = os.path.join(
-                # self.node_dir,
-                # f"{self.node_type}.csv")
-        
-        # # print(f"output_csv_table. dag_dir: {self.dag_dir}, node_dir: {self.node_dir}, file_path: {file_path}")
-
-        # os.makedirs(os.path.dirname(file_path), exist_ok=True)
-        # table.write(file_path, format="csv", overwrite=True)
-
-        # artifact = Artifact(
-            # name=self.node_type,
-            # file_path=file_path,
-            # columns=columns if columns else None,
-        # )
-
-        # self.outputs = [artifact]
-
 
     def __repr__(self):
         rows = [("node_id", self.node_id), 
@@ -249,10 +210,11 @@ class Node(ABC):
     def to_yaml_string(self):
         return yaml.safe_dump(to_plain_data(self.to_dict()), sort_keys=False)
 
-    def yaml_to_html_label(self, yaml_text: str, width_chars: int = 80, width_px: int = 320) -> str:
+    def yaml_to_html_label(self, yaml_text: str, width_chars: int = 80, width_px: int = 400) -> str:
         html_lines = []
 
         for line in yaml_text.splitlines():
+            line = line.rstrip()
             indent_len = len(line) - len(line.lstrip(" "))
             indent = "&nbsp;" * indent_len
             content = line[indent_len:]
@@ -263,6 +225,7 @@ class Node(ABC):
                 break_long_words=True,
                 break_on_hyphens=False,
             )
+            # # print(f"Wrapping line: '{content}' with indent {indent_len} and width {width_chars} -> wrapped: {wrapped}")
 
             if not wrapped:
                 html_lines.append(indent)
@@ -271,42 +234,48 @@ class Node(ABC):
 
                 # continuation lines preserve same indentation
                 for extra in wrapped[1:]:
-                    html_lines.append(indent + html.escape(extra))
-        return "<br align='left'/>".join(html_lines)
+                    html_lines.append(html.escape(extra))
+
+        return "<br align='left'/>".join(html_lines) + "<br align='left'/>"
     
     def node_label(self):
-        yaml_html = self.yaml_to_html_label(self.to_yaml_string())
+        yaml_html = self.yaml_to_html_label(self.to_yaml_string(), width_chars=60)
+        desc_html = self.yaml_to_html_label(self.description, width_chars=60)
 
-        # wrap description to fit within the node width
-        # desc_wrapped = textwrap.fill(self.description, width=40)
-        
-        # then convert to <br align='left'/> for html label
-        desc_html = self.yaml_to_html_label(self.description, width_chars=40)
-        
+        # # print(f"desc_html: {desc_html}")
 
         return f"""
-<table border="0" cellborder="0" cellspacing="0">
+<table border="0" cellborder="1" cellspacing="0" cellpadding="10" color="#CBD5E1">
 <tr>
-<td>
-<font point-size="18"><b><u>{self.label}</u></b></font>
+<td bgcolor="#F8FAFC" align="center">
+<font face="Helvetica" point-size="18" color="#0F172A"><b>{self.label}</b></font>
+<br/>
+<font face="Helvetica" point-size="10" color="#64748B">#{self.node_id}</font>
 </td>
 </tr>
+
 <tr>
-<td>
-<font>#{self.node_id}</font>
+<td bgcolor="#FFFFFF" align="left">
+<font face="Helvetica" point-size="11" color="#334155"><br align="left"/>{desc_html}</font>
 </td>
 </tr>
-<tr><td align="left">
-<br align="left"/>{desc_html}
+
+<tr>
+<td bgcolor="#F1F5F9" align="left"><br align="left"/>
+    <font face="Courier" point-size="8" color="#475569">
 <br align="left"/>
-<br align="left"/><font point-size="8">{yaml_html}</font>
-<br align="left"/>
-<br align="left"/>
-<br align="left"/> • {len(self.inputs)} inputs ⇾ {len(self.outputs)} outputs
-</td></tr>
+{yaml_html}
+    </font>
+</td>
+</tr>
+
+<tr>
+<td bgcolor="#E0F2FE" align="center">
+<font face="Helvetica" point-size="10" color="#075985">{len(self.inputs)} inputs &#8594; {len(self.outputs)} outputs</font>
+</td>
+</tr>
 </table>
-"""
-        
+"""        
 
 class DAG(ABC):
     @abstractmethod
@@ -450,7 +419,7 @@ class PipelineDAG(DAG):
                 if data["head"] is not None:
                     self.head = self.nodes[data["head"]]
         else:
-            print("No pipelines found, initializing new PipelineDAG...")
+            # print("No pipelines found, initializing new PipelineDAG...")
             self.artifact_dag = ArtifactDAG()
 
         dags_index = os.path.join("_pipelines", "dags_index.yaml")
@@ -481,7 +450,7 @@ class PipelineDAG(DAG):
         node.node_configure()
 
         node_id = node.node_id
-        print(f"Adding node {node_id}")
+        # print(f"Adding node {node_id}")
         node.artifact_dag = self.artifact_dag
        
         head = self.head
@@ -518,11 +487,11 @@ class PipelineDAG(DAG):
             head.inputs.append(artifact_item)
 
         print(f"Adding node {node_id} of type {node.node_type} with parents {[p for p in node.parents]}")
-        print(repr(node))
+        # print(repr(node))
 
         # make dir for the node
         os.makedirs(node.node_dir, exist_ok=True)
-        print(f"Node {node_id} directory created at: ", node.node_dir)
+        # print(f"Node {node_id} directory created at: ", node.node_dir)
 
         self.nodes[node_id] = node
         self.head = node
@@ -533,10 +502,10 @@ class PipelineDAG(DAG):
         return self.head
 
     def add_input_artifact_item(self, file_path):
-        print(f"Adding input artifact item with file path {file_path} to head node {self.head.node_id if self.head else None}")
+        # print(f"Adding input artifact item with file path {file_path} to head node {self.head.node_id if self.head else None}")
         head = self.get_head()
         if (not head or head.node_type != "import"):
-            print(f"Current head node type: {head.node_type if head else None}")
+            # print(f"Current head node type: {head.node_type if head else None}")
             raise ValueError("Can only add artifact to head node of type 'import'")
 
         # first copy file as-is to node dir
@@ -561,9 +530,9 @@ class PipelineDAG(DAG):
         head.inputs.append(artifact_item)
         
     def add_parameter(self, parameter):
-        print(f"Adding parameter {parameter} to head node {self.head.node_id if self.head else None}")
+        # print(f"Adding parameter {parameter} to head node {self.head.node_id if self.head else None}")
 
-        print(f"{len(parameter)} type: {type(parameter)}, existing parameters: {self.get_head().parameters if self.head else None}")
+        # print(f"{len(parameter)} type: {type(parameter)}, existing parameters: {self.get_head().parameters if self.head else None}")
 
         value = parameter[1]
         # if numeric string like "10" or "3.14", convert to int or float
@@ -591,7 +560,7 @@ class PipelineDAG(DAG):
 
     def to_yaml(self, file_path=None):
 
-        print(f"Saving DAG to yaml. artifact_dag: {self.artifact_dag}")
+        # print(f"Saving DAG to yaml. artifact_dag: {self.artifact_dag}")
 
         if file_path is None:
             file_path = os.path.join(self.dag_dir, "dag.yaml")
@@ -616,42 +585,60 @@ class PipelineDAG(DAG):
     
 
     def to_graphviz(self, view=False):
-        # dot = Digraph(comment=self.label)
         dot = Digraph()
-        # set title with extra padding around it
-        # dot.attr(label=f"{self.label}\n ", labelloc="t", fontsize="20")
 
-        dot.attr(rankdir="TB")  # left to right (LR) or top to bottom (TB)
+        dot.attr(
+            # rankdir="TB",
+            rankdir="LR",
+            bgcolor="transparent",
+            pad="0.15",
+            nodesep="0.7",
+            ranksep="1.0",
+            splines="polyline",
+        )
 
-        dot.attr("node", 
-                 shape="box", 
-                 style="filled,rounded", 
-                 fillcolor="#D6A095",
-                 fontcolor="#2E2E2E",
-                 color="#8F3F2B",
-                 penwidth="2",
-                 bgcolor="transparent",
-                 width="6",
-                 )
-        dot.graph_attr.update(bgcolor="transparent")
+        dot.attr(
+            "node",
+            shape="plain",
+            fontname="Helvetica",
+            margin="0.12",
+            width="3.2",
+            height="1.2",
+            fixedsize="false",
+        )
+
         dot.attr(
             "edge",
-            penwidth="2.5",
-            arrowsize="1.2",
-            color="#64748b"
+            color="#64748B",
+            penwidth="3.0",
+            arrowsize="1.3",
+            arrowhead="normal",
         )
 
         for node_id, node in self.nodes.items():
-            # label = f"{node.node_type}\n{node_id[:8]}"
-            label = node.node_label() 
-            dot.node(node_id, f"<{label}>")
+            dot.node(node_id, f"<{node.node_label()}>")
 
         for node_id, node in self.nodes.items():
             for parent_id in node.parents:
-                dot.edge(parent_id, node_id)
+                spacer = f"{parent_id}_{node_id}_spacer"
+                dot.node(spacer, label="", shape="point", width="0.01", height="0.01", style="invis")
+                dot.edge(
+                    parent_id,
+                    spacer,
+                    arrowhead="normal",
+                    # minlen="0.1",
+                )
+                dot.edge(
+                    spacer, 
+                    node_id,
+                    arrowhead="none", 
+                    dir="none",
+                    # constraint="false",
+                    style="invis",
+                )
 
         output_path = os.path.join(self.dag_dir, "dag")
-        dot.render(output_path, format="png", cleanup=True, view=view)
+        dot.render(output_path, format="svg", cleanup=True, view=view)
         dot.save(os.path.join(self.dag_dir, "dag.dot"))
         return dot
 
@@ -674,7 +661,7 @@ class PipelineDAG(DAG):
 
             if not parent_node.visited:
                 self._run_node(p)
-            # print(f"{parent_node.node_id} outputs: {len(parent_node.outputs)}")
+            # # print(f"{parent_node.node_id} outputs: {len(parent_node.outputs)}")
 
             for output in parent_node.outputs:
                 if output not in node.inputs:
@@ -682,8 +669,8 @@ class PipelineDAG(DAG):
 
         # before = Artifact.snapshot(node.inputs, node.outputs)
 
-        print(f"Running node {node_id}")
-        print(repr(node))
+        print(f"Running node {node_id} {node.label} ({node.node_type}).")
+        # print(repr(node))
         node.run()
 
         # for artifact in node.inputs + node.outputs:
@@ -691,16 +678,16 @@ class PipelineDAG(DAG):
         # after = Artifact.snapshot(node.inputs, node.outputs)
         # changes = Artifact.diff_snapshots(before, after)
         # node.diff = changes
-        # print()
-        # print(f"Changes after running node {node_id}:")
-        # pprint(changes)
+        # # print()
+        # # print(f"Changes after running node {node_id}:")
+        # p# print(changes)
 
         source_code = inspect.getsource(node.run)
         source_code_path = os.path.join(node.node_dir, f"{node.node_id}-script.py")
         with open(source_code_path, "w") as f:
             f.write(source_code)
 
-        # print(f"Finished running node {node_id}. parameters: {node.parameters}, inputs: {[i.file_path for i in node.inputs]}, outputs: {[o.file_path for o in node.outputs]}")
+        # # print(f"Finished running node {node_id}. parameters: {node.parameters}, inputs: {[i.file_path for i in node.inputs]}, outputs: {[o.file_path for o in node.outputs]}")
         if node.parameters and "last_run_source" in node.parameters:
             self.nodes[node_id].parameters["last_run_source"] = source_code_path
         
@@ -712,7 +699,7 @@ class PipelineDAG(DAG):
 
     def run(self):
         if self.head is None:
-            # print("No head node set, cannot run DAG.")
+            # # print("No head node set, cannot run DAG.")
             return
         self.run_from_node(self.head.node_id)
 
@@ -771,7 +758,7 @@ class NodeImport(Node):
             inputs=inputs,
             outputs=outputs,
             origin=origin,
-            description="Import data from external source into the pipeline.",
+            description="Imports external astronomical catalogs into the pipeline.",
         )
 
 
@@ -780,7 +767,7 @@ class NodeImport(Node):
             # write template script to node directory
             template_script = """# Example script for NodeImport.
 
-# print(f"*** Running in NodeImport...")
+# # print(f"*** Running in NodeImport...")
 active_columns.update({  
     'ra': "Right Ascension",
     'dec': "Declination",
@@ -830,9 +817,9 @@ active_columns.update({
     def run(self):
         """ Import artifact. """
         if len(self.inputs) > 0:
-            artifact = self.inputs.pop() # expects one input artifact
+            artifact = self.inputs[0]
             
-            print(f"Running NodeImport with artifact {artifact.file_path} and parameters {self.parameters}")
+            # print(f"Running NodeImport with artifact {artifact.file_path} and parameters {self.parameters}")
 
             active_columns = {}
 
@@ -842,7 +829,7 @@ active_columns.update({
                 code = f.read()
                 exec(code, {"parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "active_columns": active_columns})
             
-            print(f"Active columns after running script: {active_columns}")
+            # print(f"Active columns after running script: {active_columns}")
 
             if self.parameters is not None and "max_records" in self.parameters:
                 max_records = self.parameters["max_records"]
@@ -850,17 +837,16 @@ active_columns.update({
                 max_records = 10
 
             if active_columns:
-                print(f"Selected columns from script: {active_columns}")
+                # print(f"Selected columns from script: {active_columns}")
                 artifact.set_active_columns(active_columns)
-            else:
-                print("No active columns selected in script, using all columns.")
             
             artifact.dag = self.artifact_dag
             node_dir = os.path.join(self.dag_dir, self.node_id)
             artifact.file_path = os.path.join(node_dir, os.path.basename(artifact.file_path))
             artifact.max_records = max_records
+            artifact._load_from_file()
 
-            print(f"Importing artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
+            # print(f"Importing artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
 
             if not os.path.exists(artifact.file_path):
                 os.makedirs(node_dir, exist_ok=True)
@@ -891,7 +877,7 @@ class NodeExport(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
-            description="Export data by materializing the input artifacts to their file paths.",
+            description="Writes pipeline artifacts to persistent storage.",
         )
 
     def to_dict(self):
@@ -917,7 +903,7 @@ class NodeExport(Node):
             if self.outputs is None:
                 self.outputs = []
             for artifact in self.inputs:
-                print(f"Exporting artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
+                # print(f"Exporting artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
                 artifact.dag = self.artifact_dag
                 
                 # artifact._load_from_file()
@@ -951,7 +937,7 @@ class NodeGeneric(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
-            description="A generic node that can be used for testing the pipeline. It simply passes through the input artifacts to the output without modification.",
+            description="Passes artifacts through the pipeline unchanged.",
         )
 
     def to_dict(self):
@@ -990,14 +976,14 @@ class NodeEDA(Node):
             label="Exploratory Data Analysis",
             node_id=None,
             parents=[],
-            parameters=None,
+            parameters={},
             inputs=[],
             outputs=[]):
         super().__init__(
             node_type=node_type,
             dag_dir=dag_dir,
             label=label,
-            description="Exploratory Data Analysis",
+            description="Generates exploratory analysis and summary visualizations.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -1023,33 +1009,50 @@ class NodeEDA(Node):
 
     def run(self):
 
-        print(f"running EDA {self.inputs}")
 
         if len(self.inputs) == 0:
-            # print("No input artifact for EDA node.")
+            # # print("No input artifact for EDA node.")
             return
 
-        artifact = self.inputs.pop()
-        print(f"Running EDA on artifact {artifact.file_path}")
+        artifact = self.inputs[0]
+        # print(f"====Running EDA on artifact {artifact.file_path}. ")
 
-        ext = os.path.splitext(artifact.file_path)[1].lower()
-        if ext == ".fits":
-            table = Table.read(artifact.file_path, hdu=1, format="fits")
-        elif ext == ".csv":
-            table = Table.read(artifact.file_path, format="csv")
+        # ext = os.path.splitext(artifact.file_path)[1].lower()
+        # if ext == ".fits":
+            # table = Table.read(artifact.file_path, hdu=1, format="fits")
+        # elif ext == ".csv":
+            # table = Table.read(artifact.file_path, format="csv")
+        # else:
+            # raise ValueError(f"Unsupported file format {ext} for EDA node.")
+
+        # columns = artifact.active_columns 
+
+        # if self.parameters is not None and "max_records" in self.parameters:
+            # max_records = self.parameters["max_records"]
+            # table = table[:max_records]
+
+        if self.parameters is not None and "title" in self.parameters:
+            title = self.parameters["title"]
         else:
-            raise ValueError(f"Unsupported file format {ext} for EDA node.")
+            title = "Exploratory Data Analysis"
 
-        columns = artifact.active_columns 
+        table = Table()
+        artifact_dag = artifact.dag
 
-        if self.parameters is not None and "max_records" in self.parameters:
-            max_records = self.parameters["max_records"]
-            table = table[:max_records]
+        for col in artifact.active_columns:
+            if col not in artifact.columns:
+                # print(f"Column {col} not found in artifact columns {artifact.columns}. Skipping.")
+                continue
+            col_data = artifact.columns[col].latest_at(target_node_id=self.node_id, dag=artifact_dag)
+            if col_data is not None:
+                table[col] = col_data
+
+        columns = artifact.active_columns
 
         dataset_eda(table=table, 
                     columns=columns, 
                     save_dir=self.node_dir, 
-                    title="Exploratory Data Analysis",
+                    title=title,
                     )
         
         self.outputs = [artifact]
@@ -1080,13 +1083,13 @@ class NodeScript(Node):
             parameters=parameters,
             inputs=inputs,
             outputs=outputs,
-            description="A node that runs a user-provided script. The script should be a Python file that can access input artifacts, parameters, and output artifacts.",
+            description="Executes a user-defined data processing script.",
         )
     
     def node_configure(self):
         if self.parameters['script'] is None:
             # write template script to node directory
-            template_script = """# Example script for NodeScript
+            template_script = """# Example script for NodeScript. This script will run by default. You can run your own script by setting the 'script' parameter in this node to the path of the script you want to run. Use this as a template and save the script in your catalog directory.
 
 # bad_map = {
     # "Av": [-1],
@@ -1133,33 +1136,53 @@ class NodeScript(Node):
 
     def run(self):
 
-        if len(self.inputs) > 0:
-            artifact = self.inputs[0] # expects one input artifact
-            columns = artifact.columns if artifact.columns else None
-            data = Table.read(artifact.file_path)
-            df = data.to_pandas()
-            # print(df)
+        print(f"Running NodeScript {self.label}")
 
-            columns = artifact.active_columns if artifact.active_columns else data.colnames
+        if len(self.inputs) > 0:
+            artifact = self.inputs[0]
+
+
+            # columns = artifact.columns if artifact.columns else None
+            # data = Table.read(artifact.file_path)
+            # df = data.to_pandas()
+            # # print(df)
+            # columns = artifact.active_columns if artifact.active_columns else data.colnames
+
+            table = artifact.to_table(self.node_id)
+            df = table.to_pandas()
+            columns = artifact.active_columns if artifact.active_columns else table.colnames
 
             script = self.parameters.get("script", "")
+
+
+            namespace = {
+                    "df": df,
+                    "parameters": self.parameters,
+                    "inputs": self.inputs,
+                    "outputs": self.outputs,
+                    "columns": columns,
+                    }
 
             try:
                 with open(script, "r") as f:
                     code = f.read()
-                    exec(code, {"df": df, "parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "columns": columns})
+                    exec(code, namespace)
 
             except Exception as e:
-                print(f"NodeScript failed to execute script {script} with error: {e}")
+                # print(f"NodeScript failed to execute script {script} with error: {e}")
                 raise e
+
+            df = namespace["df"]
+            columns = namespace["columns"]
+
 
             for col in df.columns:
                 if col not in artifact.active_columns:
                     artifact.active_columns[col] = {}
                 artifact.add_column_version(col, self.node_id, df[col])
 
-            # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
-            # print(df)
+            # # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
+            # # print(df)
 
             self.outputs = [artifact] 
 
@@ -1216,8 +1239,8 @@ class NodeJoin(Node):
             df1 = data1.to_pandas()
             df2 = data2.to_pandas()
 
-            print("df1", df1)
-            print("df2", df2)
+            # print("df1", df1)
+            # print("df2", df2)
 
             # return
 
@@ -1291,7 +1314,7 @@ class NodeJoin(Node):
                 active_columns=matched_columns,
             )
 
-            print("df_matched", df_matched)
+            # print("df_matched", df_matched)
 
             table = Table.from_pandas(df_matched)
             output_artifact.load_from_table(table, matched_columns)

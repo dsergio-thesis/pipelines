@@ -170,64 +170,6 @@ def dataset_eda(table: astropy.table.Table,
         print(f"Saved sky distribution plot to {file_name}")
         plt.close()
 
-    # remove all c in columns that are not in df.columns
-    columns = {c: desc for c, desc in columns.items() if c in df.columns}
-
-    n_cols = 3  # number of subplot columns
-    n_rows = int(np.ceil(len(columns) / n_cols))
-
-    fig = plt.figure(constrained_layout=True, figsize=(5 * n_cols, 4 * n_rows))
-    fig.suptitle(title, fontsize=24)
-
-    
-    gs = gridspec.GridSpec(
-        n_rows,
-        n_cols,
-        figure=fig,
-        width_ratios=[1.0] * n_cols,
-        height_ratios=[1.0] * n_rows,
-    )
-
-
-
-    for i, col in enumerate(columns):
-        r = i // n_cols
-        c = i % n_cols
-
-        ax = fig.add_subplot(gs[r, c])
-
-        data = df[col].dropna()
-
-        # drop inf values
-        data = data.replace([np.inf, -np.inf], np.nan).dropna()
-
-        sns.histplot(data, bins=50, kde=True, ax=ax)
-
-        ax.set_title(f"Distribution of {col}")
-        ax.set_xlabel(columns[col])
-        ax.set_ylabel("Count")
-
-        # ---- Save individual plot ----
-        indiv_fig, indiv_ax = plt.subplots(figsize=(6, 4))
-        sns.histplot(data, bins=50, kde=True, ax=indiv_ax)
-
-        indiv_ax.set_title(f"Distribution of {col}")
-        indiv_ax.set_xlabel(columns[col])
-        indiv_ax.set_ylabel("Count")
-
-        indiv_file = f"{save_dir}/{col.lower().replace(' ', '_')}.png"
-        indiv_fig.savefig(indiv_file, bbox_inches="tight", dpi=300)
-        plt.close(indiv_fig)
-
-    # remove empty axes if grid > number of columns
-    for j in range(len(columns), n_rows * n_cols):
-        fig.delaxes(fig.add_subplot(gs[j // n_cols, j % n_cols]))
-
-    file_name = title.lower().replace(" ", "_")
-    file_name = f"{save_dir}/{file_name}.png" 
-    plt.savefig(file_name)
-    print(f"Saved EDA plot to {file_name}")
-    plt.close()
 
     for col, desc in columns.items():
         if col in table.colnames:
@@ -267,5 +209,107 @@ def dataset_eda(table: astropy.table.Table,
         yaml.dump(summary_stats, f)
     with open (f"{save_dir}/table_info.txt", 'w') as f:
         f.write(str(table.info))
+
+
+    for col in ['sfr', 'sfr_UV', 'sfr_IR']:
+        columns.pop(col, None)
+
+
+    # remove all c in columns that are not in df.columns
+    columns = {c: desc for c, desc in columns.items() if c in df.columns}
+
+    n_cols = 3  # number of subplot columns
+    n_rows = int(np.ceil((len(columns) - 2 + 1) / n_cols))  # exclude ra/dec from distribution plots
+
+    fig = plt.figure(constrained_layout=True, figsize=(5 * n_cols, 4 * n_rows))
+    fig.suptitle(title, fontsize=24)
+
+    
+    gs = gridspec.GridSpec(
+        n_rows,
+        n_cols,
+        figure=fig,
+        width_ratios=[1.0] * n_cols,
+        height_ratios=[1.0] * n_rows,
+    )
+
+
+    # add sky distribution plot as the last subplot if ra/dec are present
+    if ra_col in df.columns and dec_col in df.columns:
+        r = len(columns) // n_cols
+        c = len(columns) % n_cols
+
+        ax = fig.add_subplot(gs[0, 0])
+        sns.scatterplot(x=df[ra_col], y=df[dec_col], s=10, alpha=0.5, ax=ax)
+        ax.set_xlim(0, 360)
+        ax.set_ylim(-90, 90)
+        ax.set_title("Sky Distribution")
+        ax.set_xlabel(columns[ra_col])
+        ax.set_ylabel(columns[dec_col])
+        ax.grid(True, linestyle='--', alpha=0.5)
+
+    columns.pop(ra_col, None)
+    columns.pop(dec_col, None)
+
+    for i, col in enumerate(columns):
+        i += 1
+        r = i // n_cols
+        c = i % n_cols
+
+        ax = fig.add_subplot(gs[r, c])
+
+        data = pd.to_numeric(df[col], errors="coerce")
+        data = data.replace([np.inf, -np.inf], np.nan).dropna()
+
+        if data.empty:
+            ax.set_title(f"Distribution of {col}")
+            ax.text(0.5, 0.5, "No numeric data", ha="center", va="center")
+            ax.set_axis_off()
+            continue
+
+        # skip if ra or dec
+        if col in [ra_col, dec_col]:
+            # ax.set_title(f"Distribution of {col}")
+            # ax.text(0.5, 0.5, "See sky distribution plot", ha="center", va="center")
+            # ax.set_axis_off()
+            continue
+
+        # print(f"data: {data}")
+
+        # KDE fails if there are too few values or all values are identical
+        use_kde = len(data) > 1 and data.nunique() > 1
+
+        try:
+            sns.histplot(data, bins=50, kde=True, ax=ax)
+        except ValueError:
+            sns.histplot(data, bins=50, kde=False, ax=ax) 
+
+        ax.set_title(f"Distribution of {col}")
+        ax.set_xlabel(columns[col] if col in columns else col)
+        ax.set_ylabel("Count")
+
+        # ---- Save individual plot ----
+        indiv_fig, indiv_ax = plt.subplots(figsize=(6, 4))
+        sns.histplot(data, bins=50, kde=True, ax=indiv_ax)
+
+        indiv_ax.set_title(f"Distribution of {col}")
+        indiv_ax.set_xlabel(columns[col])
+        indiv_ax.set_ylabel("Count")
+
+        indiv_file = f"{save_dir}/{col.lower().replace(' ', '_')}.png"
+        indiv_fig.savefig(indiv_file, bbox_inches="tight", dpi=300)
+        plt.close(indiv_fig)
+
+
+    # remove empty axes if grid > number of columns
+    for j in range(len(columns), n_rows * n_cols):
+        fig.delaxes(fig.add_subplot(gs[j // n_cols, j % n_cols]))
+
+    file_name = title.lower().replace(" ", "_")
+    file_name = f"{save_dir}/{file_name}.png" 
+    plt.savefig(file_name)
+    print(f"Saved EDA plot to {file_name}")
+    plt.close()
+
     
 

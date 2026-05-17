@@ -93,7 +93,7 @@ class ColumnVersion:
     file_path: str | None = None
 
     def load_data(self, file_path: str, max_records: int = None, shuffle: bool = False) -> pd.Series:
-        print(f"calling load_data for node_id={self.node_id}, max_records={max_records}, shuffle={shuffle}")
+        # print(f"calling load_data for node_id={self.node_id}, max_records={max_records}, shuffle={shuffle}")
 
         self.file_path = self.file_path or file_path
 
@@ -216,10 +216,19 @@ class ArtifactCol:
         if len(maximal) > 1:
             conflict_nodes = [v.node_id for v in maximal]
 
-            raise ArtifactMergeConflict(
-                f"Merge conflict for column '{self.name}' at node '{target_node_id}'. "
-                f"Conflicting versions from nodes: {conflict_nodes}."
-            )
+            # if all the same hash, we can pick one arbitrarily
+            if len(set(v.hash for v in maximal)) == 1:
+                print(
+                    f"Warning: Multiple maximal versions with identical hash for column '{self.name}' at node '{target_node_id}'. "
+                    f"Nodes: {conflict_nodes}. "
+                    f"Using version from node '{maximal[0].node_id}'."
+                )
+            else:
+
+                raise ArtifactMergeConflict(
+                    f"Merge conflict for column '{self.name}' at node '{target_node_id}'. "
+                    f"Conflicting versions from nodes: {conflict_nodes}."
+                )
 
         return maximal[0].load_data(file_path=self.file_path, max_records=max_records)
 
@@ -263,6 +272,7 @@ class ArtifactItem:
                 max_records: int = None,
                 columns_index_path: str = None,
                 active_columns_index_path: str = None,
+                original_hash: int = None,
                 ):
         self.file_path = file_path
         self.file_type = Path(file_path).suffix.lower()
@@ -276,18 +286,22 @@ class ArtifactItem:
 
         self.active_columns = active_columns 
 
-        if os.path.exists(file_path) and node_id is not None and columns is None and load_from_file:
-            self._load_from_file()
-            for col in self.columns.values(): 
-                col.file_path = file_path
+        # if os.path.exists(file_path) and node_id is not None and columns is None and load_from_file:
+            # self._load_from_file()
+            # for col in self.columns.values(): 
+                # col.file_path = file_path
 
     def set_active_columns(self, active_columns: dict[str, dict] | list[str] | None) -> None:
         if active_columns is None:
             self.active_columns = None
         elif isinstance(active_columns, list):
-            self.active_columns = {col: {col} for col in active_columns}
+            self.active_columns = {col: {} for col in active_columns}
         else:
             self.active_columns = active_columns
+
+        # self.to_dict() 
+        # print(f"-- Seting active columns for artifact '{self.file_path}': {self.active_columns}")
+        
 
     def get_active_column_names(self) -> list[str]:
         if self.active_columns is None:
@@ -391,8 +405,14 @@ class ArtifactItem:
                 table = Table.read(self.file_path, format="fits", hdu=1)
                 df = table.to_pandas()
 
+            # get original file hash
+            self.original_hash = int(hash_pandas_object(df, index=True).sum())
+
             for col in df.columns:
-                self.add_column_version(col, node_id=self.node_id, data=df[col])
+
+                if self.active_columns is not None and col not in self.active_columns:
+                    continue
+                self.add_column_version(col, node_id=self.node_id, data=df[col].head(self.max_records) if self.max_records is not None else df[col])
 
         except Exception as e:
             print(f"Error reading file {self.file_path}: {e}")
@@ -441,6 +461,11 @@ class ArtifactItem:
         columns_rows = []
 
         for col_name, artifact_col in self.columns.items():
+
+            if self.active_columns is not None and col_name not in self.active_columns:
+                continue
+
+
             columns_dict[col_name] = []
 
             for version in artifact_col.versions:
@@ -472,6 +497,7 @@ class ArtifactItem:
 
             if self.active_columns is not None and col_name not in self.active_columns:
                 continue
+
             active_columns_dict[col_name] = col_name 
 
             for version in artifact_col.versions:
@@ -479,7 +505,7 @@ class ArtifactItem:
                     "column": col_name,
                     "node_id": version.node_id,
                     "hash": version.hash,
-                    "data_path": str(version_file),
+                    "data_path": str(version.file_path),
                 })
 
         pd.DataFrame(active_columns_rows).to_parquet(active_columns_index_path, index=False)
@@ -487,6 +513,7 @@ class ArtifactItem:
 
         return {
             "file_path": self.file_path,
+            "original_hash": getattr(self, "original_hash", None),
             "node_id": self.node_id,
             "column_index_path":  str(column_index_path),
             # "active_columns": self.active_columns,
@@ -498,6 +525,7 @@ class ArtifactItem:
     def from_dict(cls, d: dict, dag: ArtifactDAG = None) -> "ArtifactItem":
         item = cls(
             file_path=d["file_path"],
+            original_hash=d.get("original_hash"),
             dag=dag,
             node_id=d.get("node_id"),
             columns={},  # prevents _load_from_file()
@@ -513,7 +541,7 @@ class ArtifactItem:
 
         for _, row in active_columns_index_df.iterrows():
             col_name = row["column"]
-            item.active_columns[col_name] = {}
+            item.active_columns[col_name] = {} 
 
         for _, row in index_df.iterrows():
             col_name = row["column"]

@@ -1,9 +1,7 @@
-
-
 import numpy as np
 import pandas as pd
 
-print(f"*** Running in NodeScript...")
+print(f"*** 3D-HST Data Cleaning ***")
 
 bad_map = {
     "Av": [-1],
@@ -49,8 +47,8 @@ if "dec" in df.columns:
     df.loc[~df["dec"].between(-90, 90), "dec"] = np.nan
 
 all_nan_cols = df.columns[df.isna().all()].tolist()
-df = df.drop(columns=all_nan_cols) # drop columns that are all nan after cleaning
-
+df.drop(columns=all_nan_cols, inplace=True) # drop columns that are all nan after cleaning
+print(f"Dropped {len(all_nan_cols)} columns that were all NaN after cleaning: {all_nan_cols}")
 for col in all_nan_cols:
     if col in columns:
         columns.pop(col, None) # remove all-nan columns from columns dict for next node
@@ -62,10 +60,10 @@ for col in ["L_IR", "sfr", "sfr_IR", "sfr_UV"]:
         df[log_col] = np.where(df[col] > 0, np.log10(df[col]), np.nan) # add log10 versions of SFR and L_IR, set to nan if original value is not positive
         columns[log_col] = f"log10 {col}" # add log versions of SFR and L_IR to the columns dict for the next node
         # remove from dict
-        columns.pop(col, None) # remove original column from columns dict, since we'll use the log version for EDA
+        # columns.pop(col, None) # remove original column from columns dict, since we'll use the log version for EDA
 
-for col in ["chi2", "L_IR", "sfr", "sfr_IR", "sfr_UV"]:
-    if col in df.columns:
-        q999 = df[col].quantile(0.999)
-        df[f"{col}_is_extreme"] = df[col] > q999
 
+
+# change all values to 0 for testing
+# for col in df.columns:
+    # df[col] = np.zeros(len(df))
