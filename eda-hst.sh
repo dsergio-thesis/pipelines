@@ -6,7 +6,7 @@ rad node -c -l "Exploratory analysis pipeline on the 3D-HST catalog"
 
 rad node -ct import -l "Import catalog"
 rad node -i catalogs/collections/lsst-hst/hst/hst.fits
-rad node -p max_records 300000
+rad node -p max_records 300
 rad node -p script catalogs/collections/lsst-hst/hst/scripts/import.py
 
 #rad run
@@ -19,11 +19,12 @@ rad node -p script catalogs/collections/lsst-hst/hst/scripts/select.py
 
 rad node -ct export -l "Export processed catalog"
 
-rad node -ct eda -l "Analyze catalog distributions"
-rad node -p title "Exploratory analysis of the 3D-HST catalog"
+#rad node -ct eda -l "Analyze catalog distributions"
+rad node -ct eda-script -l "Analyze catalog distributions"
+rad node -p title "Exploratory analysis of the 3D-HST catalog, Histograms"
 
 rad run
 
-cp "_pipelines/$(rad id)/dag.svg" ~/thesis-org/reports/paper/report/figures/dag_hst_eda/
-cp "_pipelines/$(rad id)/dag.yaml" ~/thesis-org/reports/paper/report/code/dag_hst_eda/
+#cp "_pipelines/$(rad id)/dag.svg" ~/thesis-org/reports/paper/report/figures/dag_hst_eda/
+#cp "_pipelines/$(rad id)/dag.yaml" ~/thesis-org/reports/paper/report/code/dag_hst_eda/
 

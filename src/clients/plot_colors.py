@@ -151,7 +151,7 @@ def main():
         plt.xlabel(f"{xlabel} (blue → red)", fontsize=12)
         plt.ylabel(f"{ylabel} (blue → red)", fontsize=12)
 
-        # 🔥 custom legend
+        # custom legend
         legend_elements = [
             Line2D([0], [0], marker='o', color='w',
                    label='Star-forming',

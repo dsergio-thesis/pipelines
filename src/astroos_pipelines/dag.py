@@ -1009,27 +1009,12 @@ class NodeEDA(Node):
 
     def run(self):
 
-
         if len(self.inputs) == 0:
             # # print("No input artifact for EDA node.")
             return
 
         artifact = self.inputs[0]
-        # print(f"====Running EDA on artifact {artifact.file_path}. ")
-
-        # ext = os.path.splitext(artifact.file_path)[1].lower()
-        # if ext == ".fits":
-            # table = Table.read(artifact.file_path, hdu=1, format="fits")
-        # elif ext == ".csv":
-            # table = Table.read(artifact.file_path, format="csv")
-        # else:
-            # raise ValueError(f"Unsupported file format {ext} for EDA node.")
-
-        # columns = artifact.active_columns 
-
-        # if self.parameters is not None and "max_records" in self.parameters:
-            # max_records = self.parameters["max_records"]
-            # table = table[:max_records]
+        print(f"====Running EDA on artifact {artifact.file_path}. ")
 
         if self.parameters is not None and "title" in self.parameters:
             title = self.parameters["title"]
@@ -1056,7 +1041,6 @@ class NodeEDA(Node):
                     )
         
         self.outputs = [artifact]
-        # self.output_fits_table(table, columns=columns) # pass through the table to the next node
 
 
 class NodeScript(Node):
@@ -1141,19 +1125,11 @@ class NodeScript(Node):
         if len(self.inputs) > 0:
             artifact = self.inputs[0]
 
-
-            # columns = artifact.columns if artifact.columns else None
-            # data = Table.read(artifact.file_path)
-            # df = data.to_pandas()
-            # # print(df)
-            # columns = artifact.active_columns if artifact.active_columns else data.colnames
-
             table = artifact.to_table(self.node_id)
             df = table.to_pandas()
             columns = artifact.active_columns if artifact.active_columns else table.colnames
 
             script = self.parameters.get("script", "")
-
 
             namespace = {
                     "df": df,
@@ -1175,7 +1151,6 @@ class NodeScript(Node):
             df = namespace["df"]
             columns = namespace["columns"]
 
-
             for col in df.columns:
                 if col not in artifact.active_columns:
                     artifact.active_columns[col] = {}
@@ -1185,6 +1160,187 @@ class NodeScript(Node):
             # # print(df)
 
             self.outputs = [artifact] 
+
+
+
+class NodeEDAScript(Node):
+    """
+    A node that runs EDA (color-color, histogram, or sky_dist) using a  user-provided script to specify parameters and columns.
+
+    """
+
+    def __init__(self,
+                 dag_dir=None,
+                 node_type="eda-script",
+                 label="EDA Script Node",
+                 node_id=None,
+                 parents=[],
+                 parameters={"script": None, "eda_type": "histogram"},
+                 inputs=[],
+                 outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label=label,
+            dag_dir=dag_dir,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            description="Runs EDA using user-defined parameters and column selection script.",
+        )
+    
+    def node_configure(self):
+        if self.parameters['script'] is None:
+            # write template script to node directory
+            template_script = """# Example script for NodeEDAScript. This script will run by default. You can run your own script by setting the 'script' parameter in this node to the path of the script you want to run. Use this as a template and save the script in your catalog directory.
+
+# bad_map = {
+    # "Av": [-1],
+    # "L_IR": [-99],
+    # "beta": [-99],
+    # "chi2": [-1],
+    # "sfr": [-99],
+    # "sfr_IR": [-99],
+    # "sfr_UV": [-99],
+    # "z_best": [-99],
+    # "z_peak_grism": [-1],
+    # "z_peak_phot": [-99],
+    # "z_spec": [-99.9],
+# }
+# for col, bad_vals in bad_map.items():
+    # if col in df.columns:
+        # df[col] = df[col].replace(bad_vals, np.nan) # replace bad values with nan
+
+"""         
+            script_path = os.path.join(self.node_dir, f"script.py")
+
+            os.makedirs(self.node_dir, exist_ok=True)
+            with open(script_path, "w") as f:
+                f.write(template_script)
+            self.parameters = {
+                "script": script_path
+                }
+    
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "NodeEDAScript"
+        return d
+    
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            dag_dir=d["dag_dir"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+
+        print(f"Running NodeEDAScript {self.label}")
+
+        if len(self.inputs) > 0:
+            artifact = self.inputs[0]
+
+            table = artifact.to_table(self.node_id)
+            df = table.to_pandas()
+            columns = artifact.active_columns if artifact.active_columns else table.colnames
+
+            script = self.parameters.get("script", "")
+            eda_type = self.parameters.get("eda_type", "histogram")
+
+            namespace = {
+                    "df": df,
+                    "parameters": self.parameters,
+                    "inputs": self.inputs,
+                    "outputs": self.outputs,
+                    "columns": columns,
+                    }
+
+            try:
+                with open(script, "r") as f:
+                    code = f.read()
+                    exec(code, namespace)
+
+            except Exception as e:
+                # print(f"NodeScript failed to execute script {script} with error: {e}")
+                raise e
+
+            df = namespace["df"]
+            columns = namespace["columns"]
+
+            for col in df.columns:
+                if col not in artifact.active_columns:
+                    artifact.active_columns[col] = {}
+                artifact.add_column_version(col, self.node_id, df[col])
+
+            # # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
+            # # print(df)
+
+            if self.parameters is not None and "title" in self.parameters:
+                title = self.parameters["title"]
+            else:
+                title = "Exploratory Data Analysis"
+
+            table = Table()
+            artifact_dag = artifact.dag
+
+            for col in artifact.active_columns:
+                if col not in artifact.columns:
+                    # print(f"Column {col} not found in artifact columns {artifact.columns}. Skipping.")
+                    continue
+                col_data = artifact.columns[col].latest_at(target_node_id=self.node_id, dag=artifact_dag)
+                if col_data is not None:
+                    table[col] = col_data
+
+            columns = artifact.active_columns
+
+            eda_histogram(table=table, 
+                        columns=columns, 
+                        save_dir=self.node_dir, 
+                        title=title,
+                        )
+            
+            self.outputs = [artifact]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
