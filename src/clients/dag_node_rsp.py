@@ -11,6 +11,23 @@ def main():
     node_type = config.node_type
     node_label = config.node_label
     max_records = config.max_records
+    dataset_dir = config.dataset_dir
+    dataset_name = config.dataset_name
+    labels_def_file = config.labels_def_file
+
+    target = config.sky_region_target_selected
+    if not target:
+        print("--target required to run LSST pipeline")
+        return
+
+    coords = config.sky_region_targets[target].sky_coord
+    radius = config.sky_region_targets[target].radius_arcmin
+
+    dataset_cart_phot = FITS_Image_Morphometry_Photometry_Dataset(
+            dataset_dir=os.path.join(dataset_dir, dataset_name),
+            labels_init_file=labels_def_file,
+            )
+
 
     print(f"Label: {node_label}")
     
@@ -24,7 +41,15 @@ def main():
 
     if option_create:
         if node_type == "tap":
-            dag_node = NodeTAPQuery(label=node_label)
+            dag_node = NodeTAPQuery(label=node_label,
+                        parameters={
+                            "max_records": max_records,
+                            "query_coords": coords,
+                            "query_radius": radius,
+                            "script": "catalogs/collections/lsst-hst/lsst/scripts/query.py",
+                            },
+                        origin=True
+                        )
             dag.add_node(dag_node)
 
     if parameter:
