@@ -57,6 +57,8 @@ def main():
             dag_node = NodeExport(label=node_label)
         elif node_type == "eda":
             dag_node = NodeEDA(label=node_label)
+        elif node_type == "eda-script":
+            dag_node = NodeEDAScript(label=node_label)
         else: 
             dag_node = NodeGeneric(label=node_label)
 

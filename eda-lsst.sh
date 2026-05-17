@@ -28,7 +28,7 @@ rad node-rsp -p eda_type sky-distribution
 rad node-rsp -ct eda-script -l "Catalog color-color analysis"
 rad node-rsp -p title "Exploratory color-color analysis of LSST DP-1"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/color_color_select.py
-rad node-rsp -p eda_type sky-color-color
+rad node-rsp -p eda_type color-color
 
 rad run-rsp
 

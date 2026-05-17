@@ -30,6 +30,7 @@ from astroos_pipelines.utils.formatting import ascii_kv_table
 from astroos_pipelines.utils.plots.dataset_eda import *
 from astroos_pipelines.utils.plots.eda_histogram import *
 from astroos_pipelines.utils.plots.eda_sky_distribution import *
+from astroos_pipelines.utils.plots.eda_color_color import *
 from astroos_pipelines.artifacts import *
 
 # from astroos_pipelines.hst.dag import *

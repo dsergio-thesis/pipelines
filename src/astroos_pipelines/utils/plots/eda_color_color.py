@@ -191,7 +191,7 @@ def eda_color_color(table: astropy.table.Table,
 
 
     for col, desc in columns.items():
-        if col in table.colnames
+        if col in table.colnames:
             data = table[col]
             try:
                 # convert column to numpy array and drop inf values
