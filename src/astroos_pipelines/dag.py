@@ -28,6 +28,8 @@ from graphviz import Digraph
 
 from astroos_pipelines.utils.formatting import ascii_kv_table
 from astroos_pipelines.utils.plots.dataset_eda import *
+from astroos_pipelines.utils.plots.eda_histogram import *
+from astroos_pipelines.utils.plots.eda_sky_distribution import *
 from astroos_pipelines.artifacts import *
 
 # from astroos_pipelines.hst.dag import *
@@ -1298,11 +1300,28 @@ class NodeEDAScript(Node):
 
             columns = artifact.active_columns
 
-            eda_histogram(table=table, 
-                        columns=columns, 
-                        save_dir=self.node_dir, 
-                        title=title,
-                        )
+
+            if eda_type == "histogram":
+                eda_histogram(table=table, 
+                            columns=columns, 
+                            save_dir=self.node_dir, 
+                            title=title,
+                            )
+            elif eda_type == "color-color":
+                eda_color_color(table=table, 
+                                columns=columns, 
+                                save_dir=self.node_dir, 
+                                title=title,
+                                )
+            elif eda_type == "sky-distribution":
+                eda_sky_distribution(table=table, 
+                            columns=columns, 
+                            save_dir=self.node_dir, 
+                            title=title,
+                            )
+            else:
+                # print(f"Unknown eda_type {eda_type}. Supported types are 'histogram', 'color-color', and 'sky_dist'.")
+                raise ValueError(f"Unknown eda_type {eda_type}. Supported types are 'histogram', 'color-color', and 'sky-distribution'.")
             
             self.outputs = [artifact]
 
