@@ -251,6 +251,7 @@ class NodeTAPQuery(Node):
                  parents=[],
                  parameters={"script": None},
                  origin=True,
+                 label="TAP Query",
                  inputs=[],
                  outputs=[]):
         super().__init__(
@@ -259,6 +260,7 @@ class NodeTAPQuery(Node):
             node_id=node_id,
             parents=parents,
             parameters=parameters,
+            label=label,
             inputs=inputs,
             outputs=outputs,
             origin=origin,
