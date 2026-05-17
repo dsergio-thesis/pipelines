@@ -15,17 +15,20 @@ rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/select.py
 
 rad node-rsp -ct export -l "Export processed catalog"
 
-rad node-rsp -ct eda -l "Analyze catalog distributions"
-
 rad node-rsp -ct eda-script -l "Catalog distribution analysis"
-rad node-rsp -p title "Exploratory distribution analysis of the LSST DP-1 catalog"
+rad node-rsp -p title "Exploratory distribution analysis of LSST DP-1"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/histogram_select.py
 rad node-rsp -p eda_type histogram
 
 rad node-rsp -ct eda-script -l "Catalog sky distribution analysis"
-rad node-rsp -p title "Exploratory sky distribution analysis of the LSST DP-1 catalog"
+rad node-rsp -p title "Exploratory sky distribution analysis of LSST DP-1"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/sky_distribution_select.py
 rad node-rsp -p eda_type sky-distribution
+
+rad node-rsp -ct eda-script -l "Catalog color-color analysis"
+rad node-rsp -p title "Exploratory color-color analysis of LSST DP-1"
+rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/color_color_select.py
+rad node-rsp -p eda_type sky-color-color
 
 rad run-rsp
 
