@@ -141,11 +141,11 @@ def eda_color_color(table: astropy.table.Table,
 
 
     labels = np.asarray(df['label']) if 'label' in df.columns else None
-    ug = np.asarray(df['ug']) if 'ug' in df.columns else None 
-    gr = np.asarray(df['gr']) if 'gr' in df.columns else None 
-    ri = np.asarray(df['ri']) if 'ri' in df.columns else None 
-    iz = np.asarray(df['iz']) if 'iz' in df.columns else None 
-    zy = np.asarray(df['zy']) if 'zy' in df.columns else None 
+    ug = np.asarray(df['color_ug']) if 'color_ug' in df.columns else None 
+    gr = np.asarray(df['color_gr']) if 'color_gr' in df.columns else None 
+    ri = np.asarray(df['color_ri']) if 'color_ri' in df.columns else None 
+    iz = np.asarray(df['color_iz']) if 'color_iz' in df.columns else None 
+    zy = np.asarray(df['color_zy']) if 'color_zy' in df.columns else None 
 
     all_arrays = [arr for arr in [ug, gr, ri, iz, zy] if arr is not None]
 
