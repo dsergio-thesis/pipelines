@@ -18,7 +18,7 @@ rad node -ct export -l "Export processed catalog"
 rad node -ct eda -l "Analyze catalog distributions"
 rad node -p title "Exploratory analysis of the LSST DP-1 catalog"
 
-rad run
+rad run-rsp
 
 cp "_pipelines/$(rad id)/dag.svg" ~/thesis-org/reports/paper/report/figures/dag_lsst_eda/
 cp "_pipelines/$(rad id)/dag.yaml" ~/thesis-org/reports/paper/report/code/dag_lsst_eda/

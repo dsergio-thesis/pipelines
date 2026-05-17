@@ -5,7 +5,7 @@ import importlib
 
 from astroos_pipelines.dag import *
 from astroos_pipelines.lsst.dag import * 
-from astroos_pipelines.hst.dag import *
+# from astroos_pipelines.hst.dag import *
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 from astroos_pipelines.config.astroos_config import AstroosConfig
 from astroos_pipelines.logger.logger import setup_logging
