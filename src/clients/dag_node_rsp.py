@@ -50,8 +50,21 @@ def main():
                             },
                         origin=True
                         )
-            dag.add_node(dag_node)
+        elif node_type == "script":
+            dag_node = NodeScript(label=node_label)
+        elif node_type == "import":
+            dag_node = NodeImport(label=node_label, parameters={"max_records": max_records})
+        elif node_type == "export":
+            dag_node = NodeExport(label=node_label)
+        elif node_type == "eda":
+            dag_node = NodeEDA(label=node_label)
+        else: 
+            dag_node = NodeGeneric(label=node_label)
 
+        dag.add_node(dag_node)
+
+    if input_artifact:
+        dag.add_input_artifact_item(input_artifact)
     if parameter:
         dag.add_parameter(parameter)
 
