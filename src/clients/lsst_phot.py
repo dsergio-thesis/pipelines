@@ -61,7 +61,7 @@ def main():
 
     
     # we usually want the whole catalog for matching. adjust just for testing this
-    hst_max_records = 1000 # 300000
+    hst_max_records = 300000
     hst_catalog = NodeImport(
             parameters = {
                 "max_records": hst_max_records,
@@ -99,8 +99,10 @@ def main():
             parents = [lsst_hst_export.node_id],
             )
 
+    new_artifact_path="catalogs/collections/lsst-hst/hst/hst.fits"
+    dag.add_node(hst_catalog)
+    dag.add_input_artifact_item(new_artifact_path)
 
-    dag.add_node(hst_catalog, new_artifact=True, new_artifact_path="catalogs/collections/lsst-hst/hst/hst.fits")
     dag.add_node(hst_clean)
     dag.add_node(hst_select)
     dag.add_node(hst_export)
