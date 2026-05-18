@@ -46,6 +46,10 @@ def eda_pairplot(table: astropy.table.Table,
 
     print(f"Total records in table: {len(table)}.")
 
+    if len(pair_plots) == 0:
+        print("No pair-plots")
+        return
+
     df = table.to_pandas()
     
     if (sample_size is not None and sample_size < len(df)):

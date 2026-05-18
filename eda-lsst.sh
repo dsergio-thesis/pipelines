@@ -31,7 +31,7 @@ rad node-rsp -p eda_type histogram
 
 rad node-rsp -ct eda-script -l "Catalog pair-plot analysis"
 rad node-rsp -p title "Exploratory pair-plot analysis of the LSST DP-1"
-rad node-rsp -p script catalogs/collections/lsst-hst/hst/scripts/pair_plot_select.py
+rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/pair_plot_select.py
 rad node-rsp -p eda_type pair-plot
 
 rad node-rsp -ct eda-script -l "Catalog sky distribution analysis"
