@@ -223,7 +223,7 @@ class LSSTNodeCatalog(Node):
         columns = {}
         for col in table.colnames:
             columns[col] = col
-        columns.pop("objectId", None)
+        # columns.pop("objectId", None)
 
 
         if len(self.inputs) > 0:
@@ -326,7 +326,7 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
         columns = {}
         for col in table.colnames:
             columns[col] = col
-        columns.pop("objectId", None)
+        # columns.pop("objectId", None)
 
 
         artifact = ArtifactItem(

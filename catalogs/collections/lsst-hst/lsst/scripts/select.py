@@ -44,6 +44,8 @@ Next: add diff/ratio PSF and cModel for morphology
 
 """
 
+print("select...")
+print(df)
 
 df_clean = pd.DataFrame()  # will hold cleaned data with new features
 df_clean['objectId'] = df['objectId']
