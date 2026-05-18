@@ -91,7 +91,7 @@ def main():
 
     lsst_hst_match = NodeJoin(
             parameters={
-                "max_sep_arcsec": 1.8,},
+                "max_sep_arcsec": 0.8,},
             parents=[lsst_select_export.node_id, hst_export.node_id],
             )
     lsst_hst_export = NodeExport(
