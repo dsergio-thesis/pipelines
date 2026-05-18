@@ -104,7 +104,7 @@ def eda_color_color(table: astropy.table.Table,
                 x, y,
                 s=3,
                 alpha=0.3,
-                c='gray',
+                c=colors[0],
                 linewidths=0
             )
 
