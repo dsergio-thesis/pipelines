@@ -87,6 +87,9 @@ def eda_color_color(table: astropy.table.Table,
         else:
             x, y = x[mask], y[mask]
 
+
+        print(f"x, y, labels shapes after masking: {x.shape}, {y.shape}, {labels.shape if labels is not None else 'N/A'}")
+
         plt.figure(figsize=(4,4))
 
         if labels is not None:
@@ -153,6 +156,7 @@ def eda_color_color(table: astropy.table.Table,
 
     print(f"Global limits for color-color plots: {global_lim}")
     print("Plotting color-color diagrams...")
+    print(f"labels shape: {labels.shape if labels is not None else 'N/A'}, ug shape: {ug.shape if ug is not None else 'N/A'}, gr shape: {gr.shape if gr is not None else 'N/A'}, ri shape: {ri.shape if ri is not None else 'N/A'}, iz shape: {iz.shape if iz is not None else 'N/A'}, zy shape: {zy.shape if zy is not None else 'N/A'}")
 
     plot_color_color(
         x=ug, y=gr,
