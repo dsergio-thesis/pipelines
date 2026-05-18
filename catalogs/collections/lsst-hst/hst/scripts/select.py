@@ -19,3 +19,30 @@ df = df[df["chi2"] < df["chi2"].quantile(0.99)] # chi2 has extreme outliers, so 
 # remove outliers of lssfr
 df = df[df["lssfr"] > df["lssfr"].quantile(0.05)] # remove bottom 5% of lssfr for visualization
 
+
+
+
+# apply label
+
+lssfr  = np.array(df["lssfr"], dtype=float)  if "lssfr" in df.colnames else None
+
+# validity mask
+if lssfr is None:
+    raise ValueError("hst.fits is missing required column 'lssfr'.")
+
+valid &= np.isfinite(lssfr)
+
+valid &= (lssfr > -50) & (lssfr < 50)
+
+# Define labels: 0 = star-forming, 1 = quiescent
+label = np.full(len(df), -1, dtype=np.int64)
+label[(valid) & (lssfr > -9.9)] = 0 # star-forming
+label[(valid) & (lssfr < -11.1)] = 1 # quiescent
+
+# High-confidence subset mask (drop ambiguous)
+confident = (label >= 0)
+
+df["label"] = confident
+# df["confident"] = confident
+
+
