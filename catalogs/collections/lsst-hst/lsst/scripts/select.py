@@ -96,7 +96,10 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
             label_counts[str(row.label)] = 1
 
     photometric_features = np.zeros((num_bands, 3), dtype=np.float32)
-    
+   
+
+    mag_u = None
+    mag_u_flag = True
     mag_g = None
     mag_g_flag = True
     mag_r = None
@@ -105,6 +108,8 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
     mag_i_flag = True
     mag_z = None
     mag_z_flag = True
+    mag_y = None
+    mag_y_flag = True
 
     for bi, band in enumerate(bands):
         flux = getattr(row, f"{band}_psfFlux", None)

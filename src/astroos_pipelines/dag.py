@@ -1463,6 +1463,18 @@ class NodeJoin(Node):
                 else:
                     raise ValueError(f"Input artifact 2 must have columns 'ra' and 'dec' or variations thereof. Columns: {df2.columns}")
 
+            margin_deg = 0.2
+            df2_near = df2[
+                (df2["ra"] >= df1["ra"].min() - margin_deg) &
+                (df2["ra"] <= df1["ra"].max() + margin_deg) &
+                (df2["dec"] >= df1["dec"].min() - margin_deg) &
+                (df2["dec"] <= df1["dec"].max() + margin_deg)
+            ].copy()
+
+            print("df2_near rows:", len(df2_near))
+            print(df2_near[["ra", "dec"]].head())
+
+
             c1 = SkyCoord(df1["ra"].to_numpy() * u.deg,
                             df1["dec"].to_numpy() * u.deg)
             c2 = SkyCoord(df2["ra"].to_numpy() * u.deg,
@@ -1471,6 +1483,14 @@ class NodeJoin(Node):
             sep_arcsec = sep2d.to(u.arcsec).value
 
             m = sep_arcsec < self.parameters.get("max_sep_arcsec", 1)
+
+            print("min sep arcsec:", sep_arcsec.min())
+            print("p01 sep arcsec:", np.percentile(sep_arcsec, 1))
+            print("p05 sep arcsec:", np.percentile(sep_arcsec, 5))
+            print("median sep arcsec:", np.median(sep_arcsec))
+
+            for r in [1, 2, 5, 10, 30, 60]:
+                print(f"matches within {r} arcsec:", np.sum(sep_arcsec < r))
 
             df1_matched = df1[m].reset_index(drop=True)
             df2_matched = df2.iloc[idx[m]].reset_index(drop=True)
