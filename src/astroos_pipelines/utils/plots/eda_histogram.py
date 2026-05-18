@@ -45,7 +45,11 @@ def eda_histogram(table: astropy.table.Table,
     print(f"Total records in table: {len(table)}.")
 
     df = table.to_pandas()
-
+    
+    # if objectId is in columns, remove it for plotting but keep it for summary stats
+    if 'objectId' in columns:
+        columns.pop('objectId')
+        df = df.drop(columns=['objectId'])
     
     
     if (sample_size is not None and sample_size < len(df)):
