@@ -31,6 +31,7 @@ from astroos_pipelines.utils.plots.dataset_eda import *
 from astroos_pipelines.utils.plots.eda_histogram import *
 from astroos_pipelines.utils.plots.eda_sky_distribution import *
 from astroos_pipelines.utils.plots.eda_color_color import *
+from astroos_pipelines.utils.plots.eda_pairplot import *
 from astroos_pipelines.artifacts import *
 
 # from astroos_pipelines.hst.dag import *
@@ -1256,12 +1257,15 @@ class NodeEDAScript(Node):
             script = self.parameters.get("script", "")
             eda_type = self.parameters.get("eda_type", "histogram")
 
+            pair_plots = []
+
             namespace = {
                     "df": df,
                     "parameters": self.parameters,
                     "inputs": self.inputs,
                     "outputs": self.outputs,
                     "columns": columns,
+                    "pair_plots": pair_plots,
                     }
 
             try:
@@ -1275,6 +1279,7 @@ class NodeEDAScript(Node):
 
             df = namespace["df"]
             columns = namespace["columns"]
+            pair_plots = namespace["pair_plots"]
 
             # for col in df.columns:
                 # if col not in artifact.active_columns:
@@ -1318,6 +1323,13 @@ class NodeEDAScript(Node):
             elif eda_type == "sky-distribution":
                 eda_sky_distribution(table=table, 
                             columns=columns, 
+                            save_dir=self.node_dir, 
+                            title=title,
+                            )
+            elif eda_type == "pair-plot":
+                eda_pairplot(table=table, 
+                            columns=columns, 
+                            pair_plots=pair_plots,
                             save_dir=self.node_dir, 
                             title=title,
                             )
