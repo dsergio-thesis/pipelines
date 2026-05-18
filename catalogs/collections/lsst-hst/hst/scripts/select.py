@@ -23,14 +23,15 @@ df = df[df["lssfr"] > df["lssfr"].quantile(0.05)] # remove bottom 5% of lssfr fo
 
 
 # apply label
+import numpy as np
 
-lssfr  = np.array(df["lssfr"], dtype=float)  if "lssfr" in df.colnames else None
+lssfr  = np.array(df["lssfr"], dtype=float)  if "lssfr" in df.columns else None
 
 # validity mask
 if lssfr is None:
     raise ValueError("hst.fits is missing required column 'lssfr'.")
 
-valid &= np.isfinite(lssfr)
+valid = np.isfinite(lssfr)
 
 valid &= (lssfr > -50) & (lssfr < 50)
 
