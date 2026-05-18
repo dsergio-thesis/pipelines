@@ -505,6 +505,12 @@ class PipelineDAG(DAG):
         self.nodes[node_id] = node
         self.head = node
         self.to_yaml()  # save DAG after adding node
+
+    def get_node_id(self, label):
+        for node_id, node in self.nodes.items():
+            if node.label == label:
+                return node_id
+        raise ValueError(f"No node found with label {label}")
     
     def get_head(self):
         """ Get the head node of the DAG"""
@@ -648,6 +654,7 @@ class PipelineDAG(DAG):
 
         output_path = os.path.join(self.dag_dir, "dag")
         dot.render(output_path, format="svg", cleanup=True, view=view)
+        dot.render(output_path, format="png", cleanup=True)
         dot.save(os.path.join(self.dag_dir, "dag.dot"))
         return dot
 

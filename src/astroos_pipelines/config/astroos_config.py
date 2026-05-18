@@ -47,6 +47,8 @@ class AstroosConfig:
             option_create: bool = False,
             node_type: str = "generic", # NodeGeneric default
             node_label: str = None,
+            parent: str = None,
+            option_origin: bool = False,
             input_artifact: str = None,
             parameter: (str, str) = None,
             sky_region_target_selected: str = None,
@@ -59,6 +61,8 @@ class AstroosConfig:
         self.dataset_name = dataset_name
         self.pipeline_name = pipeline_name
         self.option_create = option_create
+        self.option_origin = option_origin
+        self.parent = parent
         self.node_type = node_type
         self.node_label = node_label
         self.input_artifact = input_artifact
@@ -113,6 +117,8 @@ class AstroosConfig:
             dataset_name=args.dataset_name,
             pipeline_name=args.pipeline_name,
             option_create=args.create,
+            option_origin=args.origin,
+            parent=args.parent,
             input_artifact=args.input_artifact,
             parameter=tuple(args.parameter) if args.parameter else None,
             node_type=args.node_type,
@@ -144,6 +150,8 @@ class AstroosConfig:
         p.add_argument("-n", "--pipeline-name", type=str, help="Pipeline name")
         p.add_argument("-m", "--max-records", type=int, help="Max records to fetch from query")
         p.add_argument("-c", "--create", action="store_true", help="Create new  node")
+        p.add_argument("-o", "--origin", action="store_true", help="Set node origin to current node")
+        p.add_argument("--parent", type=str, help="Parent node ID for new node")
         p.add_argument("-i", "--input-artifact", type=str, help="Path to input artifact")
         p.add_argument("-t", "--node-type", type=str, default="generic", help="Node type for new node")
         p.add_argument("-l", "--node-label", type=str, help="Label for new node (defaults to node type)")

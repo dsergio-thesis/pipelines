@@ -8,6 +8,8 @@ def main():
     input_artifact = config.input_artifact
     parameter = config.parameter
     option_create = config.option_create
+    option_origin = config.option_origin
+    parent = config.parent
     node_type = config.node_type
     node_label = config.node_label
     max_records = config.max_records
@@ -19,6 +21,8 @@ def main():
         print("No pipelines found.")
         PipelineDAG.usage()
         return
+
+    parent_id = dag.get_node_id(parent) if parent else None
 
     dag_dir = dag.dag_dir
 
@@ -35,8 +39,15 @@ def main():
             dag_node = NodeEDAScript(label=node_label)
         else: 
             dag_node = NodeGeneric(label=node_label)
+            if parent_id:
+                dag_node.parents = [parent_id]
 
         dag.add_node(dag_node)
+        if option_origin:
+            dag_node.parents = []
+    
+    if parent_id:
+        dag.head.parents.append(parent_id)
 
     if input_artifact:
         dag.add_input_artifact_item(input_artifact)
