@@ -105,7 +105,7 @@ class AstroosQueryLSST(AstroosQuery):
         result : table
             The query result
         """
-        log.info(f"Async Querying LSST ADQL with query:\n{query}")
+        print(f"Async Querying LSST ADQL with query:\n{query}")
 
         # job = self.tap_service.async_submit(query)
         # self.tap_service.async_wait(job)

@@ -35,9 +35,9 @@ def eda_pairplot(table: astropy.table.Table,
     summary_stats = {}
 
     # save full table to csv for reference
-    table_file = f"{save_dir}/full_table.csv"
-    table.write(table_file, format='csv', overwrite=True)
-    print(f"Saved full table to {table_file}")
+    # table_file = f"{save_dir}/full_table.csv"
+    # table.write(table_file, format='csv', overwrite=True)
+    # print(f"Saved full table to {table_file}")
 
     if (title is None):
         title = "Exploratory Data Analysis"

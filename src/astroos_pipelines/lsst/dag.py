@@ -320,6 +320,8 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
 
         print("Running TAP ADQL Query on LSST...")
         table = client.query_async(query["adql"])
+        
+        print(f"Number of results: {len(table)}")
 
         columns = {}
         for col in table.colnames:

@@ -7,7 +7,7 @@ rad node-rsp -c -l "Exploratory analysis pipeline on the LSST DP-1 catalog"
 # -------------------------------------------------
 # Data import
 # -------------------------------------------------
-rad node-rsp -ct tap -l "Query TAP service for LSST DP-1 catalog" --target extended_chandra_deep_field_south_ecdfs -m 1000 -d d1
+rad node-rsp -ct tap -l "Query TAP service for LSST DP-1 catalog" --target extended_chandra_deep_field_south_ecdfs -m 500000 -d d1
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/query.py
 
 # -------------------------------------------------
