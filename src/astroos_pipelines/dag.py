@@ -1425,13 +1425,15 @@ class NodeJoin(Node):
             artifact1 = self.inputs[0]
             artifact2 = self.inputs[1]
 
-            data1 = Table.read(artifact1.file_path)
-            data2 = Table.read(artifact2.file_path)
+            # data1 = Table.read(artifact1.file_path)
+            # data2 = Table.read(artifact2.file_path)
+            data1 = artifact1.to_table(self.node_id)
+            data2 = artifact2.to_table(self.node_id)
             df1 = data1.to_pandas()
             df2 = data2.to_pandas()
 
-            # print("df1", df1)
-            # print("df2", df2)
+            print("df1", df1)
+            print("df2", df2)
 
             # return
 
