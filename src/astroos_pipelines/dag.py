@@ -20,6 +20,9 @@ from astropy.coordinates import SkyCoord
 from astropy.units import Quantity
 import inspect
 
+from tqdm import tqdm
+from astropy.io import fits
+
 from astropy import units as u
 
 import html
@@ -1387,9 +1390,7 @@ class NodePhotometricDataset(Node):
             os.makedirs(self.node_dir, exist_ok=True)
             with open(script_path, "w") as f:
                 f.write(template_script)
-            self.parameters = {
-                "script": script_path
-                }
+            self.parameters["script"] = script_path
     
     def to_dict(self):
         d = super().to_dict()
@@ -1409,7 +1410,7 @@ class NodePhotometricDataset(Node):
 
     def run(self):
 
-        print(f"Running NodePhotometricDataset {self.label}")
+        print(f"Running NodePhotometricDataset {self.label} parameters: {self.parameters}")
 
         if len(self.inputs) > 0:
             artifact = self.inputs[0]

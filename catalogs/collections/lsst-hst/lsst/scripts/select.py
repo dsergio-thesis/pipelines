@@ -46,7 +46,7 @@ Next: add diff/ratio PSF and cModel for morphology
 
 
 df_clean = pd.DataFrame()  # will hold cleaned data with new features
-# df_clean['objectId'] = df['objectId']
+df_clean['objectId'] = df['objectId']
 df_clean['ra'] = df['coord_ra']
 df_clean['dec'] = df['coord_dec']
 df_clean['tract'] = df['tract']
@@ -237,6 +237,7 @@ df.index = df_clean.index
 
 
 columns.update({
+    "objectId": "objectId",
     "ra": "Right Ascension (degrees)",
     "dec": "Declination (degrees)",
     "tract": "LSST Tract Number",
