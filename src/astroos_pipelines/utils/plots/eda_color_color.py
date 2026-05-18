@@ -160,7 +160,7 @@ def eda_color_color(table: astropy.table.Table,
 
     plot_color_color(
         x=ug, y=gr,
-        labels=labels,
+        labels=None,
         xlabel="u-g", ylabel="g-r",
         filename="color_color_ug_gr.png",
         xlim=global_lim, ylim=global_lim
@@ -168,7 +168,7 @@ def eda_color_color(table: astropy.table.Table,
 
     plot_color_color(
         x=gr, y=ri,
-        labels=labels,
+        labels=None,
         xlabel="g-r", ylabel="r-i",
         filename="color_color_gr_ri.png",
         xlim=global_lim, ylim=global_lim
@@ -176,7 +176,7 @@ def eda_color_color(table: astropy.table.Table,
 
     plot_color_color(
         x=iz, y=zy,
-        labels=labels,
+        labels=None,
         xlabel="i-z", ylabel="z-y",
         filename="color_color_iz_zy.png",
         xlim=global_lim, ylim=global_lim
