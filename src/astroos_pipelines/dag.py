@@ -1197,7 +1197,7 @@ class NodeEDAScript(Node):
         )
     
     def node_configure(self):
-        if self.parameters['script'] is None:
+        if "script" not in self.parameters:
             # write template script to node directory
             template_script = """# Example script for NodeEDAScript. This script will run by default. You can run your own script by setting the 'script' parameter in this node to the path of the script you want to run. Use this as a template and save the script in your catalog directory.
 
@@ -1505,9 +1505,11 @@ class NodeJoin(Node):
                 active_columns=matched_columns,
             )
 
-            # print("df_matched", df_matched)
+            print("df_matched", df_matched)
 
             table = Table.from_pandas(df_matched)
+            print(f"** JOIN Number in df_matched: {len(table)}")
+
             output_artifact.load_from_table(table, matched_columns)
 
             self.outputs = [output_artifact]

@@ -32,6 +32,7 @@ def main():
     print(coords)
 
     lsst_catalog = NodeTAPQuery(
+            label="LSST DP-1 TAP",
             parameters={
                 "max_records": max_records,
                 "query_coords": coords,
@@ -63,6 +64,7 @@ def main():
     # we usually want the whole catalog for matching. adjust just for testing this
     hst_max_records = 300000
     hst_catalog = NodeImport(
+            label="3D-HST Catalog",
             parameters = {
                 "max_records": hst_max_records,
                 "script": "catalogs/collections/lsst-hst/hst/scripts/import.py",
@@ -89,14 +91,23 @@ def main():
 
     lsst_hst_match = NodeJoin(
             parameters={
-                "max_sep_arcsec": 0.8,},
-            parents=[lsst_select.node_id, hst_export.node_id],
+                "max_sep_arcsec": 1.8,},
+            parents=[lsst_select_export.node_id, hst_export.node_id],
             )
     lsst_hst_export = NodeExport(
             parents = [lsst_hst_match.node_id],
             )
-    lsst_hst_eda = NodeEDA(
+    lsst_hst_eda = NodeEDAScript(
+            parameters={
+                "eda_type": "histogram"
+                },
             parents = [lsst_hst_export.node_id],
+            )
+    lsst_hst_sky_dist_eda = NodeEDAScript(
+            parameters={
+                "eda_type": "sky-distribution"
+                },
+            parents = [lsst_hst_eda.node_id],
             )
 
     new_artifact_path="catalogs/collections/lsst-hst/hst/hst.fits"
@@ -116,6 +127,7 @@ def main():
     dag.add_node(lsst_hst_match)
     dag.add_node(lsst_hst_export)
     dag.add_node(lsst_hst_eda)
+    dag.add_node(lsst_hst_sky_dist_eda)
 
 
 
