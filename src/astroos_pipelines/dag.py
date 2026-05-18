@@ -1251,6 +1251,7 @@ class NodeEDAScript(Node):
             table = artifact.to_table(self.node_id)
             df = table.to_pandas()
             columns = artifact.active_columns if artifact.active_columns else table.colnames
+            columns_original = columns.copy()
 
             script = self.parameters.get("script", "")
             eda_type = self.parameters.get("eda_type", "histogram")
@@ -1275,10 +1276,10 @@ class NodeEDAScript(Node):
             df = namespace["df"]
             columns = namespace["columns"]
 
-            for col in df.columns:
-                if col not in artifact.active_columns:
-                    artifact.active_columns[col] = {}
-                artifact.add_column_version(col, self.node_id, df[col])
+            # for col in df.columns:
+                # if col not in artifact.active_columns:
+                    # artifact.active_columns[col] = {}
+                # artifact.add_column_version(col, self.node_id, df[col])
 
             # # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
             # # print(df)
@@ -1292,14 +1293,14 @@ class NodeEDAScript(Node):
             artifact_dag = artifact.dag
 
             for col in artifact.active_columns:
-                if col not in artifact.columns:
+                if col not in columns:
                     # print(f"Column {col} not found in artifact columns {artifact.columns}. Skipping.")
                     continue
                 col_data = artifact.columns[col].latest_at(target_node_id=self.node_id, dag=artifact_dag)
                 if col_data is not None:
                     table[col] = col_data
 
-            columns = artifact.active_columns
+            # columns = artifact.active_columns
 
 
             if eda_type == "histogram":
@@ -1323,7 +1324,7 @@ class NodeEDAScript(Node):
             else:
                 # print(f"Unknown eda_type {eda_type}. Supported types are 'histogram', 'color-color', and 'sky_dist'.")
                 raise ValueError(f"Unknown eda_type {eda_type}. Supported types are 'histogram', 'color-color', and 'sky-distribution'.")
-            
+            artifact.active_columns = columns_original
             self.outputs = [artifact]
 
 
