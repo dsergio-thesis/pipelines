@@ -228,18 +228,61 @@ for col in df_clean.columns:
     df[col] = df_clean[col].values
 
 df.index = df_clean.index
-# 
+
+
+
+columns.update({
+    "ra": "Right Ascension (degrees)",
+    "dec": "Declination (degrees)",
+    "tract": "LSST Tract Number",
+    "patch": "LSST Patch Number",
+    "detect_fromBlend": "Detection from Blend Flag",
+    "detect_isIsolated": "Detection Isolated Flag",
+    "refExtendedness": "Reference Extendedness (0=point-like, 1=extended)",
+    "label": "Object Class Label (if available)",
+    "color_gr": "g-r Color (mag)",
+    "color_ri": "r-i Color (mag)",
+    "color_iz": "i-z Color (mag)",
+    "u_psfFlux_arcsinh": "Arcsinh Transformed u-band PSF Flux",
+    "u_psfFlux_SNR_log": "Log SNR of u-band PSF Flux",
+    "u_psfFlux_mag": "u-band PSF Magnitude",
+    "g_psfFlux_arcsinh": "Arcsinh Transformed g-band PSF Flux",
+    "g_psfFlux_SNR_log": "Log SNR of g-band PSF Flux",
+    "g_psfFlux_mag": "g-band PSF Magnitude",
+    "r_psfFlux_arcsinh": "Arcsinh Transformed r-band PSF Flux",
+    "r_psfFlux_SNR_log": "Log SNR of r-band PSF Flux",
+    "r_psfFlux_mag": "r-band PSF Magnitude",
+    "i_psfFlux_arcsinh": "Arcsinh Transformed i-band PSF Flux",
+    "i_psfFlux_SNR_log": "Log SNR of i-band PSF Flux",
+    "i_psfFlux_mag": "i-band PSF Magnitude",
+    "z_psfFlux_arcsinh": "Arcsinh Transformed z-band PSF Flux",
+    "z_psfFlux_SNR_log": "Log SNR of z-band PSF Flux",
+    "z_psfFlux_mag": "z-band PSF Magnitude",
+    "y_psfFlux_arcsinh": "Arcsinh Transformed y-band PSF Flux",
+    "y_psfFlux_SNR_log": "Log SNR of y-band PSF Flux",
+    "y_psfFlux_mag": "y-band PSF Magnitude",
+    "color_ug": "u-g Color (mag)",
+    "color_ur": "u-r Color (mag)",
+    "color_ui": "u-i Color (mag)",
+    "color_uz": "u-z Color (mag)",
+    "color_uy": "u-y Color (mag)",
+    "color_gr": "g-r Color (mag)",
+    "color_gi": "g-i Color (mag)",
+    "color_gz": "g-z Color (mag)",
+    "color_gy": "g-y Color (mag)",
+    "color_ri": "r-i Color (mag)",
+    "color_rz": "r-z Color (mag)",
+    "color_ry": "r-y Color (mag)",
+    "color_iz": "i-z Color (mag)",
+    "color_iy": "i-y Color (mag)",
+    "color_zy": "z-y Color (mag)",
+    "curvature_ug_gr": "Curvature between u-g and g-r colors",
+    "curvature_gr_ri": "Curvature between g-r and r-i colors",
+    "curvature_ri_iz": "Curvature between r-i and i-z colors",
+    "curvature_iz_zy": "Curvature between i-z and z-y colors",
+})
 
 
 
 
-# print(f"Label counts: {label_counts}")
 
-# columns = {}
-# for col in df_clean.columns:
-    # columns[col] = col
-
-# columns.pop("objectId", None)
-
-# table = Table.from_pandas(df_clean)
-# self.output_fits_table(table, columns=columns)

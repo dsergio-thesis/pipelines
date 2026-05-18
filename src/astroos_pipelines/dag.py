@@ -1160,6 +1160,8 @@ class NodeScript(Node):
                     artifact.active_columns[col] = {}
                 artifact.add_column_version(col, self.node_id, df[col])
 
+            artifact.set_active_columns(columns)
+
             # # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
             # # print(df)
 
