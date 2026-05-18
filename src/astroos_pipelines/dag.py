@@ -33,6 +33,8 @@ from astroos_pipelines.utils.plots.eda_sky_distribution import *
 from astroos_pipelines.utils.plots.eda_color_color import *
 from astroos_pipelines.utils.plots.eda_pairplot import *
 from astroos_pipelines.artifacts import *
+from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
+
 
 # from astroos_pipelines.hst.dag import *
 
