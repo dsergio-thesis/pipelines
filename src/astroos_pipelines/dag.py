@@ -1347,6 +1347,166 @@ class NodeEDAScript(Node):
 
 
 
+class NodePhotometricDataset(Node):
+    """
+    A node that constructs a dataset.
+
+    """
+
+    def __init__(self,
+                 dag_dir=None,
+                 node_type="photometric-dataset",
+                 label="Photometric Dataset Node",
+                 node_id=None,
+                 parents=[],
+                 parameters={"script": None},
+                 inputs=[],
+                 outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            label=label,
+            dag_dir=dag_dir,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            inputs=inputs,
+            outputs=outputs,
+            description="Constructs a photmetric dataset.",
+        )
+    
+    def node_configure(self):
+        if "script" not in self.parameters:
+            # write template script to node directory
+            template_script = """# Example script 
+
+"""         
+            script_path = os.path.join(self.node_dir, f"script.py")
+
+            os.makedirs(self.node_dir, exist_ok=True)
+            with open(script_path, "w") as f:
+                f.write(template_script)
+            self.parameters = {
+                "script": script_path
+                }
+    
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "NodePhotometricDataset"
+        return d
+    
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            dag_dir=d["dag_dir"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+
+        print(f"Running NodePhotometricDataset {self.label}")
+
+        if len(self.inputs) > 0:
+            artifact = self.inputs[0]
+
+            table = artifact.to_table(self.node_id)
+            df = table.to_pandas()
+
+            columns = artifact.active_columns if artifact.active_columns else table.colnames
+            columns_original = columns.copy()
+
+            script = self.parameters.get("script", "")
+
+            namespace = {
+                    "df": df,
+                    "parameters": self.parameters,
+                    "inputs": self.inputs,
+                    "outputs": self.outputs,
+                    "columns": columns,
+                    }
+
+            try:
+                with open(script, "r") as f:
+                    code = f.read()
+                    exec(code, namespace)
+
+            except Exception as e:
+                # print(f"NodeScript failed to execute script {script} with error: {e}")
+                raise e
+
+            df = namespace["df"]
+            columns = namespace["columns"]
+
+            table = Table()
+            artifact_dag = artifact.dag
+
+            for col in artifact.active_columns:
+                if col not in columns:
+                    # print(f"Column {col} not found in artifact columns {artifact.columns}. Skipping.")
+                    continue
+                col_data = artifact.columns[col].latest_at(target_node_id=self.node_id, dag=artifact_dag)
+                if col_data is not None:
+                    table[col] = col_data
+
+
+            dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(self.parameters.get("dataset"))
+            dataset.feature_names = columns
+
+            for row in tqdm(df.itertuples(), total=len(df), desc="Building Photometric Dataset"):
+
+                target_ra = row.ra
+                target_dec = row.dec
+                photometric_features = np.zeros((6, 3), dtype=np.float32)
+                for bi, band in enumerate(['u', 'g', 'r', 'i', 'z', 'y']):
+                    photometric_features[bi] = [
+                        getattr(row, f"{band}_psfFlux_arcsinh", 0.0),
+                        # getattr(row, f"{band}_psfFluxErr_arcsinh", 0.0),
+                        getattr(row, f"{band}_psfFlux_SNR_log", 0.0),
+                        getattr(row, f"{band}_psfFlux_mag", 0.0),
+                        # getattr(row, f"{band}_psfFlux_bad_flag", 0.0),
+                    ]
+                photometric_features = np.hstack([photometric_features.flatten(),
+                    getattr(row, "color_ug", np.nan),
+                    getattr(row, "color_ur", np.nan),
+                    getattr(row, "color_ui", np.nan),
+                    getattr(row, "color_uz", np.nan),
+                    getattr(row, "color_uy", np.nan),
+                    getattr(row, "color_gr", np.nan),
+                    getattr(row, "color_gi", np.nan),
+                    getattr(row, "color_gz", np.nan),
+                    getattr(row, "color_gy", np.nan),
+                    getattr(row, "color_ri", np.nan),
+                    getattr(row, "color_rz", np.nan),
+                    getattr(row, "color_ry", np.nan),
+                    getattr(row, "color_iz", np.nan),
+                    getattr(row, "color_iy", np.nan),
+                    getattr(row, "color_zy", np.nan),
+                    getattr(row, "curvature_ug_gr", np.nan),
+                    getattr(row, "curvature_gr_ri", np.nan),
+                    getattr(row, "curvature_ri_iz", np.nan),
+                    getattr(row, "curvature_iz_zy", np.nan),])
+
+                hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
+                hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") else 0
+                hdu_phot.header['ra'] = float(target_ra)
+                hdu_phot.header['dec'] = float(target_dec)
+                hdu_phot.header['objectId'] = int(row.objectId)
+
+                if (dataset.contains(row.objectId)):
+                    dataset.update(row.objectId, hdu_phot)
+                else:
+                    dataset.append(hdu_phot)
+
+
+
+            # columns = artifact.active_columns
+
+
+            artifact.active_columns = columns_original
+            self.outputs = [artifact]
 
 
 

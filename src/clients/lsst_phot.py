@@ -109,6 +109,12 @@ def main():
                 },
             parents = [lsst_hst_eda.node_id],
             )
+    
+    lsst_hst_dataset = NodePhotometricDataset(
+            parameters={
+                "dataset": dataset_cart_phot.to_dict()},
+            parents=[lsst_hst_sky_dist_eda.node_id],
+            )
 
     new_artifact_path="catalogs/collections/lsst-hst/hst/hst.fits"
     dag.add_node(hst_catalog)
@@ -128,6 +134,7 @@ def main():
     dag.add_node(lsst_hst_export)
     dag.add_node(lsst_hst_eda)
     dag.add_node(lsst_hst_sky_dist_eda)
+    dag.add_node(lsst_hst_dataset)
 
 
 
