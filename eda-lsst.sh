@@ -4,9 +4,15 @@ rad init-rsp
 
 rad node-rsp -c -l "Exploratory analysis pipeline on the LSST DP-1 catalog"
 
+# -------------------------------------------------
+# Data import
+# -------------------------------------------------
 rad node-rsp -ct tap -l "Query TAP service for LSST DP-1 catalog" --target extended_chandra_deep_field_south_ecdfs -m 1000 -d d1
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/query.py
 
+# -------------------------------------------------
+# Data processing
+# -------------------------------------------------
 rad node-rsp -ct script -l "Clean catalog"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/clean.py
 
@@ -15,10 +21,18 @@ rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/select.py
 
 rad node-rsp -ct export -l "Export processed catalog"
 
+# -------------------------------------------------
+# Exploratory data analysis
+# -------------------------------------------------
 rad node-rsp -ct eda-script -l "Catalog distribution analysis"
 rad node-rsp -p title "Exploratory distribution analysis of LSST DP-1"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/histogram_select.py
 rad node-rsp -p eda_type histogram
+
+rad node-rsp -ct eda-script -l "Catalog pair-plot analysis"
+rad node-rsp -p title "Exploratory pair-plot analysis of the LSST DP-1"
+rad node-rsp -p script catalogs/collections/lsst-hst/hst/scripts/pair_plot_select.py
+rad node-rsp -p eda_type pair-plot
 
 rad node-rsp -ct eda-script -l "Catalog sky distribution analysis"
 rad node-rsp -p title "Exploratory sky distribution analysis of LSST DP-1"
