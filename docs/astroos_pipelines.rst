@@ -7,13 +7,9 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
-   astroos_pipelines.computer
    astroos_pipelines.config
-   astroos_pipelines.hst
    astroos_pipelines.logger
    astroos_pipelines.lsst
-   astroos_pipelines.mast
-   astroos_pipelines.sdss
    astroos_pipelines.utils
 
 Submodules
@@ -55,14 +51,6 @@ astroos\_pipelines.morphometry module
 -------------------------------------
 
 .. automodule:: astroos_pipelines.morphometry
-   :members:
-   :show-inheritance:
-   :undoc-members:
-
-astroos\_pipelines.pipelines module
------------------------------------
-
-.. automodule:: astroos_pipelines.pipelines
    :members:
    :show-inheritance:
    :undoc-members:
