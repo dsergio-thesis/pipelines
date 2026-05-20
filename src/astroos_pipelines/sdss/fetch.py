@@ -34,11 +34,12 @@ from scipy.ndimage import rotate
 
 import sys
 import importlib
-from astroos_pipelines.logger.logger import setup_logging
-importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+
+# from astroos_pipelines.logger.logger import setup_logging
+# importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 class AstroosFetch(ABC):
     """
@@ -256,7 +257,7 @@ class AstroosFetchSDSSManualCutout_ImageOnly(AstroosFetch):
                         # with open(filepath, "wb") as f:
                         #     f.write(resp.content)
                     except Exception as e:
-                        log.error(f"Failed to download {image_url}: {e}")
+                        print(f"Failed to download {image_url}: {e}")
                         continue
 
                     # with open(filepath, "rb") as f:
@@ -360,7 +361,7 @@ class AstroosFetchSDSSManualCutout_ImageOnly(AstroosFetch):
                 df_i += 1
     
         # output_images = np.array(output_images)
-        log.info(f"Output images shape: {output_images.shape}")
+        print(f"Output images shape: {output_images.shape}")
 
         return output_images, df['label'].values, output_band_bounds
 
@@ -405,7 +406,7 @@ class AstroosFetchManualFitsCutout(AstroosFetch):
                     df_i += 1
                     continue
                 else:
-                    log.info(f"Downloading ({ra}, {dec}) Label: {row.label}")
+                    print(f"Downloading ({ra}, {dec}) Label: {row.label}")
                 label = row.label
                 band_hdu_cutouts = []
                 wcs = None
@@ -438,7 +439,7 @@ class AstroosFetchManualFitsCutout(AstroosFetch):
                         image_data = io.BytesIO(response.content)
 
                     except Exception as e:
-                        log.error(f"Failed to download {image_url}: {e}")
+                        print(f"Failed to download {image_url}: {e}")
                         continue
 
                     with image_data as f:

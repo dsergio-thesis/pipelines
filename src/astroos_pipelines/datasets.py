@@ -21,11 +21,11 @@ importlib.reload(sys.modules['astroos_pipelines.labels'])
 from astroos_pipelines.utils.formatting import ascii_kv_table
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
-from astroos_pipelines.logger.logger import setup_logging
-importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+# from astroos_pipelines.logger.logger import setup_logging
+# importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 class DataSetBase(Dataset):
     """
@@ -44,7 +44,7 @@ class DataSetBase(Dataset):
         self.dataset_dir = dataset_dir
         # create directory if not exists
         os.makedirs(self.dataset_dir, exist_ok=True)
-        log.info(f"Dataset directory set to: {self.dataset_dir}")
+        print(f"Dataset directory set to: {self.dataset_dir}")
 
     def get_dataset_dir(self):
         return self.dataset_dir
@@ -177,7 +177,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         self.morphometric_transform = morphometric_transform
 
         if labels_init_file is not None and not os.path.exists(labels_init_file):
-            log.error(f"labels_init_file '{labels_init_file}' does not exist")
+            print(f"labels_init_file '{labels_init_file}' does not exist")
             raise ValueError(f"labels_init_file '{labels_init_file}' does not exist")
         if labels_init_file is None:
             log.warning("No labels_init_file provided, labels will be empty. Call dataset.labels.load_from_file() later to load labels if needed.")
@@ -192,7 +192,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
 
         self._load_manifest()
 
-        log.info(f"initializing dataset {self.dataset_dir} with {len(self.manifest_list)} objects from manifest")
+        print(f"initializing dataset {self.dataset_dir} with {len(self.manifest_list)} objects from manifest")
 
     def _load_manifest(self):
         if not os.path.exists(self.manifest_file):

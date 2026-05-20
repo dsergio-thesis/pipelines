@@ -13,7 +13,7 @@ import importlib
 
 from astroos_pipelines.lsst.query import AstroosQueryLSST
 from astroos_pipelines.dag import *
-from astroos_pipelines.computer.datases import *
+from astroos_pipelines.computer.datasets import *
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
@@ -21,13 +21,13 @@ importlib.reload(sys.modules['astroos_pipelines.utils.plots.dataset_eda'])
 importlib.reload(sys.modules['astroos_pipelines.query'])
 importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.dag'])
-importlib.reload(sys.modules['astroos_pipelines.computer.datases'])
+importlib.reload(sys.modules['astroos_pipelines.computer.datasets'])
 
-from astroos_pipelines.logger.logger import setup_logging
-importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+# from astroos_pipelines.logger.logger import setup_logging
+# importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 
 class ComputerNodeCatalog(Node):

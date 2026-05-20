@@ -26,8 +26,7 @@ def dataset_eda(table: astropy.table.Table,
     - columns: A dictionary where keys are column names and values are their descriptions.
     - save_dir: Path to save the generated plots.
     - title: Optional title for the EDA plots.
-    - sky_regions: Optional dictionary defining known sky regions with their RA/Dec boundaries. 
-                   Format: { "Region Name": (ra_min, ra_max, dec_min, dec_max) }
+    - sky_regions: Optional dictionary defining known sky regions with their RA/Dec boundaries. Format: { "Region Name": (ra_min, ra_max, dec_min, dec_max) }
     - max_records: Maximum number of records to use for plotting (for large datasets).
     """
 

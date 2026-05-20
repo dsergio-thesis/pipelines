@@ -23,11 +23,11 @@ importlib.reload(sys.modules['astroos_pipelines.datasets'])
 importlib.reload(sys.modules['astroos_pipelines.pipelines'])
 # importlib.reload(sys.modules['astroos_pipelines.dag'])
 
-from astroos_pipelines.logger.logger import setup_logging
-importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+# from astroos_pipelines.logger.logger import setup_logging
+# importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 
 

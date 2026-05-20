@@ -209,7 +209,7 @@ def asymmetry(image: np.ndarray, mask: np.ndarray,
     """
     Compute asymmetry A as normalized 180-degree rotation residual:
 
-      A = (sum |I - I_rot|) / (2 * sum |I|)
+      A = (sum abs(I - I_rot)) / (2 * sum abs(I))
 
     Centered on the provided center (yc, xc). The factor 2 accounts for the rotated image
     being double-counted. This is the standard Conselice-like asymmetry calculation.
@@ -272,7 +272,7 @@ def smoothness(image: np.ndarray, mask: np.ndarray, center: Tuple[float, float],
     """
     Smoothness (clumpiness) S computed as:
 
-      S = sum |I - I_smooth| / sum |I|
+      S = sum abs(I - I_smooth) / sum abs(I)
 
     where I_smooth is the image convolved with a gaussian kernel. Following typical
     definitions, the gaussian sigma can be chosen as a fraction of the galaxy radius.

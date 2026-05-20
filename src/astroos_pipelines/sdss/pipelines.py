@@ -24,7 +24,7 @@ import importlib
 from astroos_pipelines.utils.formatting import ascii_kv_table
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
-from astroos_pipelines.pipelines import DataPipelineStage
+from astroos_pipelines.pipelines import StagePipeline
 from astroos_pipelines.sdss.query import AstroosQuerySDSS
 from astroos_pipelines.sdss.fetch import AstroosFetchManualFitsCutout
 
@@ -41,14 +41,14 @@ from astropy.io import fits
 from astroquery.simbad import Simbad
 from astroquery.sdss import SDSS
 
-from astroos_pipelines.logger.logger import setup_logging
-importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+# from astroos_pipelines.logger.logger import setup_logging
+# importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 
-class StageCatalogSDSS(DataPipelineStage):
+class StageCatalogSDSS(StagePipeline):
     """
     Data pipeline stage for cataloging SDSS data.
     """
@@ -82,7 +82,7 @@ class StageCatalogSDSS(DataPipelineStage):
             limit=self.pipeline.max_records)
 
 
-class StageCatalogSDSS_V2(DataPipelineStage):
+class StageCatalogSDSS_V2(StagePipeline):
     """
     Data pipeline stage for cataloging SDSS data.
     """
@@ -115,7 +115,7 @@ class StageCatalogSDSS_V2(DataPipelineStage):
         # self.output = self.output[:5]
 
 
-class StageFetchSDSS_V2_ManualCutout(DataPipelineStage):
+class StageFetchSDSS_V2_ManualCutout(StagePipeline):
     """Data pipeline stage for fetching SDSS data."""
     def __init__(self):
         super().__init__(stage_name="fetch", requires_stage_dir=True)
@@ -170,7 +170,7 @@ class StageFetchSDSS_V2_ManualCutout(DataPipelineStage):
         self.pipeline.y_train_filename = f"{self.pipeline.pipeline_dir}/y_train.pt"
 
 
-class StageFetchSDSS_V3_ManualCutout(DataPipelineStage):
+class StageFetchSDSS_V3_ManualCutout(StagePipeline):
     """
     Data pipeline stage for fetching SDSS data.
     """
@@ -197,7 +197,7 @@ class StageFetchSDSS_V3_ManualCutout(DataPipelineStage):
             required_columns.append(f"{band}_field04d")
 
         if not all(col in df.columns for col in required_columns):
-            log.error(f"Missing columns in DataFrame: {[col for col in required_columns if col not in df.columns]}")
+            print(f"Missing columns in DataFrame: {[col for col in required_columns if col not in df.columns]}")
             raise ValueError(f"DataFrame from previous stage must contain columns: {required_columns}. Actual columns: {df.columns.tolist()}")
 
         return True
@@ -207,7 +207,7 @@ class StageFetchSDSS_V3_ManualCutout(DataPipelineStage):
 
         df, image_url_format_string = self.prev_stage.output
 
-        log.info(f"Image URL format string: {image_url_format_string}")
+        print(f"Image URL format string: {image_url_format_string}")
 
         astroosFetch = AstroosFetchManualFitsCutout(
             df=df,
@@ -230,7 +230,7 @@ class StageFetchSDSS_V3_ManualCutout(DataPipelineStage):
         # self.pipeline.y_train_filename = f"{self.pipeline.dataset.dir}/y_train.pt"
 
 
-class StageFetchSDSS_V2_AutoCutout(DataPipelineStage):
+class StageFetchSDSS_V2_AutoCutout(StagePipeline):
     """Data pipeline stage for fetching SDSS data."""
     def __init__(self, dataset):
         super().__init__(stage_name="fetch", requires_stage_dir=True)
@@ -322,7 +322,7 @@ class StageFetchSDSS_V2_AutoCutout(DataPipelineStage):
         print(f"Saved file: {self.pipeline.X_train_filename} and {self.pipeline.y_train_filename}")
 
 
-class StageFilterCatalogSDSS(DataPipelineStage):
+class StageFilterCatalogSDSS(StagePipeline):
     """
     Data pipeline stage for filtering SDSS catalog results.
     """
@@ -362,7 +362,7 @@ class StageFilterCatalogSDSS(DataPipelineStage):
         self.pipeline.filtered_rows = rows
 
 
-class StageFetchSDSS(DataPipelineStage):
+class StageFetchSDSS(StagePipeline):
     """
     Data pipeline stage for fetching SDSS images.
     """

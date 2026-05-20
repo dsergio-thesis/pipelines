@@ -10,11 +10,12 @@ from astroos_pipelines.query import AstroosQuery
 
 import sys
 import importlib
-from logger.logger import setup_logging
-importlib.reload(sys.modules['logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+
+# from logger.logger import setup_logging
+# importlib.reload(sys.modules['logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 
 class AstroosQueryMast(AstroosQuery):
@@ -50,7 +51,7 @@ class AstroosQueryMast(AstroosQuery):
         Table
             An astropy Table containing the results of the MAST query.
         """
-        log.info("Performing MAST query with parameters: %s", query_params)
+        print("Performing MAST query with parameters: %s", query_params)
 
         # Perform the MAST query using astroquery
         coord = SkyCoord(ra=query_params['ra'], dec=query_params['dec'], unit=(u.deg, u.deg))
@@ -59,6 +60,6 @@ class AstroosQueryMast(AstroosQuery):
         self.res_table = Table(hst)
         
         
-        log.info("MAST query completed. Number of results: %d", len(self.res_table))
+        print("MAST query completed. Number of results: %d", len(self.res_table))
         
         return self.res_table

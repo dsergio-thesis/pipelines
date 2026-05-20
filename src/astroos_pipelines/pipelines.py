@@ -13,11 +13,11 @@ import json
 from astroos_pipelines.utils.formatting import ascii_kv_table
 importlib.reload(sys.modules['astroos_pipelines.utils.formatting'])
 
-from astroos_pipelines.logger.logger import setup_logging
-importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+# from astroos_pipelines.logger.logger import setup_logging
+# importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 
 class Pipeline(ABC):
@@ -116,10 +116,10 @@ class Pipeline(ABC):
         self.prepare_pipeline()
 
         print(f"---------------- Running Pipeline ---------------- \n")
-        log.info(f"running pipeline at directory: {self.pipeline_dir}...")
+        print(f"running pipeline at directory: {self.pipeline_dir}...")
 
         for stage in self.stages:
-            log.info(f"{stage.stage_index} Running stage: {stage.stage_name}")
+            print(f"{stage.stage_index} Running stage: {stage.stage_name}")
             if not stage._validate_prev_stage_manifest():
                 raise RuntimeError(
                         f"Validation failed for {self.pipeline_name}\n"
@@ -136,7 +136,7 @@ class Pipeline(ABC):
                 with open(f"{stage.stage_dir}/manifest.json", "w") as f:
                     json.dump(stage.manifest, f, indent=4)
             
-            log.info(f"Completed stage: {stage.stage_name}")
+            print(f"Completed stage: {stage.stage_name}")
 
         print("Pipeline completed.")
         self.output = self.stages[-1].output
@@ -146,7 +146,7 @@ class Pipeline(ABC):
         if os.path.exists(self.pipeline_dir):
             import shutil
             # shutil.rmtree(self.pipeline_dir)
-            log.info(f"Cleared pipeline directory: {self.pipeline_dir}")
+            print(f"Cleared pipeline directory: {self.pipeline_dir}")
 
     def __repr__(self):
         s = f"Pipeline(pipeline_name={self.pipeline_name}, max_records={self.max_records})"
@@ -232,7 +232,7 @@ class StagePipeline(ABC):
         if self.prev_stage is None or self.prev_stage.stage_index == 0:
             return True
         if self.prev_stage.manifest is None:
-            log.error(f"Previous stage {self.prev_stage.stage_name} has no manifest.")
+            print(f"Previous stage {self.prev_stage.stage_name} has no manifest.")
             return False
         # check that prev stage manifest has required fields
         required_fields = ["node_id", "run_id"]
@@ -275,7 +275,7 @@ class StagePipeline(ABC):
         table = self.output
         # first check cache
         if os.path.exists(f"{self.stage_dir}/output.fits"):
-            log.info(f"File {self.stage_dir}/output.fits already exists. ")
+            print(f"File {self.stage_dir}/output.fits already exists. ")
             # first read the table
             existing_table = Table.read(f"{self.stage_dir}/output.fits")
             existing_ids = set(existing_table['objectId'])
@@ -286,10 +286,10 @@ class StagePipeline(ABC):
             existing_table.write(f"{self.stage_dir}/output.fits", format="fits", overwrite=True)
         else:
             table.write(f"{self.stage_dir}/output.fits", format="fits", overwrite=True)
-            log.info(f"Saved query result to {self.stage_dir}/output.fits")
+            print(f"Saved query result to {self.stage_dir}/output.fits")
 
         table.write(f"{self.stage_dir}/output.csv", format="csv", overwrite=True)
-        log.info(f"Saved query result to {self.stage_dir}/output.csv")
+        print(f"Saved query result to {self.stage_dir}/output.csv")
 
 
 class StageCatalogRandom(StagePipeline):
@@ -355,4 +355,4 @@ class StageInfo(StagePipeline):
         s = f"{self.stage_index} Stage {self.stage_name}"
         if self.prev_stage is not None:
             s += f" reporting on {self.prev_stage.stage_name}: output: {self.prev_stage.output}\n"
-        log.info(s)
+        print(s)

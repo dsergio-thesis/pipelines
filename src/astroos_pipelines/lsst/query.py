@@ -29,11 +29,12 @@ importlib.reload(sys.modules['astroos_pipelines.query'])
 
 import sys
 import importlib
-from astroos_pipelines.logger.logger import setup_logging
-importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+
+# from astroos_pipelines.logger.logger import setup_logging
+# importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 
 class AstroosQueryLSST(AstroosQuery):
@@ -58,7 +59,7 @@ class AstroosQueryLSST(AstroosQuery):
         # print("LSST TAP Query Result:")
         # print(result)
 
-        log.info("Initialized LSST Query Client.")
+        print("Initialized LSST Query Client.")
 
     def __repr__(self):
         return f"<AstroosQueryLSST(root_dir={self.root_dir}, timeout={self.timeout})>"
@@ -138,7 +139,7 @@ class AstroosQueryLSST(AstroosQuery):
         matched_df : pandas.DataFrame
             DataFrame with labeled data. 
         """
-        log.info("Cross-matching LSST data.")
+        print("Cross-matching LSST data.")
 
         # add label from Simbad crossmatch if available
         for i, row in df.iterrows():
@@ -201,7 +202,7 @@ class AstroosQueryLSST(AstroosQuery):
         matched_df : pandas.DataFrame
             DataFrame with labeled data. 
         """
-        log.info("Cross-matching LSST data.")
+        print("Cross-matching LSST data.")
 
 
         hst_dict = AstroosQueryLSST.load_hst_and_make_labels(df_hst)

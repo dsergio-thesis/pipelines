@@ -26,11 +26,12 @@ importlib.reload(sys.modules['astroos_pipelines.utils.sdss'])
 
 import sys
 import importlib
-from astroos_pipelines.logger.logger import setup_logging
-importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
-import logging
-setup_logging()
-log = logging.getLogger(__name__)
+
+# from astroos_pipelines.logger.logger import setup_logging
+# importlib.reload(sys.modules['astroos_pipelines.logger.logger'])
+# import logging
+# setup_logging()
+# log = logging.getLogger(__name__)
 
 
 # ============================================================
@@ -50,7 +51,7 @@ class AstroosQuerySDSS(AstroosQuery):
         )
         self.sdss_base_url = "https://skyserver.sdss.org/dr17/SkyServerWS/SearchTools/SqlSearch"
 
-        log.info("Initialized SDSS Client")
+        print("Initialized SDSS Client")
         self.timeout = 120
         SDSS.timeout = 120
 
@@ -84,7 +85,7 @@ class AstroosQuerySDSS(AstroosQuery):
         res = requests.get(request_url, timeout=self.timeout)
                            
         if res is None:
-            log.info("No results found.")
+            print("No results found.")
             return Table()
         
         log.debug(res.status_code)
@@ -287,7 +288,7 @@ class AstroosQuerySDSS(AstroosQuery):
 
             # first check cache
             if os.path.exists(f"{self.root_dir}/{query_info}.csv"):
-                log.info(f"File {self.root_dir}/{query_info}.csv already exists. Skipping...")
+                print(f"File {self.root_dir}/{query_info}.csv already exists. Skipping...")
                 query_index += 1
                 if query_index >= max_queries:
                     break
@@ -297,7 +298,7 @@ class AstroosQuerySDSS(AstroosQuery):
 
                 """ 
 
-                First SIMBAD to get overall catalog info
+                First SIMBAD to get overall cataprint
 
 
                 """
@@ -363,7 +364,7 @@ class AstroosQuerySDSS(AstroosQuery):
                 df.to_csv(f"{self.root_dir}/{query_info}.csv", index=False)
 
             except Exception as e:
-                log.error(f"Error querying {queries[query_index][0]} to {queries[query_index][1]}: {e}")
+                print(f"Error querying {queries[query_index][0]} to {queries[query_index][1]}: {e}")
                 raise e
 
             sleep(1.2)
@@ -503,7 +504,7 @@ class AstroosQuerySDSS(AstroosQuery):
 
             try:
                 """ 
-                First SIMBAD to get overall catalog info
+                First SIMBAD to get overall cataprint
                 """
 
                 res = Simbad.query_tap(queries[query_index][2])
@@ -543,7 +544,7 @@ class AstroosQuerySDSS(AstroosQuery):
                     # print(sdss_data.text)
 
                     if len(sdss_data.text.split("\n")) <= 2:
-                        log.info(f"No SDSS data found for {row['main_id']}. Skipping...")
+                        print(f"No SDSS data found for {row['main_id']}. Skipping...")
                         continue
                     else:
 
@@ -551,7 +552,7 @@ class AstroosQuerySDSS(AstroosQuery):
                         data = sdss_data.text.split("\n")[2]
 
                         if str(data).strip() == "":
-                            log.info(f"No SDSS data found for {row['main_id']}. Skipping...")
+                            print(f"No SDSS data found for {row['main_id']}. Skipping...")
                             continue
 
                         morph_type = str(row['morph_type'])
@@ -597,7 +598,7 @@ class AstroosQuerySDSS(AstroosQuery):
                             band_image_components[f"{band}_field04d"].append(field04d)
 
                 total_records += len(coords_ra)
-                log.info(f"Accumulated total records: {total_records + len(coords_ra)}")
+                print(f"Accumulated total records: {total_records + len(coords_ra)}")
                 
                 df = pd.DataFrame({
                     "ra": coords_ra,
@@ -627,7 +628,7 @@ class AstroosQuerySDSS(AstroosQuery):
                 # result = result, image_url_format_string
 
             except Exception as e:
-                log.error(f"Error querying {queries[query_index][0]} to {queries[query_index][1]}: {e}")
+                print(f"Error querying {queries[query_index][0]} to {queries[query_index][1]}: {e}")
                 raise e
 
             sleep(1.2)

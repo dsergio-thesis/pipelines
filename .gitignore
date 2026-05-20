@@ -219,3 +219,11 @@ _pipelines/
 data/
 **/*.parquet
 **/*.zip
+
+# Sphinx build output
+docs/_build/
+
+# UML output
+uml/*.png
+uml/*.svg
+uml/*.dot
