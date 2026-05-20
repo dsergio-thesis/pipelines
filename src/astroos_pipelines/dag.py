@@ -1438,14 +1438,15 @@ class NodePhotometricDataset(Node):
                     "columns": columns,
                     }
 
-            try:
-                with open(script, "r") as f:
-                    code = f.read()
-                    exec(code, namespace)
+            if script is not None:
+                try:
+                    with open(script, "r") as f:
+                        code = f.read()
+                        exec(code, namespace)
 
-            except Exception as e:
-                # print(f"NodeScript failed to execute script {script} with error: {e}")
-                raise e
+                except Exception as e:
+                    # print(f"NodeScript failed to execute script {script} with error: {e}")
+                    raise e
 
             df = namespace["df"]
             columns = namespace["columns"]

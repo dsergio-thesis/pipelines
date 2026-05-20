@@ -2,8 +2,7 @@
 make clean
 rad init-rsp
 
-rad node-rsp -c -l "LSST DP-1 and 3D-HST Catalog Dataset"
-
+#rad node-rsp -c -l "LSST DP-1 and 3D-HST Catalog Dataset"
 
 # -------------------------------------------------
 # LSST DP-1 Data import
