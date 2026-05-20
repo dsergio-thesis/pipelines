@@ -218,3 +218,4 @@ log
 _pipelines/
 data/
 **/*.parquet
+**/*.zip
