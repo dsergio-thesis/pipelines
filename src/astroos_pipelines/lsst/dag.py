@@ -836,7 +836,7 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
         # self.output_fits_table(table, columns=self.parameters.get("columns", None))
 
 
-class LSSTNodeButlerFetch(Node):
+class NodeLSSTButlerFetch(Node):
     def __init__(
             self,
             node_type="catalog_lsst_butler_fetch",
@@ -874,7 +874,7 @@ class LSSTNodeButlerFetch(Node):
     def run(self):
 
         artifact = self.inputs[0]
-        table = Table.read(artifact.file_path, hdu=1)
+        table = artifact.to_table() 
 
         print(f"Fetching LSST data via Butler for {len(table)} objects...")
 
@@ -995,7 +995,7 @@ def worker_patch(args):
         hdu_img.header['ra'] = float(target_ra)
         hdu_img.header['dec'] = float(target_dec)
         hdu_img.header['objectId'] = int(row['objectId'])
-        hdu_img.header['redshift'] = -999
+        # hdu_img.header['redshift'] = -999
         # hdu_img.header['min_ra'] = min_ra
         # hdu_img.header['max_ra'] = max_ra
         # hdu_img.header['min_dec'] = min_dec

@@ -54,6 +54,9 @@ rad node-rsp -ct export -l "Export merged dataset"
 rad node-rsp -ct photo-dataset -l "Construct LSST DP-1 and 3D-HST dataset"
 rad node-rsp -p dataset-name "05-19"
 
+rad node-rsp -ct "butler-coadd-cutout" -l "Generate cutouts for LSST DP-1 and 3D-HST dataset"
+rad node-rsp -p dataset-name "05-19"
+
 # -------------------------------------------------
 # Exploratory data analysis
 # -------------------------------------------------
