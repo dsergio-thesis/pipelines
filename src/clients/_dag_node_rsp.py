@@ -1,6 +1,8 @@
 
 from clients._rsp import *
 
+# Below is copied from dag_node.py 
+
 def main():
 
     config = client_config()
@@ -8,6 +10,8 @@ def main():
     input_artifact = config.input_artifact
     parameter = config.parameter
     option_create = config.option_create
+    option_origin = config.option_origin
+    parent = config.parent
     node_type = config.node_type
     node_label = config.node_label
     max_records = config.max_records
@@ -17,11 +21,6 @@ def main():
 
     target = config.sky_region_target_selected
 
-    # dataset_cart_phot = FITS_Image_Morphometry_Photometry_Dataset(
-            # dataset_dir=os.path.join(dataset_dir, dataset_name),
-            # labels_init_file=labels_def_file,
-            # )
-
     print(f"Label: {node_label}")
     
     dag = PipelineDAG(label=pipeline_name)
@@ -29,6 +28,8 @@ def main():
         print("No pipelines found.")
         PipelineDAG.usage()
         return
+
+    parent_id = dag.get_node_id(parent) if parent else None
 
     dag_dir = dag.dag_dir
 
@@ -55,19 +56,38 @@ def main():
             dag_node = NodeImport(label=node_label, parameters={"max_records": max_records})
         elif node_type == "export":
             dag_node = NodeExport(label=node_label)
-        elif node_type == "eda":
-            dag_node = NodeEDA(label=node_label)
         elif node_type == "eda-script":
             dag_node = NodeEDAScript(label=node_label)
+        elif node_type == "merge":
+            dag_node = NodeJoin(parameters={"max_sep_arcsec": 0.8,})
+        elif node_type == "photo-dataset":
+            dag_node = NodePhotometricDataset()
         else: 
             dag_node = NodeGeneric(label=node_label)
+            if parent_id:
+                dag_node.parents = [parent_id]
 
         dag.add_node(dag_node)
+        if option_origin:
+            dag_node.parents = []
+    
+    if parent_id:
+        dag.head.parents.append(parent_id)
 
     if input_artifact:
         dag.add_input_artifact_item(input_artifact)
+
     if parameter:
         dag.add_parameter(parameter)
+
+    if parameter and "dataset-name" in parameter:
+        dataset_name = parameter["dataset-name"]
+        
+        dataset = FITS_Image_Morphometry_Photometry_Dataset(
+                dataset_dir=os.path.join(dataset_dir, dataset_name),
+                labels_init_file=labels_def_file,
+                )
+        dag_node.parameters["dataset"] = dataset.to_dict()
 
     dag.to_yaml()
     dag.to_graphviz()
