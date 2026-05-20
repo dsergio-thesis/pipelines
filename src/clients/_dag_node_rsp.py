@@ -3,7 +3,6 @@ from clients._rsp import *
 
 # Below is copied from dag_node.py 
 
-
 def main():
 
     config = client_config()
@@ -22,8 +21,6 @@ def main():
 
     target = config.sky_region_target_selected
 
-    print(f"Label: {node_label}")
-    
     dag = PipelineDAG(label=pipeline_name)
     if not dag.is_initialized():
         print("No pipelines found.")

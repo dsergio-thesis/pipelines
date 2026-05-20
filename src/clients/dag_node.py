@@ -19,8 +19,6 @@ def main():
 
     target = config.sky_region_target_selected
 
-    print(f"Label: {node_label}")
-    
     dag = PipelineDAG(label=pipeline_name)
     if not dag.is_initialized():
         print("No pipelines found.")
