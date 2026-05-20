@@ -84,7 +84,8 @@ def main():
                 dataset_dir=os.path.join(dataset_dir, dataset_name),
                 labels_init_file=labels_def_file,
                 )
-        dag.add_parameter("dataset", dataset.to_dict())
+        parameter_tuple = ("dataset", dataset.to_dict())
+        dag.add_parameter(parameter_tuple)
 
     dag.to_yaml()
     dag.to_graphviz()
