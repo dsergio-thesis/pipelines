@@ -78,14 +78,13 @@ def main():
     if parameter:
         dag.add_parameter(parameter)
 
-    if parameter and "dataset-name" in parameter:
-        dataset_name = parameter["dataset-name"]
-        
+    if parameter and parameter[0] == "dataset-name":
+        dataset_name = parameter[1]
         dataset = FITS_Image_Morphometry_Photometry_Dataset(
                 dataset_dir=os.path.join(dataset_dir, dataset_name),
                 labels_init_file=labels_def_file,
                 )
-        dag_node.parameters["dataset"] = dataset.to_dict()
+        dag_node.add_parameter("dataset", dataset.to_dict())
 
     dag.to_yaml()
     dag.to_graphviz()
