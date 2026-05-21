@@ -351,12 +351,30 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         return objectId in self.manifest_set
 
     def update(self, objectId, hdu):
-        """ Update existing FITS file for objectId, adding new HDU """
+        """Update existing FITS file for objectId, replacing matching HDU."""
         if not self.contains(objectId):
-            raise ValueError(f"objectId '{objectId}' not found in dataset, cannot update non-existent entry.")
+            raise ValueError(
+                    f"objectId '{objectId}' not found in dataset, cannot update non-existent entry."
+                    )
 
-        with fits.open(os.path.join(self.dataset_dir, f"{objectId}.fits"), mode="update") as cur_hdul:
-            cur_hdul.append(hdu)
+        path = os.path.join(self.dataset_dir, f"{objectId}.fits")
+        extname = hdu.header.get("EXTNAME")
+
+        with fits.open(path, mode="update") as cur_hdul:
+            matches = [
+                    i for i, existing_hdu in enumerate(cur_hdul)
+                    if existing_hdu.header.get("EXTNAME") == extname
+                    ]
+
+            if matches:
+                cur_hdul[matches[0]] = hdu
+
+                # remove accidental duplicates
+                for i in reversed(matches[1:]):
+                    del cur_hdul[i]
+            else:
+                cur_hdul.append(hdu)
+
             cur_hdul.flush()
 
     def __repr__(self):
