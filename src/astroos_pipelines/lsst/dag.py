@@ -839,15 +839,18 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
 class NodeLSSTButlerFetch(Node):
     def __init__(
             self,
+            dag_dir=None,
             node_type="catalog_lsst_butler_fetch",
             node_id=None,
             parents=[],
-            parameters=None,
+            parameters={},
+            label="Fetch LSST DP-1 Cutouts (Butler)",
             inputs=[],
             outputs=[]):
         super().__init__(
             node_type=node_type,
-            label="Fetch LSST DP-1 Cutouts (Butler)",
+            dag_dir=dag_dir,
+            label=label,
             description="Use the RSP Butler service <br />to fetch deep coadd cutouts.",
             node_id=node_id,
             parents=parents,
@@ -858,7 +861,7 @@ class NodeLSSTButlerFetch(Node):
 
     def to_dict(self):
         d = super().to_dict()
-        d["type"] = "LSSTNodeButlerFetch"
+        d["type"] = "NodeLSSTButlerFetch"
         return d
 
     @classmethod
@@ -874,7 +877,7 @@ class NodeLSSTButlerFetch(Node):
     def run(self):
 
         artifact = self.inputs[0]
-        table = artifact.to_table() 
+        table = artifact.to_table(self.node_id) 
 
         print(f"Fetching LSST data via Butler for {len(table)} objects...")
 
