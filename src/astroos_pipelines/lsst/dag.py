@@ -851,7 +851,7 @@ class NodeLSSTButlerFetch(Node):
             node_type=node_type,
             dag_dir=dag_dir,
             label=label,
-            description="Use the RSP Butler service <br />to fetch deep coadd cutouts.",
+            description="Use the RSP Butler service to fetch deep coadd cutouts.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -928,8 +928,9 @@ def worker_patch(args):
     ext = geom.Extent2I(STAMP_W, STAMP_H)
     band_images = np.zeros((len(BANDS), STAMP_H, STAMP_W), dtype=np.float32)
 
-    for row in object_rows:
+    for row in tqdm(object_rows, desc=f"Processing tract {tract} patch {patch}", total=len(object_rows)): 
 
+        
         # print("row\n\n")
         # print(row)
         ra_deg = float(row["ra"])
