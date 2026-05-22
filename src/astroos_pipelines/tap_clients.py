@@ -38,6 +38,11 @@ class TapClient(ABC):
     def async_result(self, job_url):
         pass
 
+    def query_async(self, query, poll_interval=2):
+        job = self.async_submit(query)
+        results = job.fetch_result()
+        return results.to_table() 
+
 # ============================================================
 # requests TAP Client
 # ============================================================
@@ -87,14 +92,18 @@ class SimpleTAPClient(TapClient):
 # Pyvo TAP Client
 # ============================================================
 class PyvoTAPClient(TapClient):
-    def __init__(self, base_url, credentials_file, maxrecords=None):
+    def __init__(self, base_url, credentials_file = None, maxrecords=None):
         super().__init__(base_url, credentials_file=credentials_file, maxrecords=maxrecords)
 
-        self.session = requests.Session()
-        # read token from file
-        with open(credentials_file, "r") as f:
-            token = f.read().strip()
-        self.session.headers["Authorization"] = f"Bearer {token}"
+        if credentials_file is not None:
+            self.session = requests.Session()
+            # read token from file
+            with open(credentials_file, "r") as f:
+                token = f.read().strip()
+            self.session.headers["Authorization"] = f"Bearer {token}"
+        else:
+            self.session = None
+            token = None
 
         self.service = pyvo.dal.tap.TAPService(
             base_url,
@@ -115,19 +124,19 @@ class PyvoTAPClient(TapClient):
         else:
             job = self.service.run_async(query)
         
-        print(f"Job: {job.phase} URL: {job.url}")
+        # print(f"Job: {job.phase} URL: {job.url}")
         job.run()
-        print(f"Job: {job.phase} URL: {job.url}")
+        # print(f"Job: {job.phase} URL: {job.url}")
         return job
 
     def async_wait(self, job, poll_interval=2):
         while job.phase not in ("COMPLETED", "ERROR", "ABORTED"):
             time.sleep(poll_interval)
-            print(f"Job phase: {job.phase}")
+            # print(f"Job phase: {job.phase}")
         return job.phase
 
     def async_result(self, job):
-        print(f"Job phase: {job.phase}")
+        # print(f"Job phase: {job.phase}")
         job = pyvo.dal.tap.AsyncTAPJob(job.url, session=self.session)
         return job.fetch_result()
 

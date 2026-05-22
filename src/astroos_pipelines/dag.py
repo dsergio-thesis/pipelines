@@ -38,6 +38,8 @@ from astroos_pipelines.utils.plots.eda_pairplot import *
 from astroos_pipelines.artifacts import *
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset
 
+from astroos_pipelines.tap_clients import PyvoTAPClient
+
 
 # from astroos_pipelines.hst.dag import *
 
@@ -984,79 +986,79 @@ class NodeGeneric(Node):
 
 
 
-class NodeEDA(Node):
-    def __init__(
-            self,
-            dag_dir=None,
-            node_type="eda",
-            label="Exploratory Data Analysis",
-            node_id=None,
-            parents=[],
-            parameters={},
-            inputs=[],
-            outputs=[]):
-        super().__init__(
-            node_type=node_type,
-            dag_dir=dag_dir,
-            label=label,
-            description="Generates exploratory analysis and summary visualizations.",
-            node_id=node_id,
-            parents=parents,
-            parameters=parameters,
-            inputs=inputs,
-            outputs=outputs,
-            )
+# class NodeEDA(Node):
+    # def __init__(
+            # self,
+            # dag_dir=None,
+            # node_type="eda",
+            # label="Exploratory Data Analysis",
+            # node_id=None,
+            # parents=[],
+            # parameters={},
+            # inputs=[],
+            # outputs=[]):
+        # super().__init__(
+            # node_type=node_type,
+            # dag_dir=dag_dir,
+            # label=label,
+            # description="Generates exploratory analysis and summary visualizations.",
+            # node_id=node_id,
+            # parents=parents,
+            # parameters=parameters,
+            # inputs=inputs,
+            # outputs=outputs,
+            # )
 
-    def to_dict(self):
-        d = super().to_dict()
-        d["type"] = self.__class__.__name__
-        return d
+    # def to_dict(self):
+        # d = super().to_dict()
+        # d["type"] = self.__class__.__name__
+        # return d
 
-    @classmethod
-    def _from_dict(cls, d):
-        return cls(
-            dag_dir=d["dag_dir"],
-            node_id=d["node_id"],
-            parents=d.get("parents", []),
-            parameters=d.get("parameters", {}),
-            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
-        )
+    # @classmethod
+    # def _from_dict(cls, d):
+        # return cls(
+            # dag_dir=d["dag_dir"],
+            # node_id=d["node_id"],
+            # parents=d.get("parents", []),
+            # parameters=d.get("parameters", {}),
+            # inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            # outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        # )
 
-    def run(self):
+    # def run(self):
 
-        if len(self.inputs) == 0:
-            # # print("No input artifact for EDA node.")
-            return
+        # if len(self.inputs) == 0:
+            # # # print("No input artifact for EDA node.")
+            # return
 
-        artifact = self.inputs[0]
-        print(f"====Running EDA on artifact {artifact.file_path}. ")
+        # artifact = self.inputs[0]
+        # print(f"====Running EDA on artifact {artifact.file_path}. ")
 
-        if self.parameters is not None and "title" in self.parameters:
-            title = self.parameters["title"]
-        else:
-            title = "Exploratory Data Analysis"
+        # if self.parameters is not None and "title" in self.parameters:
+            # title = self.parameters["title"]
+        # else:
+            # title = "Exploratory Data Analysis"
 
-        table = Table()
-        artifact_dag = artifact.dag
+        # table = Table()
+        # artifact_dag = artifact.dag
 
-        for col in artifact.active_columns:
-            if col not in artifact.columns:
-                # print(f"Column {col} not found in artifact columns {artifact.columns}. Skipping.")
-                continue
-            col_data = artifact.columns[col].latest_at(target_node_id=self.node_id, dag=artifact_dag)
-            if col_data is not None:
-                table[col] = col_data
+        # for col in artifact.active_columns:
+            # if col not in artifact.columns:
+                # # print(f"Column {col} not found in artifact columns {artifact.columns}. Skipping.")
+                # continue
+            # col_data = artifact.columns[col].latest_at(target_node_id=self.node_id, dag=artifact_dag)
+            # if col_data is not None:
+                # table[col] = col_data
 
-        columns = artifact.active_columns
+        # columns = artifact.active_columns
 
-        dataset_eda(table=table, 
-                    columns=columns, 
-                    save_dir=self.node_dir, 
-                    title=title,
-                    )
+        # dataset_eda(table=table, 
+                    # columns=columns, 
+                    # save_dir=self.node_dir, 
+                    # title=title,
+                    # )
         
-        self.outputs = [artifact]
+        # self.outputs = [artifact]
 
 
 class NodeScript(Node):
@@ -1671,3 +1673,105 @@ class NodeJoin(Node):
             output_artifact.load_from_table(table, matched_columns)
 
             self.outputs = [output_artifact]
+
+
+class NodeTAPQueryGeneric(Node):
+    """
+    A node that connects to a TAP service.
+
+    """
+
+    def __init__(self,
+                 dag_dir=None,
+                 node_type="NodeTAPQueryGeneric",
+                 node_id=None,
+                 parents=[],
+                 parameters={"script": None},
+                 origin=True,
+                 label="TAP Query Generic",
+                 inputs=[],
+                 outputs=[]):
+        super().__init__(
+            node_type=node_type,
+            dag_dir=dag_dir,
+            node_id=node_id,
+            parents=parents,
+            parameters=parameters,
+            label=label,
+            inputs=inputs,
+            outputs=outputs,
+            origin=origin,
+            description="A node that connects to a TAP service.",
+        )
+    
+    def node_configure(self):
+        if 'script' not in self.parameters:
+            # write template script to node directory
+            template_script = """# Example script for NodeTAPQuery
+
+query["description"] = "Get 10 random objects"
+query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
+
+"""         
+            script_path = os.path.join(self.node_dir, f"script.py")
+
+            os.makedirs(self.node_dir, exist_ok=True)
+            with open(script_path, "w") as f:
+                f.write(template_script)
+            self.parameters = {
+                    "script": script_path
+                }
+    
+    def to_dict(self):
+        d = super().to_dict()
+        d["type"] = "NodeTAPQueryGeneric"
+        return d
+    
+    @classmethod
+    def _from_dict(cls, d):
+        return cls(
+            node_id=d["node_id"],
+            dag_dir=d["dag_dir"],
+            parents=d.get("parents", []),
+            parameters=d.get("parameters", {}),
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
+        )
+
+    def run(self):
+
+        script = self.parameters.get("script", "")
+        max_records = self.parameters.get("max_records", 3)
+
+        query = {"adql": "", "description": ""}
+
+        with open(script, "r") as f:
+            code = f.read()
+            exec(code, {"query": query, 
+                        "parameters": self.parameters, 
+                        })
+
+        client = PyvoTAPClient(
+                base_url="https://datalab.noirlab.edu/tap")
+
+        print("Running TAP ADQL Query...")
+        table = client.query_async(query["adql"])
+        
+        print(f"Number of results: {len(table)}")
+
+        columns = {}
+        for col in table.colnames:
+            columns[col] = col
+        # columns.pop("objectId", None)
+
+
+        artifact = ArtifactItem(
+                file_path=os.path.join(self.node_dir, "tap.fits"),
+                dag=self.artifact_dag,
+                node_id=self.node_id,
+                )
+        artifact.load_from_table(table, columns)
+        artifact.materialize(self.node_id)
+
+        self.outputs = [artifact]
+
