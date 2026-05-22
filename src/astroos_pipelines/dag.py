@@ -495,7 +495,7 @@ class PipelineDAG(DAG):
                 head.inputs = []
             head.inputs.append(artifact_item)
 
-        print(f"Adding node {node_id} of type {node.node_type} with parents {[p for p in node.parents]}")
+        print(f"Adding node {node_id} of type {node.node_type} with label {node.label}")
         # print(repr(node))
 
         # make dir for the node
