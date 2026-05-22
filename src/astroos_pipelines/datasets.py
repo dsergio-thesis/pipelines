@@ -180,7 +180,7 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
             print(f"labels_init_file '{labels_init_file}' does not exist")
             raise ValueError(f"labels_init_file '{labels_init_file}' does not exist")
         if labels_init_file is None:
-            log.warning("No labels_init_file provided, labels will be empty. Call dataset.labels.load_from_file() later to load labels if needed.")
+            print("No labels_init_file provided, labels will be empty. Call dataset.labels.load_from_file() later to load labels if needed.")
             self.labels = None
         else:
             self.labels = Labels(labels_dir=dataset_dir, labels_init_file=labels_init_file)

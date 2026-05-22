@@ -126,6 +126,7 @@ class AstroosConfig:
             sky_regions_csv=base.sky_regions_csv,
             sky_region_target_selected=args.target,
             max_records=args.max_records if args.max_records is not None else base.max_records,
+            labels_def_file=base.labels_def_file,
         )
 
         # optional runtime coord override

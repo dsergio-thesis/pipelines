@@ -3,6 +3,7 @@ from typing import Tuple, Optional
 import numpy as np
 from scipy import ndimage as ndi
 from scipy.ndimage import gaussian_filter, rotate
+# import skimage
 from skimage import measure, filters, morphology
 from skimage.measure import label, regionprops
 from math import log10
@@ -89,6 +90,8 @@ def simple_segmentation(
     bkg_mean, bkg_std = sigma_clip_background(image)
 
     # print(f"bkg_mean, bkg_std: {(bkg_mean, bkg_std)}")
+
+    # print(f"scikit-image version: {skimage.__version__}")
 
     thresh = bkg_mean + nsigma * bkg_std
     bw = image > thresh
