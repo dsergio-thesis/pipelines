@@ -836,19 +836,22 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
         # self.output_fits_table(table, columns=self.parameters.get("columns", None))
 
 
-class LSSTNodeButlerFetch(Node):
+class NodeLSSTButlerFetch(Node):
     def __init__(
             self,
+            dag_dir=None,
             node_type="catalog_lsst_butler_fetch",
             node_id=None,
             parents=[],
-            parameters=None,
+            parameters={},
+            label="Fetch LSST DP-1 Cutouts (Butler)",
             inputs=[],
             outputs=[]):
         super().__init__(
             node_type=node_type,
-            label="Fetch LSST DP-1 Cutouts (Butler)",
-            description="Use the RSP Butler service <br />to fetch deep coadd cutouts.",
+            dag_dir=dag_dir,
+            label=label,
+            description="Use the RSP Butler service to fetch deep coadd cutouts.",
             node_id=node_id,
             parents=parents,
             parameters=parameters,
@@ -858,7 +861,7 @@ class LSSTNodeButlerFetch(Node):
 
     def to_dict(self):
         d = super().to_dict()
-        d["type"] = "LSSTNodeButlerFetch"
+        d["type"] = "NodeLSSTButlerFetch"
         return d
 
     @classmethod
@@ -874,7 +877,7 @@ class LSSTNodeButlerFetch(Node):
     def run(self):
 
         artifact = self.inputs[0]
-        table = Table.read(artifact.file_path, hdu=1)
+        table = artifact.to_table(self.node_id) 
 
         print(f"Fetching LSST data via Butler for {len(table)} objects...")
 
@@ -925,8 +928,9 @@ def worker_patch(args):
     ext = geom.Extent2I(STAMP_W, STAMP_H)
     band_images = np.zeros((len(BANDS), STAMP_H, STAMP_W), dtype=np.float32)
 
-    for row in object_rows:
+    for row in tqdm(object_rows, desc=f"Processing tract {tract} patch {patch}", total=len(object_rows)): 
 
+        
         # print("row\n\n")
         # print(row)
         ra_deg = float(row["ra"])
@@ -995,7 +999,7 @@ def worker_patch(args):
         hdu_img.header['ra'] = float(target_ra)
         hdu_img.header['dec'] = float(target_dec)
         hdu_img.header['objectId'] = int(row['objectId'])
-        hdu_img.header['redshift'] = -999
+        # hdu_img.header['redshift'] = -999
         # hdu_img.header['min_ra'] = min_ra
         # hdu_img.header['max_ra'] = max_ra
         # hdu_img.header['min_dec'] = min_dec

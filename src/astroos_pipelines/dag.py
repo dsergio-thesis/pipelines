@@ -1354,11 +1354,6 @@ class NodeEDAScript(Node):
             self.outputs = [artifact]
 
 
-
-
-
-
-
 class NodePhotometricDataset(Node):
     """
     A node that constructs a dataset.
@@ -1518,36 +1513,6 @@ class NodePhotometricDataset(Node):
 
             artifact.active_columns = columns_original
             self.outputs = [artifact]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class NodeJoin(Node):

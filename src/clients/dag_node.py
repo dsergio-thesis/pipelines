@@ -58,6 +58,8 @@ def main():
             dag_node = NodeJoin(parameters={"max_sep_arcsec": 0.8,})
         elif node_type == "photo-dataset":
             dag_node = NodePhotometricDataset()
+        elif node_type == "butler-coadd-cutout":
+            dag_node = NodeLSSTButlerFetch(label=node_label)
         else: 
             dag_node = NodeGeneric(label=node_label)
             if parent_id:

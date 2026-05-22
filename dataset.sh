@@ -7,7 +7,7 @@ rad init-rsp
 # -------------------------------------------------
 # LSST DP-1 Data import
 # -------------------------------------------------
-rad node-rsp -ct tap -l "TAP LSST DP-1 catalog" --target extended_chandra_deep_field_south_ecdfs -m 500000 -d d1
+rad node-rsp -ct tap -l "TAP LSST DP-1 catalog" --target extended_chandra_deep_field_south_ecdfs -m 5000 -d d1
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/query.py
 
 # -------------------------------------------------
@@ -52,7 +52,10 @@ rad node-rsp -ct export -l "Export merged dataset"
 # Construct Dataset
 # -------------------------------------------------
 rad node-rsp -ct photo-dataset -l "Construct LSST DP-1 and 3D-HST dataset"
-rad node-rsp -p dataset-name "05-19"
+rad node-rsp -p dataset-name "05-21-2"
+
+rad node-rsp -ct "butler-coadd-cutout" -l "Generate cutouts for LSST DP-1 and 3D-HST dataset"
+rad node-rsp -p dataset-name "05-21-2"
 
 # -------------------------------------------------
 # Exploratory data analysis
