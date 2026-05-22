@@ -28,6 +28,13 @@ importlib.reload(sys.modules['astroos_pipelines.datasets'])
 import matplotlib.pyplot as plt
 import seaborn as sns
 
+from astropy.io import fits
+
+import lsst.geom as geom
+from astropy.io import fits
+import numpy as np
+import lsst.geom as geom
+
 
 from astropy.io import fits
 # do wcs next
@@ -344,8 +351,6 @@ def build_groups(objects, dataset_dict):
 
 
 
-import numpy as np
-import lsst.geom as geom
 
 def wcs_bounds_radec(skywcs, width: int, height: int):
     """
@@ -389,44 +394,34 @@ def wcs_bounds_radec(skywcs, width: int, height: int):
     return ra_min, ra_max, dec_min, dec_max
 
 
-from astropy.io import fits
-
-import lsst.geom as geom
-from astropy.io import fits
-
 def make_cutout_header3(cutout, ra, dec):
     wcs = cutout.getWcs()
 
-    # Start from LSST's FITS WCS keywords
     hdr = fits.Header(wcs.getFitsMetadata().toDict())
     hdr["WCSAXES"] = 2
 
-    # Choose a nice reference pixel in CUTOUT coordinates
-    width, height = cutout.getDimensions()  # (W, H)
+    width, height = cutout.getDimensions()
+
     x_ref = (width - 1) / 2.0
     y_ref = (height - 1) / 2.0
 
-    # Find the sky coord at that cutout pixel
     sp = wcs.pixelToSky(geom.Point2D(x_ref, y_ref))
     ra_ref = sp.getRa().asDegrees()
     dec_ref = sp.getDec().asDegrees()
 
-    # FITS uses 1-based pixel coordinates for CRPIX
     hdr["CRPIX1"] = x_ref + 1.0
     hdr["CRPIX2"] = y_ref + 1.0
-    hdr["CRVAL1"] = ra
-    hdr["CRVAL2"] = dec
+    hdr["CRVAL1"] = ra_ref
+    hdr["CRVAL2"] = dec_ref
 
     ra_min, ra_max, dec_min, dec_max = wcs_bounds_radec(wcs, width, height)
-
-    ra_min = ra + hdr['CD1_1'] * width / 2
-    ra_max = ra - hdr['CD1_1'] * width / 2
-    dec_min = dec - hdr['CD2_2'] * height / 2
-    dec_max = dec + hdr['CD2_2'] * height / 2
 
     hdr["min_ra"] = ra_min
     hdr["max_ra"] = ra_max
     hdr["min_dec"] = dec_min
     hdr["max_dec"] = dec_max
+
+    hdr["target_ra"] = float(ra)
+    hdr["target_dec"] = float(dec)
 
     return hdr
