@@ -48,6 +48,8 @@ def main():
                         )
         elif node_type == "script":
             dag_node = NodeScript(label=node_label)
+        elif node_type == "gtap":
+            dag_node = NodeTAPQueryGeneric(label=node_label, parameters={"max_records": max_records})
         elif node_type == "import":
             dag_node = NodeImport(label=node_label, parameters={"max_records": max_records})
         elif node_type == "export":
