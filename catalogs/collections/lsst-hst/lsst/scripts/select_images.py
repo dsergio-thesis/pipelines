@@ -6,11 +6,14 @@ from tqdm import tqdm
 
 
 """
-features per band: 
-    - psf and cModel magnitudes (2 features) 
-    - psf and cModel SNR (2 features, log-scaled)
+3 features per band: 
+    - flux Transformed (arcsinh)
+    - x err Transformed (arcsinh)
+    - log SNR (clamped to 0 if err=0)
+    - mag (from flux, with safe handling of zero/negative flux)
+    - x bad-flag (1 if any issues with flux/err, else 0)
 
-15 color features (using cModel mags, but could also do PSF mags or both):
+15 color features:
     - u-g color (mag_u - mag_g)
     - u-r color (mag_u - mag_r)
     - u-i color (mag_u - mag_i)
@@ -37,12 +40,12 @@ features per band:
     - curv_ri_iz = (mag_r - mag_i) - (mag_i - mag_z) = mag_r - 2*mag_i + mag_z
     - curv_iz_zy = (mag_i - mag_z) - (mag_z - mag_y) = mag_i - 2*mag_z + mag_y
 
-Next: add diff/ratio of PSF and cModel for extendedness 
+Next: add diff/ratio PSF and cModel for morphology
 
 """
 
-# print("select...")
-# print(df)
+print("select...")
+print(df)
 
 df_clean = pd.DataFrame()  # will hold cleaned data with new features
 df_clean['objectId'] = df['objectId']
@@ -53,14 +56,19 @@ df_clean['patch'] = df['patch']
 df_clean['detect_fromBlend'] = df['detect_fromBlend']
 df_clean['detect_isIsolated'] = df['detect_isIsolated']
 df_clean['refExtendedness'] = df['refExtendedness']
+# df_clean['label'] = df['label'] if 'label' in df.columns else [np.nan] * len(df)
 df_clean['color_gr'] = [np.nan] * len(df)
 df_clean['color_ri'] = [np.nan] * len(df)
 df_clean['color_iz'] = [np.nan] * len(df)
 for band in ['u', 'g', 'r', 'i', 'z', 'y']:
+    df_clean[f"{band}_psfFlux_arcsinh"] = [np.nan] * len(df)
+    df_clean[f"{band}_psfFluxErr_arcsinh"] = [np.nan] * len(df)
     df_clean[f"{band}_psfFlux_SNR_log"] = [np.nan] * len(df)
     df_clean[f"{band}_psfFlux_mag"] = [np.nan] * len(df)
     df_clean[f"{band}_psfFlux_bad_flag"] = [np.nan] * len(df)
 
+    df_clean[f"{band}_free_cModelFlux_arcsinh"] = [np.nan] * len(df)
+    df_clean[f"{band}_free_cModelFluxErr_arcsinh"] = [np.nan] * len(df)
     df_clean[f"{band}_free_cModelFlux_SNR_log"] = [np.nan] * len(df)
     df_clean[f"{band}_free_cModelFlux_mag"] = [np.nan] * len(df)
     df_clean[f"{band}_free_cModelFlux_bad_flag"] = [np.nan] * len(df)
@@ -77,6 +85,11 @@ label_counts = dict()
 
 num_bands = len(bands)
 
+# precompute safe scales (dataset-level)
+# flux_scale = self.median_r_psfFlux if getattr(self, "median_r_psfFlux", 0) and self.median_r_psfFlux > 0 else 1.0
+# err_scale  = self.median_r_psfFluxErr if getattr(self, "median_r_psfFluxErr", 0) and self.median_r_psfFluxErr > 0 else 1.0
+flux_scale = 1.0
+err_scale = 1.0
 
 for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"):
     target_ra = row.coord_ra
@@ -84,9 +97,13 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
 
     if hasattr(row, "label"):
         if (str(row.label) in label_counts):
+            # print(f"found label {str(row.label)}, adding to existing counts")
             label_counts[str(row.label)] += 1
         else:
+            # print(f"found label {str(row.label)}, setting count to 1")
             label_counts[str(row.label)] = 1
+
+    photometric_features = np.zeros((num_bands, 3), dtype=np.float32)
    
 
     psf_mag_u = None
@@ -120,149 +137,117 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
         psf_err  = getattr(row, f"{band}_psfFluxErr", None)
         psf_flag = getattr(row, f"{band}_psfFlux_flag", False)
 
-        cmodel_flux = getattr(row, f"{band}_free_cModelFlux", None)
-        cmodel_err = getattr(row, f"{band}_free_cModelFluxErr", None)
-        cmodel_flag = getattr(row, f"{band}_free_cModelFlux_flag", False)
+        cModel_flux = getattr(row, f"{band}_free_cModelFlux", None)
+        cModel_err = getattr(row, f"{band}_free_cModelFluxErr", None)
+        cModel_flag = getattr(row, f"{band}_free_cModelFlux_flag", False)
 
-        psf_mag = flux_to_mag(psf_flux) if psf_flux is not None and psf_flux > 0 else np.nan
-        cmodel_mag = flux_to_mag(cmodel_flux) if cmodel_flux is not None and cmodel_flux > 0 else np.nan
+        mag = flux_to_mag(flux) if flux is not None and flux > 0 else np.nan
+        mag_model = flux_to_mag(model_flux) if model_flux is not None and model_flux > 0 else np.nan
         
         # sanitize missing/NaN
-        invalid = (
-            psf_flux is None
-            or psf_err is None
-            or cmodel_flux is None
-            or cmodel_err is None
-            or pd.isna(psf_flux)
-            or pd.isna(psf_err)
-            or pd.isna(psf_mag)
-            or pd.isna(cmodel_mag)
-        )
-
-        if invalid:
-            psf_flux = 0.0
-            psf_err = 0.0
-            psf_mag = np.nan 
-            psf_snr = 0.0
+        if (flux is None 
+            or err is None 
+            or flag is None
+            or model_flux is None
+            or model_err is None
+            or model_flag is None
+            or (isinstance(flux, float) and np.isnan(flux)) 
+            or (isinstance(err, float) and np.isnan(err)
+            or (isinstance(mag, float) and np.isnan(mag))
+            or (isinstance(mag_model, float) and np.isnan(mag_model))
+                ):
+            psf_x1 = 0.0
+            psf_x2 = 0.0
+            psf_x3 = 0.0
+            psf_x4 = 0.0
             psf_bad = 1.0  # treat missing as bad
-            cmodel_flux = 0.0
-            cmodel_err = 0.0
-            cmodel_mag = np.nan 
-            cmodel_snr = 0.0
-            cmodel_bad = 1.0  # treat missing as bad
+            cmag_x1 = 0.0
+            cmag_x2 = 0.0
+            cmag_x3 = 0.0
+            cmag_x4 = 0.0
+            cmag_bad = 1.0  # treat missing as bad
             
         else:
+            # arcsinh scaling 
+            psf_x1 = np.arcsinh(float(flux) / flux_scale)
+            psf_x2 = np.arcsinh(float(err) / err_scale)
 
             # SNR feature (clamp to non-negative)
-            if psf_err > 0:
-                psf_snr = float(psf_flux) / float(psf_err)
-                psf_snr = np.log1p(max(0.0, psf_snr))
+            if err > 0:
+                snr = float(flux) / float(err)
+                psf_x3 = np.log1p(max(0.0, snr))
             else:
-                psf_snr = 0.0
+                psf_x3 = 0.0
 
-            if cmodel_err > 0:
-                cmodel_snr = float(cmodel_flux) / float(cmodel_err)
-                cmodel_snr = np.log1p(max(0.0, cmodel_snr))
-            else:
-                cmodel_snr = 0.0
-
+            psf_x4 = mag
             if band == 'g':
-                psf_mag_g = psf_mag
-                psf_mag_g_flag = psf_flag
-                cmodel_mag_g = cmodel_mag
-                cmodel_mag_g_flag = cmodel_flag
+                mag_g = mag
+                mag_g_flag = flag
             elif band == 'r':
-                psf_mag_r = psf_mag
-                psf_mag_r_flag = psf_flag
-                cmodel_mag_r = cmodel_mag
-                cmodel_mag_r_flag = cmodel_flag
+                mag_r = mag
+                mag_r_flag = flag
             elif band == 'i':
-                psf_mag_i = psf_mag
-                psf_mag_i_flag = psf_flag
-                cmodel_mag_i = cmodel_mag
-                cmodel_mag_i_flag = cmodel_flag
-            elif band == 'u':
-                psf_mag_u = psf_mag
-                psf_mag_u_flag = psf_flag
-                cmodel_mag_u = cmodel_mag
-                cmodel_mag_u_flag = cmodel_flag
+                mag_i = mag
+                mag_i_flag = flag
             elif band == 'z':
-                psf_mag_z = psf_mag
-                psf_mag_z_flag = psf_flag
-                cmodel_mag_z = cmodel_mag
-                cmodel_mag_z_flag = cmodel_flag
+                mag_z = mag
+                mag_z_flag = flag
+            elif band == 'u':
+                mag_u = mag
+                mag_u_flag = flag
             elif band == 'y':
-                psf_mag_y = psf_mag
-                psf_mag_y_flag = psf_flag
-                cmodel_mag_y = cmodel_mag
-                cmodel_mag_y_flag = cmodel_flag
-                
-        df_clean.at[row.Index, f"{band}_psfFlux_mag"] = psf_mag
-        df_clean.at[row.Index, f"{band}_psfFlux_SNR_log"] = psf_snr        
-        df_clean.at[row.Index, f"{band}_cModelFlux_mag"] = cmodel_mag
-        df_clean.at[row.Index, f"{band}_cModelFlux_SNR_log"] = cmodel_snr
+                mag_y = mag
+                mag_y_flag = flag
 
-        df_clean.at[row.Index, f"{band}_psfFlux_bad_flag"] = psf_bad
-        df_clean.at[row.Index, f"{band}_cModelFlux_bad_flag"] = cmodel_bad
+            psf_bad = 1.0 if bool(flag) else 0.0
 
-    psf_flux_mags = {
-        "u": psf_mag_u,
-        "g": psf_mag_g,
-        "r": psf_mag_r,
-        "i": psf_mag_i,
-        "z": psf_mag_z,
-        "y": psf_mag_y,
-    }
-    cmodel_flux_mags = {
-        "u": cmodel_mag_u,
-        "g": cmodel_mag_g,
-        "r": cmodel_mag_r,
-        "i": cmodel_mag_i,
-        "z": cmodel_mag_z,
-        "y": cmodel_mag_y,
-    }
-    psf_flux_flags = {
-        "u": psf_mag_u_flag,
-        "g": psf_mag_g_flag,
-        "r": psf_mag_r_flag,
-        "i": psf_mag_i_flag,
-        "z": psf_mag_z_flag,
-        "y": psf_mag_y_flag,
-    }
-    cmodel_flux_flags = {
-        "u": cmodel_mag_u_flag,
-        "g": cmodel_mag_g_flag,
-        "r": cmodel_mag_r_flag,
-        "i": cmodel_mag_i_flag,
-        "z": cmodel_mag_z_flag,
-        "y": cmodel_mag_y_flag,
+        photometric_features[bi] = (x1, x3, x4)
+
+        df_clean.at[row.Index, f"{band}_psfFlux_arcsinh"] = x1
+        # df_clean.at[row.Index, f"{band}_psfFluxErr_arcsinh"] = x2
+        df_clean.at[row.Index, f"{band}_psfFlux_SNR_log"] = x3
+        df_clean.at[row.Index, f"{band}_psfFlux_mag"] = x4
+        # df_clean.at[row.Index, f"{band}_psfFlux_bad_flag"] = bad
+
+    mags = {
+        "u": mag_u,
+        "g": mag_g,
+        "r": mag_r,
+        "i": mag_i,
+        "z": mag_z,
+        "y": mag_y,
     }
 
-    def psf_color(b1, b2):
-        m1, m2 = psf_flux_mags[b1], psf_flux_mags[b2]
-        f1, f2 = psf_flux_flags[b1], psf_flux_flags[b2]
-        return m1 - m2 if (m1 is not None and m2 is not None and not f1 and not f2) else np.nan
-    def cmodel_color(b1, b2):
-        m1, m2 = cmodel_flux_mags[b1], cmodel_flux_mags[b2]
-        f1, f2 = cmodel_flux_flags[b1], cmodel_flux_flags[b2]
+    flags = {
+        "u": mag_u_flag,
+        "g": mag_g_flag,
+        "r": mag_r_flag,
+        "i": mag_i_flag,
+        "z": mag_z_flag,
+        "y": mag_y_flag,
+    }
+
+    def color(b1, b2):
+        m1, m2 = mags[b1], mags[b2]
+        f1, f2 = flags[b1], flags[b2]
         return m1 - m2 if (m1 is not None and m2 is not None and not f1 and not f2) else np.nan
     
     colors = {}
-    colors['ug'] = cmodel_color('u', 'g')
-    colors['ur'] = cmodel_color('u', 'r')
-    colors['ui'] = cmodel_color('u', 'i')
-    colors['uz'] = cmodel_color('u', 'z')
-    colors['uy'] = cmodel_color('u', 'y')
-    colors['gr'] = cmodel_color('g', 'r')
-    colors['gi'] = cmodel_color('g', 'i')
-    colors['gz'] = cmodel_color('g', 'z')
-    colors['gy'] = cmodel_color('g', 'y')
-    colors['ri'] = cmodel_color('r', 'i')
-    colors['rz'] = cmodel_color('r', 'z')
-    colors['ry'] = cmodel_color('r', 'y')
-    colors['iz'] = cmodel_color('i', 'z')
-    colors['iy'] = cmodel_color('i', 'y')
-    colors['zy'] = cmodel_color('z', 'y')
+    colors['ug'] = color('u', 'g')
+    colors['ur'] = color('u', 'r')
+    colors['ui'] = color('u', 'i')
+    colors['uz'] = color('u', 'z')
+    colors['uy'] = color('u', 'y')
+    colors['gr'] = color('g', 'r')
+    colors['gi'] = color('g', 'i')
+    colors['gz'] = color('g', 'z')
+    colors['gy'] = color('g', 'y')
+    colors['ri'] = color('r', 'i')
+    colors['rz'] = color('r', 'z')
+    colors['ry'] = color('r', 'y')
+    colors['iz'] = color('i', 'z')
+    colors['iy'] = color('i', 'y')
+    colors['zy'] = color('z', 'y')
 
     curvatures = {}
     curvatures['ug_gr'] = (colors['ug'] - colors['gr']) if (not np.isnan(colors['ug']) and not np.isnan(colors['gr'])) else np.nan
@@ -270,6 +255,10 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
     curvatures['ri_iz'] = (colors['ri'] - colors['iz']) if (not np.isnan(colors['ri']) and not np.isnan(colors['iz'])) else np.nan
     curvatures['iz_zy'] = (colors['iz'] - colors['zy']) if (not np.isnan(colors['iz']) and not np.isnan(colors['zy'])) else np.nan
 
+    photometric_features = np.hstack([photometric_features.flatten(), 
+        [color for color in colors.values()] + 
+        [curv for curv in curvatures.values()]
+                                      ])
     for color_name, color_value in colors.items():
         df_clean.at[row.Index, f"color_{color_name}"] = color_value
     for curv_name, curv_value in curvatures.items():
@@ -288,6 +277,7 @@ for col in df_clean.columns:
 df.index = df_clean.index
 
 
+
 columns.update({
     "objectId": "objectId",
     "ra": "Right Ascension (degrees)",
@@ -301,30 +291,24 @@ columns.update({
     "color_gr": "g-r Color (mag)",
     "color_ri": "r-i Color (mag)",
     "color_iz": "i-z Color (mag)",
+    "u_psfFlux_arcsinh": "Arcsinh Transformed u-band PSF Flux",
     "u_psfFlux_SNR_log": "Log SNR of u-band PSF Flux",
     "u_psfFlux_mag": "u-band PSF Magnitude",
+    "g_psfFlux_arcsinh": "Arcsinh Transformed g-band PSF Flux",
     "g_psfFlux_SNR_log": "Log SNR of g-band PSF Flux",
     "g_psfFlux_mag": "g-band PSF Magnitude",
+    "r_psfFlux_arcsinh": "Arcsinh Transformed r-band PSF Flux",
     "r_psfFlux_SNR_log": "Log SNR of r-band PSF Flux",
     "r_psfFlux_mag": "r-band PSF Magnitude",
+    "i_psfFlux_arcsinh": "Arcsinh Transformed i-band PSF Flux",
     "i_psfFlux_SNR_log": "Log SNR of i-band PSF Flux",
     "i_psfFlux_mag": "i-band PSF Magnitude",
+    "z_psfFlux_arcsinh": "Arcsinh Transformed z-band PSF Flux",
     "z_psfFlux_SNR_log": "Log SNR of z-band PSF Flux",
     "z_psfFlux_mag": "z-band PSF Magnitude",
+    "y_psfFlux_arcsinh": "Arcsinh Transformed y-band PSF Flux",
     "y_psfFlux_SNR_log": "Log SNR of y-band PSF Flux",
     "y_psfFlux_mag": "y-band PSF Magnitude",
-    "u_cModelFlux_SNR_log": "Log SNR of u-band cModel Flux",
-    "u_cModelFlux_mag": "u-band cModel Magnitude",
-    "g_cModelFlux_SNR_log": "Log SNR of g-band cModel Flux",
-    "g_cModelFlux_mag": "g-band cModel Magnitude",
-    "r_cModelFlux_SNR_log": "Log SNR of r-band cModel Flux",
-    "r_cModelFlux_mag": "r-band cModel Magnitude",
-    "i_cModelFlux_SNR_log": "Log SNR of i-band cModel Flux",
-    "i_cModelFlux_mag": "i-band cModel Magnitude",
-    "z_cModelFlux_SNR_log": "Log SNR of z-band cModel Flux",
-    "z_cModelFlux_mag": "z-band cModel Magnitude",
-    "y_cModelFlux_SNR_log": "Log SNR of y-band cModel Flux",
-    "y_cModelFlux_mag": "y-band cModel Magnitude",
     "color_ug": "u-g Color (mag)",
     "color_ur": "u-r Color (mag)",
     "color_ui": "u-i Color (mag)",
