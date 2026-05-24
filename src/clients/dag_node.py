@@ -4,6 +4,7 @@ from clients._local import *
 def main():
 
     config = client_config()
+    # print(config)
     pipeline_name = config.pipeline_name
     input_artifact = config.input_artifact
     parameter = config.parameter
@@ -62,6 +63,8 @@ def main():
             dag_node = NodePhotometricDataset()
         elif node_type == "butler-coadd-cutout":
             dag_node = NodeLSSTButlerFetch(label=node_label)
+        elif node_type == "ls-cutout":
+            dag_node = NodeLSCutoutFetch(label=node_label)
         else: 
             dag_node = NodeGeneric(label=node_label)
             if parent_id:
@@ -73,6 +76,7 @@ def main():
     
     if parent_id:
         dag.head.parents.append(parent_id)
+        dag.artifact_dag.add_edge(parent_id, dag.head.node_id)
 
     if input_artifact:
         dag.add_input_artifact_item(input_artifact)

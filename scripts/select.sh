@@ -8,5 +8,5 @@ fi
 
 source env.sh
 export PYTHONPATH="src${PYTHONPATH:+:$PYTHONPATH}"
-export MPLBACKEND=Agg
-python -m clients.dag_run "$@"
+
+python -m clients.dag_select "$@"

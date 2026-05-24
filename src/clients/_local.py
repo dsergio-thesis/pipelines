@@ -10,6 +10,7 @@ from astroos_pipelines.utils.plots.as_html import plot_random_samples_as_html
 # from astroos_pipelines.pipelines import *
 # from astroos_pipelines.hst.pipelines import * 
 # from astroos_pipelines.hst.dag import *
+from astroos_pipelines.ls.dag import *
 from astroos_pipelines.dag import * 
 from astroos_pipelines.datasets import FITS_Image_Morphometry_Photometry_Dataset, \
         DataLoaderFITS
@@ -27,7 +28,7 @@ import logging
 def client_config():
     # global configuration for development and testing
     # importlib.reload(sys.modules['astroos_pipelines.pipelines'])
-    importlib.reload(sys.modules['astroos_pipelines.dag'])
+    # importlib.reload(sys.modules['astroos_pipelines.dag'])
     # importlib.reload(sys.modules['astroos_pipelines.hst.pipelines'])
     # importlib.reload(sys.modules['astroos_pipelines.hst.dag'])
     importlib.reload(sys.modules['astroos_pipelines.datasets'])

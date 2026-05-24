@@ -39,6 +39,7 @@ class TapClient(ABC):
         pass
 
     def query_async(self, query, poll_interval=2):
+        print(f"Submitting async TAP query: {query}")
         job = self.async_submit(query)
         results = job.fetch_result()
         return results.to_table() 
@@ -119,14 +120,35 @@ class PyvoTAPClient(TapClient):
 
     def async_submit(self, query):
         print(f"Submitting async TAP query with self.maxrecords: {self.maxrecords}")
-        if self.maxrecords is not None:
-            job = self.service.submit_job(query, maxrec=self.maxrecords)
-        else:
-            job = self.service.run_async(query)
-        
-        # print(f"Job: {job.phase} URL: {job.url}")
+
+        job = self.service.submit_job(query, maxrec=self.maxrecords)
+
+        print(f"Job URL: {job.url}")
+
         job.run()
-        # print(f"Job: {job.phase} URL: {job.url}")
+        job.wait(phases=["COMPLETED", "ERROR", "ABORTED"])
+
+        print(f"Job phase: {job.phase}")
+
+        import requests
+
+        if job.phase != "COMPLETED":
+            print("Job phase:", job.phase)
+            print("Job URL:", job.url)
+
+            error_url = job.url.rstrip("/") + "/error"
+            print("Error URL:", error_url)
+
+            try:
+                r = requests.get(error_url, timeout=30)
+                print("HTTP status:", r.status_code)
+                print("TAP error text:")
+                print(r.text)
+            except Exception as e:
+                print("Could not fetch TAP error:", e)
+
+            raise RuntimeError(f"TAP job failed with phase {job.phase}")
+
         return job
 
     def async_wait(self, job, poll_interval=2):

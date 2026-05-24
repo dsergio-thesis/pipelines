@@ -54,6 +54,11 @@ class AstroosConfig:
             sky_region_target_selected: str = None,
             sky_region_target_radius_arcmin: float = None,
             labels_def_file: Path = None,
+            n_epochs: int = None,
+            n_bags: int = None,
+            n_channels: int = None,
+            start_node_id: str = None,
+            selected_dag_id: str = None,
             ):
         self.dataset_dir = dataset_dir
         self.pipeline_dir = pipeline_dir
@@ -74,6 +79,11 @@ class AstroosConfig:
         self.sky_region_target_selected = sky_region_target_selected
 
         self.labels_def_file = labels_def_file
+        self.n_epochs = n_epochs
+        self.n_bags = n_bags
+        self.n_channels = n_channels
+        self.start_node_id = start_node_id
+        self.selected_dag_id = selected_dag_id
     
     @staticmethod
     def clean_path(value: str) -> Path:
@@ -98,6 +108,9 @@ class AstroosConfig:
             max_records=int(env("MAX_RECORDS", "6")),
             sky_regions_csv=cls.clean_path(env("SKY_REGIONS_CSV")).expanduser(),
             labels_def_file=cls.clean_path(env("LABELS_DEF_FILE")).expanduser(),
+            n_epochs=int(env("N_EPOCHS", "2")),
+            n_bags=int(env("N_BAGS", "2")),
+            n_channels=int(env("N_CHANNELS", "3")),
         )
 
     
@@ -126,7 +139,12 @@ class AstroosConfig:
             sky_regions_csv=base.sky_regions_csv,
             sky_region_target_selected=args.target,
             max_records=args.max_records if args.max_records is not None else base.max_records,
-            labels_def_file=base.labels_def_file,
+            labels_def_file=args.labels_def_file if args.labels_def_file is not None else base.labels_def_file,
+            n_epochs=args.n_epochs if args.n_epochs is not None else base.n_epochs,
+            n_bags=args.n_bags if args.n_bags is not None else base.n_bags,
+            n_channels=args.n_channels if args.n_channels is not None else base.n_channels,
+            start_node_id=args.start_node_id if args.start_node_id is not None else None,
+            selected_dag_id=args.selected_dag_id if args.selected_dag_id is not None else None,
         )
 
         # optional runtime coord override
@@ -156,8 +174,14 @@ class AstroosConfig:
         p.add_argument("-i", "--input-artifact", type=str, help="Path to input artifact")
         p.add_argument("-t", "--node-type", type=str, default="generic", help="Node type for new node")
         p.add_argument("-l", "--node-label", type=str, help="Label for new node (defaults to node type)")
+        p.add_argument("--labels-def-file", type=str, help="Path to labels definition file (CSV)")
         p.add_argument("--target", type=str, help="Target key to override coordinates")
         p.add_argument("-p", "--parameter", nargs=2, metavar=("KEY", "VALUE"), help="Additional parameter as key value pair")
+        p.add_argument("-e", "--n-epochs", type=int, help="Number of epochs for training")
+        p.add_argument("-k", "--n-bags", type=int, help="Number of bags for training")
+        p.add_argument("-b", "--n-channels", type=int, help="Number of channels for training")
+        p.add_argument("-s", "--start-node-id", type=str, help="Node ID to start from (for resuming pipelines)")
+        p.add_argument("-g", "--selected-dag-id", type=str, help="DAG ID to select for execution (if multiple DAGs in pipeline)")
         return p
 
     def __repr__(self):

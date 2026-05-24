@@ -24,19 +24,16 @@ class Labels:
                  required_columns=None, 
                  unknown_label_index=31):
         
-        print(f"Initializing Labels with directory: {labels_dir} and init file: {labels_init_file}")
         self.labels_dir = labels_dir
         os.makedirs(self.labels_dir, exist_ok=True)
         self.required_columns = required_columns or ['label_index', 'short_name']
         self.unknown_label_index = unknown_label_index
 
-        if labels_init_file is None:
+        if os.path.exists(os.path.join(self.labels_dir, "labels.csv")):
             self._load_labels()
         else:
+            print(f"Initializing Labels with directory: {labels_dir} and init file: {labels_init_file}")
             self.labels_init_file = labels_init_file
-            if not os.path.exists(self.labels_init_file):
-                print(f"Labels initialization file not found: {self.labels_init_file}")
-                raise FileNotFoundError(f"Labels initialization file not found: {self.labels_init_file}")
             self._initialize_labels()
 
     def get_labels_file(self):

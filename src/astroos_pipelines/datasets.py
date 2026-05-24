@@ -82,58 +82,6 @@ class DataSetBase(Dataset):
         raise NotImplementedError("Must implement update method to update existing data in the dataset.")
 
 
-class DataLoaderFITS(DataLoader):
-    """
-    DataLoader for FITS datasets.
-
-    Parameters
-    ----------
-    dataset : Dataset
-        The dataset to load data from.
-    batch_size : int, optional
-        How many samples per batch to load (default is 1).
-    shuffle : bool, optional
-        Set to True to have the data reshuffled at every epoch (default is False).
-    num_workers : int, optional
-        How many subprocesses to use for data loading. 0 means that the data will be loaded in the main process (default is 1).
-    sampler : Sampler, optional
-        Defines the strategy to draw samples from the dataset. If specified, shuffle must be False (default is None).
-    pin_memory : bool, optional
-        If True, the data loader will copy Tensors into CUDA pinned memory before returning them (default is True).
-    """
-
-    dateset: Dataset
-
-    def __init__(self, 
-                 dataset, 
-                 batch_size=1, 
-                 shuffle=False, 
-                 num_workers=1,
-                 sampler=None,
-                 pin_memory=True,
-                 ):
-        super().__init__(
-            dataset, 
-            batch_size=batch_size, 
-            shuffle=shuffle, 
-            num_workers=num_workers, 
-            sampler=sampler,
-            pin_memory=pin_memory,
-            collate_fn=self.custom_collate)
-
-    @staticmethod
-    def custom_collate(batch: list) -> tuple:
-        """ 
-        Custom collate function to handle FITS data.
-        Expects each item in batch to be a tuple of (image, label, morph_features, phot_features, header).
-        """
-        images, labels, morph_features, phot_features, headers = zip(*batch)
-        images = torch.stack(images) if images and images[0] is not None else None
-        labels = torch.stack(labels)
-        morph_features = torch.stack(morph_features) if morph_features and morph_features[0] is not None else None 
-        phot_features = torch.stack(phot_features)
-        headers = list(headers)
-        return images, labels, morph_features, phot_features, headers 
 
 
 class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
@@ -407,3 +355,59 @@ class FITS_Image_Morphometry_Photometry_Dataset(DataSetBase):
         if d.get("labels") is not None:
             dataset.labels = Labels.from_dict(d["labels"])
         return dataset
+
+
+
+class DataLoaderFITS(DataLoader):
+    """
+    DataLoader for FITS datasets.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        The dataset to load data from.
+    batch_size : int, optional
+        How many samples per batch to load (default is 1).
+    shuffle : bool, optional
+        Set to True to have the data reshuffled at every epoch (default is False).
+    num_workers : int, optional
+        How many subprocesses to use for data loading. 0 means that the data will be loaded in the main process (default is 1).
+    sampler : Sampler, optional
+        Defines the strategy to draw samples from the dataset. If specified, shuffle must be False (default is None).
+    pin_memory : bool, optional
+        If True, the data loader will copy Tensors into CUDA pinned memory before returning them (default is True).
+    """
+
+    dateset: FITS_Image_Morphometry_Photometry_Dataset
+
+    def __init__(self, 
+                 dataset: FITS_Image_Morphometry_Photometry_Dataset, 
+                 batch_size: int = 1,
+                 shuffle: bool = False,
+                 num_workers: int = 1,
+                 sampler: torch.utils.data.Sampler = None,
+                 pin_memory: bool = True
+                 ):
+        super().__init__(
+            dataset, 
+            batch_size=batch_size, 
+            shuffle=shuffle, 
+            num_workers=num_workers, 
+            sampler=sampler,
+            pin_memory=pin_memory,
+            collate_fn=self.custom_collate)
+
+    @staticmethod
+    def custom_collate(batch: list) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, list]:
+        """ 
+        Custom collate function to handle FITS data.
+        Expects each item in batch to be a tuple of (image, label, morph_features, phot_features, header).
+        """
+        images, labels, morph_features, phot_features, headers = zip(*batch)
+        images = torch.stack(images) if images and images[0] is not None else None
+        labels = torch.stack(labels)
+        morph_features = torch.stack(morph_features) if morph_features and morph_features[0] is not None else None 
+        phot_features = torch.stack(phot_features) if phot_features and phot_features[0] is not None else None
+        headers = list(headers)
+        return images, labels, morph_features, phot_features, headers 
+

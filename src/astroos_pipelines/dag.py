@@ -413,15 +413,21 @@ class PipelineDAG(DAG):
                 data = yaml.safe_load(file)
                 self.nodes = {}
 
-                for node_data in data["nodes"]:
-                    node = Node.from_dict(node_data)
-                    self.nodes[node_data["node_id"]] = node
 
                 artifact_dag_data = data["artifact_dag"]
                 if artifact_dag_data is not None:
                     self.artifact_dag = ArtifactDAG.from_dict(artifact_dag_data)
                 else:
                     self.artifact_dag = ArtifactDAG()
+                    
+                for node_data in data["nodes"]:
+                    node = Node.from_dict(node_data)
+                    self.nodes[node_data["node_id"]] = node
+
+                    for inputs in node.inputs:
+                        inputs.dag = self.artifact_dag
+                    for outputs in node.outputs:
+                        outputs.dag = self.artifact_dag
 
                 self.children = defaultdict(list)
                 for node in self.nodes.values():
@@ -605,8 +611,8 @@ class PipelineDAG(DAG):
         dot = Digraph()
 
         dot.attr(
-            # rankdir="TB",
-            rankdir="LR",
+            rankdir="TB",
+            # rankdir="LR",
             bgcolor="transparent",
             pad="0.15",
             nodesep="0.7",
@@ -660,14 +666,14 @@ class PipelineDAG(DAG):
         dot.save(os.path.join(self.dag_dir, "dag.dot"))
         return dot
 
-    def run_from_node(self, node_id):
+    def run_from_node(self, node_id, check_dependencies=True):
         node = self.nodes[node_id]
         for _, node in self.nodes.items():
             node.visited = False
         
-        self._run_node(node_id)
+        self._run_node(node_id, check_dependencies=check_dependencies)
     
-    def _run_node(self, node_id):
+    def _run_node(self, node_id, check_dependencies=True):
 
         node = self.nodes[node_id]
         node.artifact_dag = self.artifact_dag
@@ -677,7 +683,7 @@ class PipelineDAG(DAG):
         for p in node.parents:
             parent_node = self.nodes[p]
 
-            if not parent_node.visited:
+            if not parent_node.visited and check_dependencies:
                 self._run_node(p)
             # # print(f"{parent_node.node_id} outputs: {len(parent_node.outputs)}")
 
@@ -715,11 +721,17 @@ class PipelineDAG(DAG):
                 if not child_node.visited:
                     self._run_node(child_id)
 
-    def run(self):
+    def run(self, start_node_id=None, check_dependencies=True):
         if self.head is None:
-            # # print("No head node set, cannot run DAG.")
+            # print("No head node set, cannot run DAG.")
             return
-        self.run_from_node(self.head.node_id)
+
+        if start_node_id is not None:
+            if start_node_id not in self.nodes:
+                raise ValueError(f"Start node id {start_node_id} not found in DAG.")
+            return self.run_from_node(start_node_id, check_dependencies=check_dependencies)
+        else:
+            self.run_from_node(self.head.node_id)
 
         
     @staticmethod
@@ -930,6 +942,7 @@ class NodeExport(Node):
                 self.outputs.append(artifact)
 
 
+        print(f"=== Exported {len(self.inputs)} inputs in NodeExport to {len(self.outputs)} outputs.")
 
 
 class NodeGeneric(Node):
@@ -1567,8 +1580,15 @@ class NodeJoin(Node):
             # data2 = Table.read(artifact2.file_path)
             data1 = artifact1.to_table(self.node_id)
             data2 = artifact2.to_table(self.node_id)
+            # print(f"artifact1: {artifact1}")
+            print(f"artifact2: {artifact2}")
+            print(f"artifact1 active columns: {artifact1.active_columns}")
+            print(f"artifact2 active columns: {artifact2.active_columns}")
             df1 = data1.to_pandas()
             df2 = data2.to_pandas()
+
+            # print("data1", data1)
+            print("data2", data2)
 
             print("df1", df1)
             print("df2", df2)
@@ -1588,6 +1608,7 @@ class NodeJoin(Node):
                     df1 = df1.rename(columns={ra_col1: "ra", dec_col1: "dec"})
                 else:
                     raise ValueError(f"Input artifact 1 must have columns 'ra' and 'dec' or variations thereof. Columns: {df1.columns}")
+            
             if "ra" not in df2.columns or "dec" not in df2.columns:
                 ra_col2 = None
                 dec_col2 = None
@@ -1600,6 +1621,7 @@ class NodeJoin(Node):
                     df2 = df2.rename(columns={ra_col2: "ra", dec_col2: "dec"})
                 else:
                     raise ValueError(f"Input artifact 2 must have columns 'ra' and 'dec' or variations thereof. Columns: {df2.columns}")
+            
 
             margin_deg = 0.2
             df2_near = df2[
@@ -1742,6 +1764,7 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
 
         script = self.parameters.get("script", "")
         max_records = self.parameters.get("max_records", 3)
+        base_url = self.parameters.get("base_url", "https://datalab.noirlab.edu/tap")
 
         query = {"adql": "", "description": ""}
 
@@ -1752,7 +1775,7 @@ query["adql"] = "SELECT TOP 10 objectId FROM dp1.Object"
                         })
 
         client = PyvoTAPClient(
-                base_url="https://datalab.noirlab.edu/tap")
+                base_url=base_url,)
 
         print("Running TAP ADQL Query...")
         table = client.query_async(query["adql"])

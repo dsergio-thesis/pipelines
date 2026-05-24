@@ -264,7 +264,7 @@ class ArtifactCol:
 class ArtifactItem:
     def __init__(self, 
                 file_path: str, 
-                dag: ArtifactDAG = None, 
+                dag: ArtifactDAG, 
                 node_id: str = None, 
                 columns: dict[str, ArtifactCol] = None,
                 active_columns: dict[str, dict] | None = None,
@@ -277,7 +277,7 @@ class ArtifactItem:
         self.file_path = file_path
         self.file_type = Path(file_path).suffix.lower()
         self.dag = dag 
-        self.columns = columns or {}
+        self.columns: dict[str, ArtifactCol] = columns or {}
         self.node_id = node_id
         self.max_records = max_records
 
@@ -349,19 +349,23 @@ class ArtifactItem:
         else:
             df_columns = self.get_active_column_names()
 
+        # print(f"df_columns: {df_columns}, len(self.columns): {len(self.columns)}")
+
         combined = {}
         for col_name in df_columns:
             artifact_col = self.columns[col_name]
             series = artifact_col.latest_at(node_id, self.dag, max_records=self.max_records)
-            # print(f"series: {series.head()}")
+            # print(f"{node_id} series: {series.head()}")
 
             if series is not None:
                 combined[col_name] = series
 
+        # print(f"Combined columns for node '{node_id}': {combined}")
         return pd.DataFrame(combined)
 
     def to_table(self, node_id: str, col_names: list[str] = None) -> Table:
         df = self.to_df(node_id, col_names)
+        print(f"ArtifactItem.to_table: {df.head()}")
         return Table.from_pandas(df)
 
     def materialize(self, node_id: str) -> None:
