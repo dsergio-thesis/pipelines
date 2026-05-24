@@ -115,6 +115,9 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
     cmodel_mag_y = None
     cmodel_mag_y_flag = True
 
+    psf_bad = 0.0
+    cmodel_bad = 0.0
+
     for bi, band in enumerate(bands):
         psf_flux = getattr(row, f"{band}_psfFlux", None)
         psf_err  = getattr(row, f"{band}_psfFluxErr", None)
