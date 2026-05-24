@@ -249,11 +249,23 @@ class Node(ABC):
 
         return "<br align='left'/>".join(html_lines) + "<br align='left'/>"
     
-    def node_label(self):
-        yaml_html = self.yaml_to_html_label(self.to_yaml_string(), width_chars=60)
-        desc_html = self.yaml_to_html_label(self.description, width_chars=60)
+    def node_label(self, node_yaml=False):
+        yaml_html = self.yaml_to_html_label(self.to_yaml_string(), width_chars=40)
+        desc_html = self.yaml_to_html_label(self.description, width_chars=40)
 
         # # print(f"desc_html: {desc_html}")
+        
+        node_yaml_html = f"""
+<tr>
+<td bgcolor="#F1F5F9" align="left"><br align="left"/>
+    <font face="Courier" point-size="8" color="#475569">
+<br align="left"/>
+{yaml_html}
+    </font>
+</td>
+</tr>
+        """
+
 
         return f"""
 <table border="0" cellborder="1" cellspacing="0" cellpadding="10" color="#CBD5E1">
@@ -271,14 +283,7 @@ class Node(ABC):
 </td>
 </tr>
 
-<tr>
-<td bgcolor="#F1F5F9" align="left"><br align="left"/>
-    <font face="Courier" point-size="8" color="#475569">
-<br align="left"/>
-{yaml_html}
-    </font>
-</td>
-</tr>
+{node_yaml_html if node_yaml else ""}
 
 <tr>
 <td bgcolor="#E0F2FE" align="center">
@@ -393,7 +398,8 @@ class PipelineDAG(DAG):
                 elif new:
                     # set to random hash if no label provided and there is no selected DAG in the index
                     label = hashlib.sha256(os.urandom(16)).hexdigest()[:8]
-
+        elif new:
+            label = label + "_" + hashlib.sha256(os.urandom(16)).hexdigest()[:8]
         if not label:
             return
 
@@ -607,12 +613,12 @@ class PipelineDAG(DAG):
                 # yaml.safe_dump(to_plain_data(node.to_dict()), file, sort_keys=False)
     
 
-    def to_graphviz(self, view=False):
+    def to_graphviz(self, view=False, node_yaml=False):
         dot = Digraph()
 
         dot.attr(
-            rankdir="TB",
-            # rankdir="LR",
+            # rankdir="TB",
+            rankdir="LR",
             bgcolor="transparent",
             pad="0.15",
             nodesep="0.7",
@@ -639,7 +645,7 @@ class PipelineDAG(DAG):
         )
 
         for node_id, node in self.nodes.items():
-            dot.node(node_id, f"<{node.node_label()}>")
+            dot.node(node_id, f"<{node.node_label(node_yaml=node_yaml)}>")
 
         for node_id, node in self.nodes.items():
             for parent_id in node.parents:
@@ -647,18 +653,18 @@ class PipelineDAG(DAG):
                 dot.node(spacer, label="", shape="point", width="0.01", height="0.01", style="invis")
                 dot.edge(
                     parent_id,
-                    spacer,
+                    node_id,
                     arrowhead="normal",
                     # minlen="0.1",
                 )
-                dot.edge(
-                    spacer, 
-                    node_id,
-                    arrowhead="none", 
-                    dir="none",
-                    # constraint="false",
-                    style="invis",
-                )
+                # dot.edge(
+                    # spacer, 
+                    # node_id,
+                    # arrowhead="none", 
+                    # dir="none",
+                    # # constraint="false",
+                    # style="invis",
+                # )
 
         output_path = os.path.join(self.dag_dir, "dag")
         dot.render(output_path, format="svg", cleanup=True, view=view)
@@ -1480,14 +1486,13 @@ class NodePhotometricDataset(Node):
 
                 target_ra = row.ra
                 target_dec = row.dec
-                photometric_features = np.zeros((6, 3), dtype=np.float32)
+                photometric_features = np.zeros((6, 4), dtype=np.float32)
                 for bi, band in enumerate(['u', 'g', 'r', 'i', 'z', 'y']):
                     photometric_features[bi] = [
-                        getattr(row, f"{band}_psfFlux_arcsinh", 0.0),
-                        # getattr(row, f"{band}_psfFluxErr_arcsinh", 0.0),
-                        getattr(row, f"{band}_psfFlux_SNR_log", 0.0),
-                        getattr(row, f"{band}_psfFlux_mag", 0.0),
-                        # getattr(row, f"{band}_psfFlux_bad_flag", 0.0),
+                        getattr(row, f"{band}_psfFlux_SNR_log", np.nan),
+                        getattr(row, f"{band}_psfFlux_mag", np.nan),
+                        getattr(row, f"{band}_cModelFlux_SNR_log", np.nan),
+                        getattr(row, f"{band}_cModelFlux_mag", np.nan),
                     ]
                 photometric_features = np.hstack([photometric_features.flatten(),
                     getattr(row, "color_ug", np.nan),
