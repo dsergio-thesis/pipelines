@@ -1,6 +1,6 @@
 
-make clean
-rad init
+#make clean
+rad init -n "dag-worflow-example"
 
 rad node -cl "n1"
 rad node -cl "n2"

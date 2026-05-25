@@ -227,3 +227,5 @@ docs/_build/
 uml/*.png
 uml/*.svg
 uml/*.dot
+
+**/old/*

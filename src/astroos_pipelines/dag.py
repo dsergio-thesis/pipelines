@@ -252,6 +252,14 @@ class Node(ABC):
     def node_label(self, node_yaml=False):
         yaml_html = self.yaml_to_html_label(self.to_yaml_string(), width_chars=40)
         desc_html = self.yaml_to_html_label(self.description, width_chars=40)
+        parameters_html = self.yaml_to_html_label(str(self.parameters), width_chars=40)
+
+        artifacts_html = ""
+        for input in self.inputs:
+            artifacts_html += f"Input: {os.path.basename(input.file_path)}\n"
+        for output in self.outputs:
+            artifacts_html += f"Output: {os.path.basename(output.file_path)}\n"
+        artifacts_html = self.yaml_to_html_label(artifacts_html, width_chars=40)
 
         # # print(f"desc_html: {desc_html}")
         
@@ -262,6 +270,30 @@ class Node(ABC):
 <br align="left"/>
 {yaml_html}
     </font>
+</td>
+</tr>
+        """
+
+        node_parameters_html = f"""
+<tr>
+<td bgcolor="#F1F5F9" align="left"><br align="left"/>
+    <font face="Courier" point-size="8" color="#475569">
+<br align="left"/>
+{parameters_html}
+<br align="left"/>
+</font>
+</td>
+</tr>
+        """
+
+        node_artifacts_html = f"""
+<tr>
+<td bgcolor="#F1F5F9" align="left"><br align="left"/>
+    <font face="Courier" point-size="8" color="#475569">
+<br align="left"/>
+{artifacts_html}
+<br align="left"/>
+</font>
 </td>
 </tr>
         """
@@ -284,6 +316,9 @@ class Node(ABC):
 </tr>
 
 {node_yaml_html if node_yaml else ""}
+
+{node_parameters_html if self.parameters else ""}
+
 
 <tr>
 <td bgcolor="#E0F2FE" align="center">
