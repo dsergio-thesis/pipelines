@@ -1307,7 +1307,7 @@ class NodeEDAScript(Node):
             artifact_dag = artifact.dag
 
             for col in artifact.active_columns:
-                if col not in columns:
+                if col not in columns or col not in artifact.columns:
                     # print(f"Column {col} not found in artifact columns {artifact.columns}. Skipping.")
                     continue
                 col_data = artifact.columns[col].latest_at(target_node_id=self.node_id, dag=artifact_dag)

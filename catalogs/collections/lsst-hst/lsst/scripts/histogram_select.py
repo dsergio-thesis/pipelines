@@ -1,22 +1,25 @@
 
 keys = list(columns.keys())
+
+# print(f"searching {keys}")
 for col in keys:
     if col not in [
-            'u_psfFlux_mag', 
             'g_psfFlux_mag', 
             'r_psfFlux_mag', 
             'i_psfFlux_mag', 
-            'z_psfFlux_mag',
-            'y_psfFlux_mag',
+            'g_free_cModelFlux_mag',
+            'r_free_cModelFlux_mag',
+            'i_free_cModelFlux_mag',
             'g_psfFlux_SNR_log',
             'r_psfFlux_SNR_log',
             'i_psfFlux_SNR_log',
-            'color_ug',
-            'color_gr',
-            'color_ri',
-            'color_iz',
+            'g_free_cModelFlux_SNR_log',
+            'r_free_cModelFlux_SNR_log',
+            'i_free_cModelFlux_SNR_log',
             'refExtendedness',
             ]:
         columns.pop(col, None)
-        df.pop(col)
+        if col in df.columns:
+            # print(f"Removing {col} from histogram_select")
+            df.pop(col)
 

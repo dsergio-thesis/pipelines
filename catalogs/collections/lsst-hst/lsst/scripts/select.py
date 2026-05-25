@@ -143,15 +143,15 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
         )
 
         if invalid:
-            psf_flux = 0.0
-            psf_err = 0.0
+            psf_flux = np.nan
+            psf_err = np.nan 
             psf_mag = np.nan 
-            psf_snr = 0.0
+            psf_snr = np.nan
             psf_bad = 1.0  # treat missing as bad
-            cmodel_flux = 0.0
-            cmodel_err = 0.0
+            cmodel_flux = np.nan 
+            cmodel_err = np.nan 
             cmodel_mag = np.nan 
-            cmodel_snr = 0.0
+            cmodel_snr = np.nan 
             cmodel_bad = 1.0  # treat missing as bad
             
         else:
@@ -202,11 +202,11 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
                 
         df_clean.at[row.Index, f"{band}_psfFlux_mag"] = psf_mag
         df_clean.at[row.Index, f"{band}_psfFlux_SNR_log"] = psf_snr        
-        df_clean.at[row.Index, f"{band}_cModelFlux_mag"] = cmodel_mag
-        df_clean.at[row.Index, f"{band}_cModelFlux_SNR_log"] = cmodel_snr
+        df_clean.at[row.Index, f"{band}_free_cModelFlux_mag"] = cmodel_mag
+        df_clean.at[row.Index, f"{band}_free_cModelFlux_SNR_log"] = cmodel_snr
 
         df_clean.at[row.Index, f"{band}_psfFlux_bad_flag"] = psf_bad
-        df_clean.at[row.Index, f"{band}_cModelFlux_bad_flag"] = cmodel_bad
+        df_clean.at[row.Index, f"{band}_free_cModelFlux_bad_flag"] = cmodel_bad
 
     psf_flux_mags = {
         "u": psf_mag_u,
@@ -300,7 +300,7 @@ columns.update({
     "detect_fromBlend": "Detection from Blend Flag",
     "detect_isIsolated": "Detection Isolated Flag",
     "refExtendedness": "Reference Extendedness (0=point-like, 1=extended)",
-    "label": "Object Class Label (if available)",
+    "label": "Object Class Label",
     "u_psfFlux_SNR_log": "Log SNR of u-band PSF Flux",
     "u_psfFlux_mag": "u-band PSF Magnitude",
     "g_psfFlux_SNR_log": "Log SNR of g-band PSF Flux",
@@ -313,18 +313,18 @@ columns.update({
     "z_psfFlux_mag": "z-band PSF Magnitude",
     "y_psfFlux_SNR_log": "Log SNR of y-band PSF Flux",
     "y_psfFlux_mag": "y-band PSF Magnitude",
-    "u_cModelFlux_SNR_log": "Log SNR of u-band cModel Flux",
-    "u_cModelFlux_mag": "u-band cModel Magnitude",
-    "g_cModelFlux_SNR_log": "Log SNR of g-band cModel Flux",
-    "g_cModelFlux_mag": "g-band cModel Magnitude",
-    "r_cModelFlux_SNR_log": "Log SNR of r-band cModel Flux",
-    "r_cModelFlux_mag": "r-band cModel Magnitude",
-    "i_cModelFlux_SNR_log": "Log SNR of i-band cModel Flux",
-    "i_cModelFlux_mag": "i-band cModel Magnitude",
-    "z_cModelFlux_SNR_log": "Log SNR of z-band cModel Flux",
-    "z_cModelFlux_mag": "z-band cModel Magnitude",
-    "y_cModelFlux_SNR_log": "Log SNR of y-band cModel Flux",
-    "y_cModelFlux_mag": "y-band cModel Magnitude",
+    "u_free_cModelFlux_SNR_log": "Log SNR of u-band cModel Flux",
+    "u_free_cModelFlux_mag": "u-band cModel Magnitude",
+    "g_free_cModelFlux_SNR_log": "Log SNR of g-band cModel Flux",
+    "g_free_cModelFlux_mag": "g-band cModel Magnitude",
+    "r_free_cModelFlux_SNR_log": "Log SNR of r-band cModel Flux",
+    "r_free_cModelFlux_mag": "r-band cModel Magnitude",
+    "i_free_cModelFlux_SNR_log": "Log SNR of i-band cModel Flux",
+    "i_free_cModelFlux_mag": "i-band cModel Magnitude",
+    "z_free_cModelFlux_SNR_log": "Log SNR of z-band cModel Flux",
+    "z_free_cModelFlux_mag": "z-band cModel Magnitude",
+    "y_free_cModelFlux_SNR_log": "Log SNR of y-band cModel Flux",
+    "y_free_cModelFlux_mag": "y-band cModel Magnitude",
     "color_ug": "u-g Color (cModel mag)",
     "color_ur": "u-r Color (cModel mag)",
     "color_ui": "u-i Color (cModel mag)",
