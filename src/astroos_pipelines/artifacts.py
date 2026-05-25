@@ -178,6 +178,8 @@ class ArtifactCol:
     def latest_at(self, target_node_id: str, dag: ArtifactDAG, max_records: int = None) -> pd.Series | None:
         valid_nodes = dag.ancestors(target_node_id, include_self=True)
 
+        print(f"Finding latest version of column '{self.name}' at node '{target_node_id}'. Valid nodes: {valid_nodes}")
+
         candidates = [
             version
             for version in self.versions
@@ -225,6 +227,7 @@ class ArtifactCol:
                 )
             else:
 
+                # add column version to 
                 raise ArtifactMergeConflict(
                     f"Merge conflict for column '{self.name}' at node '{target_node_id}'. "
                     f"Conflicting versions from nodes: {conflict_nodes}."
@@ -365,13 +368,14 @@ class ArtifactItem:
 
     def to_table(self, node_id: str, col_names: list[str] = None) -> Table:
         df = self.to_df(node_id, col_names)
-        print(f"ArtifactItem.to_table: {df.head()}")
+        # print(f"ArtifactItem.to_table: {df.head()}")
         return Table.from_pandas(df)
 
     def materialize(self, node_id: str) -> None:
         first_col = next(iter(self.columns.values()), None)
 
         if (self.max_records is not None 
+            and first_col is not None
             and self.max_records < first_col.latest_at(node_id, self.dag).shape[0]
             ):
             print(f" --> max_records={self.max_records} is less than the number of records in the first column.")

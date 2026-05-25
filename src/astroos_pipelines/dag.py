@@ -591,7 +591,12 @@ class PipelineDAG(DAG):
         )
         if head.inputs is None:
             head.inputs = []
-        head.inputs.append(artifact_item)
+
+        # head.inputs.append(artifact_item)
+        
+        if head.parameters is None:
+            head.parameters = {}
+        head.parameters["artifact"] = artifact_item.to_dict()
         
     def add_parameter(self, parameter):
         # print(f"Adding parameter {parameter} to head node {self.head.node_id if self.head else None}")
@@ -728,13 +733,14 @@ class PipelineDAG(DAG):
                 self._run_node(p)
             # # print(f"{parent_node.node_id} outputs: {len(parent_node.outputs)}")
 
+            node.inputs = []
             for output in parent_node.outputs:
                 if output not in node.inputs:
                     node.inputs.append(output)
 
         # before = Artifact.snapshot(node.inputs, node.outputs)
 
-        print(f"Running node {node_id} {node.label} ({node.node_type}).")
+        print(f"Running {node_id} - {node.label} - {node.node_type}")
         # print(repr(node))
         node.run()
 
@@ -887,43 +893,49 @@ active_columns.update({
 
     def run(self):
         """ Import artifact. """
-        if len(self.inputs) > 0:
-            artifact = self.inputs[0]
-            
-            # print(f"Running NodeImport with artifact {artifact.file_path} and parameters {self.parameters}")
+        
+        if self.parameters is None or "artifact" not in self.parameters:
+            raise ValueError("No artifact specified in parameters for NodeImport. Please add an artifact using add_input_artifact_item() or specify an artifact in the parameters.")
 
-            active_columns = {}
+        artifact = ArtifactItem.from_dict(self.parameters["artifact"])
 
-            script = self.parameters.get("script", "")
+        # print(f"Running NodeImport with artifact {artifact.file_path} and parameters {self.parameters}")
 
-            with open(script, "r") as f:
-                code = f.read()
-                exec(code, {"parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "active_columns": active_columns})
-            
-            # print(f"Active columns after running script: {active_columns}")
+        active_columns = {}
 
-            if self.parameters is not None and "max_records" in self.parameters:
-                max_records = self.parameters["max_records"]
-            else:
-                max_records = 10
+        script = self.parameters.get("script", "")
 
-            if active_columns:
-                # print(f"Selected columns from script: {active_columns}")
-                artifact.set_active_columns(active_columns)
-            
-            artifact.dag = self.artifact_dag
-            node_dir = os.path.join(self.dag_dir, self.node_id)
-            artifact.file_path = os.path.join(node_dir, os.path.basename(artifact.file_path))
-            artifact.max_records = max_records
-            artifact._load_from_file()
+        with open(script, "r") as f:
+            code = f.read()
+            exec(code, {"parameters": self.parameters, "inputs": self.inputs, "outputs": self.outputs, "active_columns": active_columns})
+        
+        # print(f"Active columns after running script: {active_columns}")
 
-            # print(f"Importing artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
+        if self.parameters is not None and "max_records" in self.parameters:
+            max_records = self.parameters["max_records"]
+        else:
+            max_records = 10
 
-            if not os.path.exists(artifact.file_path):
-                os.makedirs(node_dir, exist_ok=True)
-                artifact.materialize(node_id=self.node_id, max_records=max_records)
+        if active_columns:
+            # print(f"Selected columns from script: {active_columns}")
+            artifact.set_active_columns(active_columns)
+        
+        artifact.dag = self.artifact_dag
+        node_dir = os.path.join(self.dag_dir, self.node_id)
+        artifact.file_path = os.path.join(node_dir, os.path.basename(artifact.file_path))
+        artifact.max_records = max_records
+        artifact._load_from_file()
 
-            self.outputs = [artifact]
+        # print(f"Importing artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
+
+        if not os.path.exists(artifact.file_path):
+            os.makedirs(node_dir, exist_ok=True)
+            artifact.materialize(node_id=self.node_id, max_records=max_records)
+
+        self.outputs = [artifact]
+        for artifact in self.inputs:
+            if artifact not in self.outputs:
+                self.outputs.append(artifact)
 
 
 class NodeExport(Node):
@@ -973,15 +985,15 @@ class NodeExport(Node):
 
             if self.outputs is None:
                 self.outputs = []
+
+            self.outputs = []
             for artifact in self.inputs:
                 # print(f"Exporting artifact {artifact.file_path} with dag {self.artifact_dag} and node_id {self.node_id}")
+
                 artifact.dag = self.artifact_dag
-                
-                # artifact._load_from_file()
                 artifact.file_path = os.path.join(self.dag_dir, self.node_id, os.path.basename(artifact.file_path))
                 artifact.materialize(node_id=self.node_id)
                 self.outputs.append(artifact)
-
 
         print(f"=== Exported {len(self.inputs)} inputs in NodeExport to {len(self.outputs)} outputs.")
 
@@ -1030,89 +1042,10 @@ class NodeGeneric(Node):
 
     def run(self):
         """ Pass through inputs to outputs for testing the pipeline. """
-        if len(self.inputs) > 0:
-            artifact = self.inputs.pop()
-            data = Table.read(artifact.file_path)
-            
-            df = data.to_pandas()
 
-            self.outputs = [artifact]
-
-
-
-# class NodeEDA(Node):
-    # def __init__(
-            # self,
-            # dag_dir=None,
-            # node_type="eda",
-            # label="Exploratory Data Analysis",
-            # node_id=None,
-            # parents=[],
-            # parameters={},
-            # inputs=[],
-            # outputs=[]):
-        # super().__init__(
-            # node_type=node_type,
-            # dag_dir=dag_dir,
-            # label=label,
-            # description="Generates exploratory analysis and summary visualizations.",
-            # node_id=node_id,
-            # parents=parents,
-            # parameters=parameters,
-            # inputs=inputs,
-            # outputs=outputs,
-            # )
-
-    # def to_dict(self):
-        # d = super().to_dict()
-        # d["type"] = self.__class__.__name__
-        # return d
-
-    # @classmethod
-    # def _from_dict(cls, d):
-        # return cls(
-            # dag_dir=d["dag_dir"],
-            # node_id=d["node_id"],
-            # parents=d.get("parents", []),
-            # parameters=d.get("parameters", {}),
-            # inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
-            # outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
-        # )
-
-    # def run(self):
-
-        # if len(self.inputs) == 0:
-            # # # print("No input artifact for EDA node.")
-            # return
-
-        # artifact = self.inputs[0]
-        # print(f"====Running EDA on artifact {artifact.file_path}. ")
-
-        # if self.parameters is not None and "title" in self.parameters:
-            # title = self.parameters["title"]
-        # else:
-            # title = "Exploratory Data Analysis"
-
-        # table = Table()
-        # artifact_dag = artifact.dag
-
-        # for col in artifact.active_columns:
-            # if col not in artifact.columns:
-                # # print(f"Column {col} not found in artifact columns {artifact.columns}. Skipping.")
-                # continue
-            # col_data = artifact.columns[col].latest_at(target_node_id=self.node_id, dag=artifact_dag)
-            # if col_data is not None:
-                # table[col] = col_data
-
-        # columns = artifact.active_columns
-
-        # dataset_eda(table=table, 
-                    # columns=columns, 
-                    # save_dir=self.node_dir, 
-                    # title=title,
-                    # )
-        
-        # self.outputs = [artifact]
+        self.outputs = []
+        for input in self.inputs:
+            self.outputs.append(input)
 
 
 class NodeScript(Node):
@@ -1192,13 +1125,14 @@ class NodeScript(Node):
 
     def run(self):
 
-        print(f"Running NodeScript {self.label}")
+        # print(f"Running NodeScript {self.label}")
 
         if len(self.inputs) > 0:
             artifact = self.inputs[0]
 
             table = artifact.to_table(self.node_id)
             df = table.to_pandas()
+            df_original = df.copy()
             columns = artifact.active_columns if artifact.active_columns else table.colnames
 
             script = self.parameters.get("script", "")
@@ -1222,13 +1156,18 @@ class NodeScript(Node):
 
             df = namespace["df"]
             columns = namespace["columns"]
-
+            
+            changed = False
             for col in df.columns:
-                if col not in artifact.active_columns:
-                    artifact.active_columns[col] = {}
-                artifact.add_column_version(col, self.node_id, df[col])
 
-            artifact.set_active_columns(columns)
+                if (col not in df_original.columns) or not df[col].equals(df_original[col]):
+                    changed = True
+                    if col not in artifact.active_columns:
+                        artifact.active_columns[col] = {}
+                    artifact.add_column_version(col, self.node_id, df[col])
+            
+            if changed:
+                artifact.set_active_columns(columns)
 
             # # print(f"Executed script {script} on data with {len(df)} rows and {len(df.columns)} columns.")
             # # print(df)

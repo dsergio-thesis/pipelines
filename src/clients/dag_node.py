@@ -73,6 +73,9 @@ def main():
         dag.add_node(dag_node)
         if option_origin:
             dag_node.parents = []
+            artifact_dag = dag.artifact_dag
+            artifact_dag.parents[dag_node.node_id] = []
+                
     
     if parent_id:
         dag.head.parents.append(parent_id)
