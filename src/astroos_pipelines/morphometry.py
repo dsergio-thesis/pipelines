@@ -468,26 +468,9 @@ def morfomytry(image: np.ndarray) -> dict:
 
     # stamp = synthetic_spiral()
     stamp = image.squeeze()
-
     mask = simple_segmentation(stamp, nsigma=0, min_area=50)
     res = measure_morfometry(stamp, mask=mask, do_segmentation=True)
     # print("Results:", {k: v for k, v in res.items() if k not in ('mask',)})
-
-    # plt.figure(figsize=(12, 4))
-    # plt.subplot(1, 3, 1)
-    # plt.title("Original")
-    # plt.imshow(np.flipud(stamp), origin='lower')
-    # plt.subplot(1, 3, 2)
-    # plt.title("Mask")
-    # plt.imshow(np.flipud(stamp), origin='lower')
-    # plt.contour(np.flipud(res['mask']), colors='red', linewidths=3.0)
-    # plt.subplot(1, 3, 3)
-    # plt.title("Masked")
-    # plt.imshow(np.flipud(stamp * res['mask']), origin='lower')
-    # plt.colorbar()
-    # plt.show()
-
-    # mirror mask vertically
     
     output_mask = np.flipud(res['mask'])
     return res, output_mask

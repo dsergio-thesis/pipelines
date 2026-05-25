@@ -101,7 +101,7 @@ export ASTROOS_ROOT="$REPO_ROOT"
 export PATH="$ASTROOS_ROOT/bin:$PATH"
 export PATH="$HOME/.local/bin:$PATH"
 
-# ---- create CLI router script in repo bin/ ----
+# ---- CLI router script in repo bin/ ----
 mkdir -p "$BIN_DIR"
 
 CLI_NAME="rad"
@@ -117,7 +117,7 @@ if [ -z "${ASTROOS_ROOT:-}" ]; then
 fi
 
 if [ $# -lt 1 ]; then
-  echo "Usage: astroos <command> [args...]"
+  echo "Usage: rad <command> [args...]"
   echo ""
   echo "Available commands:"
   ls -1 "$ASTROOS_ROOT/scripts" 2>/dev/null | sed 's/\.sh$//' || true
@@ -157,6 +157,6 @@ else
 fi
 echo ""
 echo "Commands:"
-echo "  astroos"
-echo "  astroos <command> --help"
+echo "  rad"
+echo "  rad <command> --help"
 echo ""

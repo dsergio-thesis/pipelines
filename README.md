@@ -3,17 +3,19 @@
 
 ## Overview
 
+- Dataset generation
 - LSST
 - SDSS
+- DESI Legacy Survey
+- Galaxy Zoo
 - Survey photometry/pixel pipelines
-- Dataset generation
 
 ### The project uses:
 
 - Python 3.11
 - pyproject.toml packaging
 - Editable installs
-- CLI interface via `astroos`
+- CLI interface via `rad`
 
 ------------------------------------------------------------
 
@@ -25,14 +27,14 @@ Install:
 
 Run tests:
 
-    astroos unit_tests
+    rad unit_tests
 
 ------------------------------------------------------------
 ## CLI Usage
 
 The installer creates a CLI command:
 
-    astroos <command> [args...]
+    rad <command> [args...]
 
 Commands are auto-detected from:
 
@@ -40,7 +42,7 @@ Commands are auto-detected from:
 
 Examples:
 
-    astroos unit_tests
+    rad unit_tests
 
 ------------------------------------------------------------
 
