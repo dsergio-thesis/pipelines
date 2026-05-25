@@ -178,7 +178,7 @@ class ArtifactCol:
     def latest_at(self, target_node_id: str, dag: ArtifactDAG, max_records: int = None) -> pd.Series | None:
         valid_nodes = dag.ancestors(target_node_id, include_self=True)
 
-        print(f"Finding latest version of column '{self.name}' at node '{target_node_id}'. Valid nodes: {valid_nodes}")
+        # print(f"Finding latest version of column '{self.name}' at node '{target_node_id}'. Valid nodes: {valid_nodes}")
 
         candidates = [
             version
