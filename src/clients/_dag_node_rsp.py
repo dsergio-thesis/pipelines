@@ -3,11 +3,10 @@ from clients._rsp import *
 
 # Below is copied from dag_node.py 
 
-
-
 def main():
 
     config = client_config()
+    # print(config)
     pipeline_name = config.pipeline_name
     input_artifact = config.input_artifact
     parameter = config.parameter
@@ -52,6 +51,8 @@ def main():
                         )
         elif node_type == "script":
             dag_node = NodeScript(label=node_label)
+        elif node_type == "gtap":
+            dag_node = NodeTAPQueryGeneric(label=node_label, parameters={"max_records": max_records})
         elif node_type == "import":
             dag_node = NodeImport(label=node_label, parameters={"max_records": max_records})
         elif node_type == "export":
@@ -64,6 +65,8 @@ def main():
             dag_node = NodePhotometricDataset()
         elif node_type == "butler-coadd-cutout":
             dag_node = NodeLSSTButlerFetch(label=node_label)
+        elif node_type == "ls-cutout":
+            dag_node = NodeLSCutoutFetch(label=node_label)
         else: 
             dag_node = NodeGeneric(label=node_label)
             if parent_id:
@@ -72,9 +75,13 @@ def main():
         dag.add_node(dag_node)
         if option_origin:
             dag_node.parents = []
+            artifact_dag = dag.artifact_dag
+            artifact_dag.parents[dag_node.node_id] = []
+                
     
     if parent_id:
         dag.head.parents.append(parent_id)
+        dag.artifact_dag.add_edge(parent_id, dag.head.node_id)
 
     if input_artifact:
         dag.add_input_artifact_item(input_artifact)
@@ -96,4 +103,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

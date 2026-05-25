@@ -1,5 +1,4 @@
 
-#make clean
 rad init -n "dag-merge"
 
 rad node -cl "a1" -t import
@@ -26,7 +25,6 @@ rad node -cl "a5"
 rad node --parent "b2"
 
 rad node -ct export -l "a6"
-
 
 rad run
 
