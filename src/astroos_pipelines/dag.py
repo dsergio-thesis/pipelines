@@ -1551,6 +1551,9 @@ class NodeJoin(Node):
 
     def run(self):
         """ Join dataframes. """
+
+        print(f"Running NodeJoin {self.label} with parameters: {self.parameters} and inputs: {[i.file_path for i in self.inputs]}")
+
         if len(self.inputs) == 2:
             artifact1 = self.inputs[0]
             artifact2 = self.inputs[1]
