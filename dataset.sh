@@ -7,7 +7,7 @@ rad init-rsp
 # -------------------------------------------------
 # LSST DP-1 Data import
 # -------------------------------------------------
-rad node-rsp -ct tap -l "TAP LSST DP-1 catalog" --target extended_chandra_deep_field_south_ecdfs -m 500000
+rad node-rsp -ct tap -l "TAP LSST DP-1 catalog" --target extended_chandra_deep_field_south_ecdfs -m 5000
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/query.py
 
 # -------------------------------------------------

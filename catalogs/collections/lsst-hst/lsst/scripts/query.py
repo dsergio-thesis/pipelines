@@ -76,6 +76,7 @@ if query_radius > 0:
     
     WHERE coord_ra BETWEEN {ra_min} AND {ra_max}
         AND coord_dec BETWEEN {dec_min} AND {dec_max}
+        AND refExtendedness = 1
 
     """
     query["adql"] = query["adql"].format(
