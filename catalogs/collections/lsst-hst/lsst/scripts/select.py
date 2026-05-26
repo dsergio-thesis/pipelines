@@ -130,7 +130,22 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
         psf_mag = flux_to_mag(psf_flux) if psf_flux is not None and psf_flux > 0 else np.nan
         cmodel_mag = flux_to_mag(cmodel_flux) if cmodel_flux is not None and cmodel_flux > 0 else np.nan
         
-        # sanitize missing/NaN
+        min_snr = 3.0
+        min_mag = 10.0
+        max_mag = 30.0
+
+        psf_snr_raw = (
+            float(psf_flux) / float(psf_err)
+            if psf_flux is not None and psf_err is not None and psf_err > 0
+            else 0.0
+        )
+
+        cmodel_snr_raw = (
+            float(cmodel_flux) / float(cmodel_err)
+            if cmodel_flux is not None and cmodel_err is not None and cmodel_err > 0
+            else 0.0
+        )
+
         invalid = (
             psf_flux is None
             or psf_err is None
@@ -138,10 +153,19 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
             or cmodel_err is None
             or pd.isna(psf_flux)
             or pd.isna(psf_err)
+            or pd.isna(cmodel_flux)
+            or pd.isna(cmodel_err)
             or pd.isna(psf_mag)
             or pd.isna(cmodel_mag)
+            or bool(psf_flag)
+            or bool(cmodel_flag)
+            or psf_snr_raw < min_snr
+            or cmodel_snr_raw < min_snr
+            or psf_mag < min_mag
+            or psf_mag > max_mag
+            or cmodel_mag < min_mag
+            or cmodel_mag > max_mag
         )
-
         if invalid:
             psf_flux = np.nan
             psf_err = np.nan 
@@ -158,14 +182,12 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
 
             # SNR feature (clamp to non-negative)
             if psf_err > 0:
-                psf_snr = float(psf_flux) / float(psf_err)
-                psf_snr = np.log1p(max(0.0, psf_snr))
+                psf_snr = np.log1p(max(0.0, psf_snr_raw)) 
             else:
                 psf_snr = 0.0
 
             if cmodel_err > 0:
-                cmodel_snr = float(cmodel_flux) / float(cmodel_err)
-                cmodel_snr = np.log1p(max(0.0, cmodel_snr))
+                cmodel_snr = np.log1p(max(0.0, cmodel_snr_raw))
             else:
                 cmodel_snr = 0.0
 
