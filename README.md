@@ -68,7 +68,7 @@ Python Version
 This project requires:
 
     Python 3.11
-    Access to the RSP environment for LSST-specific operations (use `node-rsp` and `run-rsp`)
+    Access to the RSP environment for LSST-specific operations (use node-rsp and run-rsp)
 
 
 
