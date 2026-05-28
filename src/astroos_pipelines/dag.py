@@ -726,6 +726,7 @@ class PipelineDAG(DAG):
 
         node.visited = True
         
+        node.inputs = []
         for p in node.parents:
             parent_node = self.nodes[p]
 
@@ -733,7 +734,6 @@ class PipelineDAG(DAG):
                 self._run_node(p)
             # # print(f"{parent_node.node_id} outputs: {len(parent_node.outputs)}")
 
-            node.inputs = []
             for output in parent_node.outputs:
                 if output not in node.inputs:
                     node.inputs.append(output)
