@@ -37,8 +37,8 @@ valid &= (lssfr > -50) & (lssfr < 50)
 
 # Define labels: 0 = star-forming, 1 = quiescent
 label = np.full(len(df), -1, dtype=np.int64)
-label[(valid) & (lssfr > -9.9)] = 0 # star-forming
-label[(valid) & (lssfr < -11.1)] = 1 # quiescent
+label[(valid) & (lssfr > -11)] = 0 # star-forming
+label[(valid) & (lssfr < -11)] = 1 # quiescent
 
 # High-confidence subset mask (drop ambiguous)
 confident = (label >= 0)
