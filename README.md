@@ -20,7 +20,7 @@ Install:
 
 ------------------------------------------------------------
 ## CLI Usage
-
+```
 usage: rad <command> [options]
 
 RAD - Provenance-Aware DAG Pipeline Manager
@@ -45,7 +45,7 @@ status                             Show pipeline status
 checkout <pipeline-id>             Switch pipeline 
 graph                              Render DAG visualization
 export                             Export final artifacts
-
+```
 ------------------------------------------------------------
 
 # INSTALLATION GUIDE
