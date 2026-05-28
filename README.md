@@ -1,5 +1,5 @@
 
-# Astroos LSST/SDSS/HST Machine Learning Pipelines 
+# Astroos LSST/3D-HST Machine Learning Pipelines 
 
 
 ### The project uses:
