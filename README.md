@@ -1,14 +1,6 @@
 
 # Astroos LSST/SDSS/HST Machine Learning Pipelines 
 
-## Overview
-
-- Dataset generation
-- LSST
-- SDSS
-- DESI Legacy Survey
-- Galaxy Zoo
-- Survey photometry/pixel pipelines
 
 ### The project uses:
 
@@ -25,24 +17,34 @@ Install:
 
     ./install.sh
 
-Run tests:
-
-    rad unit_tests
 
 ------------------------------------------------------------
 ## CLI Usage
 
-The installer creates a CLI command:
+usage: rad <command> [options]
 
-    rad <command> [args...]
+RAD - Provenance-Aware DAG Pipeline Manager
+===========================================
 
-Commands are auto-detected from:
+init    -n, --name <pipeline-name>
 
-    $ASTROOS_ROOT/scripts/
+node
+  -c, --create                     Create node
+  -o, --origin                     Mark origin node
+  -l, --label <label>              Node label
+  -t, --type <type>                import | export | script |
+                                   eda-script | tap | gtap |
+                                   photo-dataset |
+                                   butler-coadd-cutout
+  -i, --input-artifact <path>      Input artifact path
+  -p, --parameter <key> <value>    Parameter assignment
+  --parent <node-id>               Parent dependency
 
-Examples:
-
-    rad unit_tests
+run                                Execute DAG pipeline
+status                             Show pipeline status
+checkout <pipeline-id>             Switch pipeline 
+graph                              Render DAG visualization
+export                             Export final artifacts
 
 ------------------------------------------------------------
 
@@ -55,15 +57,8 @@ From the project root (pipelines/):
 This will:
 
 - Configure environment variables
-- Create CLI command: astroos
+- Create CLI command: `rad`
 
-------------------------------------------------------------
-Running Tests
-------------------------------------------------------------
-
-After activating environment:
-
-    astroos unit_tests
 
 
 ------------------------------------------------------------
