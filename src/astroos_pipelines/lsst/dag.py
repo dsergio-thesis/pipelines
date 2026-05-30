@@ -215,6 +215,8 @@ class NodeLSSTButlerFetch(Node):
             for _ in ex.map(worker_patch, tasks):
                 pass
 
+        self.outputs = [artifact]
+
 
 
 def worker_patch(args):
@@ -253,7 +255,7 @@ def worker_patch(args):
     ext = geom.Extent2I(STAMP_W, STAMP_H)
     band_images = np.zeros((len(BANDS), STAMP_H, STAMP_W), dtype=np.float32)
 
-    for row in tqdm(object_rows, desc=f"Processing tract {tract} patch {patch}", total=len(object_rows)): 
+    for row in tqdm(object_rows, desc=f"Processing cutouts", total=len(object_rows)): 
 
         
         # print("row\n\n")
