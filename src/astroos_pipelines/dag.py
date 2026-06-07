@@ -223,18 +223,23 @@ class Node(ABC):
 
     def parameter_keys(self):
         if self.parameters is None:
-            return "" 
-        parameter_keys = self.parameters.keys()
-        parameter_keys_str = "\n".join(parameter_keys)
+            return "None" 
+        keys = list(self.parameters.keys())
+        for i, key in enumerate(keys):
+            if len(key) > 20:
+                keys[i] = key[:17]
         # each key on a new line
-        # print(f"Parameter keys for node {self.node_id}: {parameter_keys_str}")
-        return str(parameter_keys_str)
+        print(f"Parameter keys for node {self.node_id}: {keys}")
+        return "\n".join(keys) 
 
     def yaml_to_html_label(self, yaml_text: str, width_chars: int = 80, width_px: int = 400) -> str:
         html_lines = []
 
-        # print(f"Converting YAML for {yaml_text}")
+        print(f"Converting YAML for {yaml_text}")
         for line in yaml_text.splitlines():
+            # if (len(line) < width_chars):
+                # html_lines.append(line)
+                # continue
             line = line.rstrip()
             indent_len = len(line) - len(line.lstrip(" "))
             indent = "&nbsp;" * indent_len
@@ -257,20 +262,21 @@ class Node(ABC):
                 for extra in wrapped[1:]:
                     html_lines.append(html.escape(extra))
 
+        print(f"Lines: {html_lines}")
         return "<br align='left'/>".join(html_lines) + "<br align='left'/>"
     
     def node_label(self, node_yaml=False):
-        yaml_html = self.yaml_to_html_label(self.to_yaml_string(), width_chars=40)
-        desc_html = self.yaml_to_html_label(self.description, width_chars=20)
-        parameters_html = self.yaml_to_html_label(str(self.parameters), width_chars=20)
-        parameters_keys = self.yaml_to_html_label(self.parameter_keys(), width_chars=20)
+        yaml_html =  self.yaml_to_html_label(self.to_yaml_string(), width_chars=40)
+        desc_html =  self.yaml_to_html_label(self.description, width_chars=20)
+        parameters_html =  self.yaml_to_html_label(str(self.parameters), width_chars=20)
+        parameters_keys =  self.yaml_to_html_label(self.parameter_keys(), width_chars=20)
 
         artifacts_html = ""
         for input in self.inputs:
             artifacts_html += f"Input: {os.path.basename(input.file_path)}\n"
         for output in self.outputs:
             artifacts_html += f"Output: {os.path.basename(output.file_path)}\n"
-        artifacts_html = self.yaml_to_html_label(artifacts_html, width_chars=40)
+        artifacts_html = "" # self.yaml_to_html_label(artifacts_html, width_chars=40)
 
         # # print(f"desc_html: {desc_html}")
         
@@ -280,6 +286,9 @@ class Node(ABC):
     <font face="Courier" point-size="28" color="#475569">
 <br align="left"/>
 {yaml_html}
+
+{parameters_keys}
+
     </font>
 </td>
 </tr>
@@ -308,6 +317,17 @@ class Node(ABC):
 # </td>
 # </tr>
             # """
+
+        node_parameters_keys_html = f"""
+<tr>
+<td bgcolor="#F1F5F9" align="left"><br align="left"/>
+<font face="Courier" point-size="22" color="#475569">
+{parameters_keys}
+<br align="left"/>
+</font>
+</td>
+</tr>
+        """
 
         node_artifacts_html = f"""
 <tr>
@@ -341,9 +361,8 @@ class Node(ABC):
 </td>
 </tr>
 
-{node_yaml_html if node_yaml else ""}
+{node_parameters_keys_html}
 
-{parameters_keys}
 
 
 <tr>
