@@ -3,10 +3,10 @@ from clients._local import *
 
 def main():
 
-    config, pipeline_metadata = client_config()
+    config = client_config()
     dataset_dir = config.dataset_dir
     dataset_name = config.dataset_name
-    label_def_file = config.label_def_file
+    label_def_file = config.labels_def_file
     max_records = config.max_records
     print("Configuration loaded successfully.")
     
@@ -28,7 +28,7 @@ def main():
 
     dataset_cartesian = FITS_Image_Morphometry_Photometry_Dataset(
         dataset_dir=os.path.join(dataset_dir, dataset_name),
-        labels_init_file=os.path.join("catalogs", "hst", "sfq_labels.csv"),
+        labels_init_file=None,
         transform=transformCartesian,
         morphometric_transform=MorphometryFeatures()
     )
