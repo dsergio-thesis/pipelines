@@ -221,6 +221,13 @@ class Node(ABC):
     def to_yaml_string(self):
         return yaml.safe_dump(to_plain_data(self.to_dict()), sort_keys=False)
 
+    def parameter_keys(self):
+        if self.parameters is None:
+            return []
+        parameter_keys = list(self.parameters.keys())
+        # each key on a new line
+        return "\n".join(parameter_keys)
+
     def yaml_to_html_label(self, yaml_text: str, width_chars: int = 80, width_px: int = 400) -> str:
         html_lines = []
 
@@ -253,6 +260,7 @@ class Node(ABC):
         yaml_html = self.yaml_to_html_label(self.to_yaml_string(), width_chars=40)
         desc_html = self.yaml_to_html_label(self.description, width_chars=20)
         parameters_html = self.yaml_to_html_label(str(self.parameters), width_chars=20)
+        parameters_keys = self.yaml_to_html_label(self.parameter_keys(), width_chars=20)
 
         artifacts_html = ""
         for input in self.inputs:
@@ -332,7 +340,7 @@ class Node(ABC):
 
 {node_yaml_html if node_yaml else ""}
 
-{node_parameters_html}
+{parameters_keys}
 
 
 <tr>
