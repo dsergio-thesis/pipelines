@@ -251,8 +251,8 @@ class Node(ABC):
     
     def node_label(self, node_yaml=False):
         yaml_html = self.yaml_to_html_label(self.to_yaml_string(), width_chars=40)
-        desc_html = self.yaml_to_html_label(self.description, width_chars=40)
-        parameters_html = self.yaml_to_html_label(str(self.parameters), width_chars=40)
+        desc_html = self.yaml_to_html_label(self.description, width_chars=20)
+        parameters_html = self.yaml_to_html_label(str(self.parameters), width_chars=20)
 
         artifacts_html = ""
         for input in self.inputs:
@@ -266,7 +266,7 @@ class Node(ABC):
         node_yaml_html = f"""
 <tr>
 <td bgcolor="#F1F5F9" align="left"><br align="left"/>
-    <font face="Courier" point-size="8" color="#475569">
+    <font face="Courier" point-size="28" color="#475569">
 <br align="left"/>
 {yaml_html}
     </font>
@@ -277,7 +277,7 @@ class Node(ABC):
         node_parameters_html = f"""
 <tr>
 <td bgcolor="#F1F5F9" align="left"><br align="left"/>
-    <font face="Courier" point-size="8" color="#475569">
+    <font face="Courier" point-size="22" color="#475569">
 <br align="left"/>
 {parameters_html}
 <br align="left"/>
@@ -285,6 +285,18 @@ class Node(ABC):
 </td>
 </tr>
         """
+
+        # node_parameters_html = f"""
+# <tr>
+# <td bgcolor="#F1F5F9" align="left"><br align="left"/>
+    # <font face="Courier" point-size="22" color="#475569">
+# <br align="left"/>Parameters
+# <br align="left"/>Artifacts
+# <br align="left"/>
+# </font>
+# </td>
+# </tr>
+            # """
 
         node_artifacts_html = f"""
 <tr>
@@ -303,26 +315,26 @@ class Node(ABC):
 <table border="0" cellborder="1" cellspacing="0" cellpadding="10" color="#CBD5E1">
 <tr>
 <td bgcolor="#F8FAFC" align="center">
-<font face="Helvetica" point-size="18" color="#0F172A"><b>{self.label}</b></font>
+<font face="Helvetica" point-size="32" color="#0F172A"><b>{self.label}</b></font>
 <br/>
-<font face="Helvetica" point-size="10" color="#64748B">#{self.node_id}</font>
+<font face="Helvetica" point-size="22" color="#64748B">#{self.node_id}</font>
 </td>
 </tr>
 
 <tr>
 <td bgcolor="#FFFFFF" align="left">
-<font face="Helvetica" point-size="11" color="#334155"><br align="left"/>{desc_html}</font>
+<font face="Helvetica" point-size="22" color="#334155"><br align="left"/>{desc_html}</font>
 </td>
 </tr>
 
 {node_yaml_html if node_yaml else ""}
 
-{node_parameters_html if self.parameters else ""}
+{node_parameters_html}
 
 
 <tr>
 <td bgcolor="#E0F2FE" align="center">
-<font face="Helvetica" point-size="10" color="#075985">{len(self.inputs)} inputs &#8594; {len(self.outputs)} outputs</font>
+<font face="Helvetica" point-size="20" color="#075985">{len(self.inputs)} inputs &#8594; {len(self.outputs)} outputs</font>
 </td>
 </tr>
 </table>
