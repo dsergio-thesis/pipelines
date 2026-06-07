@@ -323,7 +323,10 @@ class Node(ABC):
 
 <tr>
 <td bgcolor="#FFFFFF" align="left">
-<font face="Helvetica" point-size="22" color="#334155"><br align="left"/>{desc_html}</font>
+<font face="Helvetica" point-size="22" color="#334155">
+{desc_html}
+
+</font>
 </td>
 </tr>
 

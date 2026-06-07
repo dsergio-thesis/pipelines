@@ -7,7 +7,7 @@ if [ -z "${ASTROOS_ROOT:-}" ]; then
 fi
 
 if [ $# -lt 1 ]; then
-  echo "Usage: astroos <command> [args...]"
+  echo "Usage: rad <command> [args...]"
   echo ""
   echo "Available commands:"
   ls -1 "$ASTROOS_ROOT/scripts" 2>/dev/null | sed 's/\.sh$//' || true
