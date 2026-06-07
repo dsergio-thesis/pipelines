@@ -1535,7 +1535,10 @@ class NodePhotometricDataset(Node):
                     getattr(row, "curvature_iz_zy", np.nan),])
 
                 hdu_phot = fits.ImageHDU(data=photometric_features, name="PHOTO")
-                hdu_phot.header['label'] = int(row.label) if hasattr(row, "label") and row.label is not np.nan else 0
+                try:
+                    hdu_phot.header['label'] = int(row.label)
+                except:
+                    hdu_phot.header['label'] = -1
                 hdu_phot.header['ra'] = float(target_ra)
                 hdu_phot.header['dec'] = float(target_dec)
                 hdu_phot.header['objectId'] = int(row.objectId)
