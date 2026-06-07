@@ -223,14 +223,17 @@ class Node(ABC):
 
     def parameter_keys(self):
         if self.parameters is None:
-            return []
-        parameter_keys = list(self.parameters.keys())
+            return "" 
+        parameter_keys = self.parameters.keys()
+        parameter_keys_str = "\n".join(parameter_keys)
         # each key on a new line
-        return "\n".join(parameter_keys)
+        # print(f"Parameter keys for node {self.node_id}: {parameter_keys_str}")
+        return str(parameter_keys_str)
 
     def yaml_to_html_label(self, yaml_text: str, width_chars: int = 80, width_px: int = 400) -> str:
         html_lines = []
 
+        # print(f"Converting YAML for {yaml_text}")
         for line in yaml_text.splitlines():
             line = line.rstrip()
             indent_len = len(line) - len(line.lstrip(" "))
