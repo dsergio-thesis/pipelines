@@ -229,13 +229,13 @@ class Node(ABC):
             if len(key) > 20:
                 keys[i] = key[:17]
         # each key on a new line
-        print(f"Parameter keys for node {self.node_id}: {keys}")
+        # print(f"Parameter keys for node {self.node_id}: {keys}")
         return "\n".join(keys) 
 
     def yaml_to_html_label(self, yaml_text: str, width_chars: int = 80, width_px: int = 400) -> str:
         html_lines = []
 
-        print(f"Converting YAML for {yaml_text}")
+        # print(f"Converting YAML for {yaml_text}")
         for line in yaml_text.splitlines():
             # if (len(line) < width_chars):
                 # html_lines.append(line)
@@ -262,7 +262,7 @@ class Node(ABC):
                 for extra in wrapped[1:]:
                     html_lines.append(html.escape(extra))
 
-        print(f"Lines: {html_lines}")
+        # print(f"Lines: {html_lines}")
         return "<br align='left'/>".join(html_lines) + "<br align='left'/>"
     
     def node_label(self, node_yaml=False):

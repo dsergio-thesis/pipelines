@@ -1,18 +1,18 @@
 
-make clean
-rad init-rsp
+#make clean
+rad init-rsp -n "LSST-EDA"
 
-rad node-rsp -c -l "Exploratory analysis pipeline on the LSST DP-1 catalog"
+rad node-rsp -c -l "EDA LSST DP1 catalog"
 
 # -------------------------------------------------
 # Data import
 # -------------------------------------------------
-rad node-rsp -ct tap -l "Query TAP service for LSST DP-1 catalog" --target extended_chandra_deep_field_south_ecdfs -m 500000 -d d1
+rad node-rsp -ct tap -l "Query TAP LSST DP1" --target extended_chandra_deep_field_south_ecdfs -m 500000 -d d1
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/query.py
 
 # -------------------------------------------------
 # Data processing
-# -------------------------------------------------
+# --------------------------------------------:-----
 rad node-rsp -ct script -l "Clean catalog"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/clean.py
 
@@ -25,22 +25,22 @@ rad node-rsp -ct export -l "Export processed catalog"
 # Exploratory data analysis
 # -------------------------------------------------
 rad node-rsp -ct eda-script -l "Catalog distribution analysis"
-rad node-rsp -p title "Exploratory distribution analysis of LSST DP-1"
+rad node-rsp -p title "Exploratory distribution analysis of LSST DP1"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/histogram_select.py
 rad node-rsp -p eda_type histogram
 
 rad node-rsp -ct eda-script -l "Catalog pair-plot analysis"
-rad node-rsp -p title "Exploratory pair-plot analysis of the LSST DP-1"
+rad node-rsp -p title "Exploratory pair-plot analysis of the LSST DP1"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/pair_plot_select.py
 rad node-rsp -p eda_type pair-plot
 
 rad node-rsp -ct eda-script -l "Catalog sky distribution analysis"
-rad node-rsp -p title "Exploratory sky distribution analysis of LSST DP-1"
+rad node-rsp -p title "Exploratory sky distribution analysis of LSST DP1"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/sky_distribution_select.py
 rad node-rsp -p eda_type sky-distribution
 
 rad node-rsp -ct eda-script -l "Catalog color-color analysis"
-rad node-rsp -p title "Exploratory color-color analysis of LSST DP-1"
+rad node-rsp -p title "Exploratory color-color analysis of LSST DP1"
 rad node-rsp -p script catalogs/collections/lsst-hst/lsst/scripts/color_color_select.py
 rad node-rsp -p eda_type color-color
 

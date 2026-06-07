@@ -195,8 +195,8 @@ class NodeLSSTButlerFetch(Node):
             node_id=d["node_id"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
         )
 
     def run(self):
