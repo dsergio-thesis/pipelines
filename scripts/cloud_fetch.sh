@@ -40,7 +40,7 @@ echo "Searching for latest tarball for dataset '$DATASET' in $REMOTE_DIR ..."
 LATEST_FILE=$(rclone lsf "$REMOTE_DIR" \
   | grep "^${DATASET}-.*\.tar\.gz$" \
   | sort \
-  | tail -n 1)
+  | tail -n 1 || true)
 
 if [[ -z "$LATEST_FILE" ]]; then
   echo "Error: No tarball found for dataset '$DATASET' in $REMOTE_DIR"
