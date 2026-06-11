@@ -87,6 +87,8 @@ for row in tqdm(df.itertuples(), total=n, desc="Extracting Photometric Features"
             label_counts[str(row.label)] += 1
         else:
             label_counts[str(row.label)] = 1
+    else:
+        df_clean.at[row.Index, 'label'] = np.nan
    
 
     psf_mag_u = None
@@ -312,6 +314,8 @@ for col in df_clean.columns:
 
 df.index = df_clean.index
 
+
+print("Label counts:", label_counts)
 
 columns.update({
     "objectId": "objectId",

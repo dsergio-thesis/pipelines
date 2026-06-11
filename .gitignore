@@ -229,3 +229,5 @@ uml/*.svg
 uml/*.dot
 
 **/old/*
+
+recordings/

@@ -7,7 +7,7 @@ query_coords = parameters.get("query_coords")
 query_radius = parameters.get("query_radius")
 max_records = parameters.get("max_records")
 
-# Deserialize SkyCoord if needed
+# Deserialize SkyCoord
 if isinstance(query_coords, dict):
     query_coords = SkyCoord(
         ra=query_coords["ra_deg"] * u.deg,
@@ -15,7 +15,7 @@ if isinstance(query_coords, dict):
         frame=query_coords.get("frame", "icrs")
     )
 
-# Deserialize radius if needed
+# Deserialize radius
 if isinstance(query_radius, (int, float)):
     query_radius = query_radius * u.deg
 
@@ -77,6 +77,7 @@ if query_radius > 0:
     WHERE coord_ra BETWEEN {ra_min} AND {ra_max}
         AND coord_dec BETWEEN {dec_min} AND {dec_max}
         AND refExtendedness = 1
+        AND detect_isIsolated = 1
 
     """
     query["adql"] = query["adql"].format(

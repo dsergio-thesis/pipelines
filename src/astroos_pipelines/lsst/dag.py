@@ -35,9 +35,7 @@ from astropy.io import fits
 import numpy as np
 import lsst.geom as geom
 
-
 from astropy.io import fits
-# do wcs next
 
 rsp_mode = False
 try:
@@ -169,7 +167,7 @@ class NodeLSSTButlerFetch(Node):
             node_id=None,
             parents=[],
             parameters={},
-            label="Fetch LSST DP-1 Cutouts (Butler)",
+            label="Fetch LSST DP1 Cutouts (Butler)",
             inputs=[],
             outputs=[]):
         super().__init__(
@@ -195,8 +193,8 @@ class NodeLSSTButlerFetch(Node):
             node_id=d["node_id"],
             parents=d.get("parents", []),
             parameters=d.get("parameters", {}),
-            inputs=[Artifact.from_dict(a) for a in d.get("inputs", [])],
-            outputs=[Artifact.from_dict(a) for a in d.get("outputs", [])],
+            inputs=[ArtifactItem.from_dict(a) for a in d.get("inputs", [])],
+            outputs=[ArtifactItem.from_dict(a) for a in d.get("outputs", [])],
         )
 
     def run(self):
@@ -217,30 +215,19 @@ class NodeLSSTButlerFetch(Node):
 
         self.outputs = [artifact]
 
-
-
 def worker_patch(args):
 
-    BANDS = ["u", "g", "r", "i", "z"]
     BANDS = ["u", "g", "r", "i", "z", "y"]
 
     # cutout stamp size (pixels)
     STAMP_W = 100
     STAMP_H = 100
 
-    # tract, patch, object_rows, dataset_dir, dataset_labels = args
     tract, patch, object_rows, dataset_dict = args
 
     # print("object_rows")
     # print(object_rows)
 
-    # dataset = FITS_Image_Morphometry_Photometry_Dataset(
-            # dataset_dir=dataset_dir,
-            # labels_init_file=dataset_labels,
-            # N_bands=len(BANDS), 
-            # N_morphometric_features=4,
-            # N_photometric_features=4,
-            # )
     dataset = FITS_Image_Morphometry_Photometry_Dataset.from_dict(dataset_dict)
 
     from lsst.daf.butler import Butler
@@ -256,7 +243,6 @@ def worker_patch(args):
     band_images = np.zeros((len(BANDS), STAMP_H, STAMP_W), dtype=np.float32)
 
     for row in tqdm(object_rows, desc=f"Processing cutouts", total=len(object_rows)): 
-
         
         # print("row\n\n")
         # print(row)
@@ -270,10 +256,10 @@ def worker_patch(args):
         wcs_header = fits.Header()
         hdr = fits.Header()
         
-        min_ra = ra_deg - 0.0138889
-        max_ra = ra_deg + 0.0138889
-        min_dec = dec_deg - 0.0138889
-        max_dec = dec_deg + 0.0138889
+        # min_ra = ra_deg - 0.0138889
+        # max_ra = ra_deg + 0.0138889
+        # min_dec = dec_deg - 0.0138889
+        # max_dec = dec_deg + 0.0138889
 
         for band, exp in coadds.items():
             wcs = exp.getWcs()
@@ -284,7 +270,7 @@ def worker_patch(args):
             # Convert sky coordinate to pixel coordinate in this exposure
             pix = wcs.skyToPixel(sky)  # returns lsst.geom.Point2D
 
-            # Optional: skip objects whose pixel center is off-image
+            # Skip objects whose pixel center is off-image
             bbox = exp.getBBox()
             if not bbox.contains(geom.Point2I(int(round(pix.getX())), int(round(pix.getY())))):
                 continue
@@ -299,25 +285,13 @@ def worker_patch(args):
             hdr = make_cutout_header3(cutout, ra_deg, dec_deg)
             # print(f"hdr: {hdr}")
 
-
-            # print("cutout bbox:", cutout.getBBox())  # should show a small region
-            # print("cutout dims:", cutout.getDimensions())  # width/height
-            # print("cutout WCS:", wcs_cutout)  # should be a valid WCS object
-
             if (band == "r"):
                 wcs_header = wcs_cutout.getFitsMetadata()
-
-                # min_ra, max_ra = wcs_cutout.getSkyBBox().getMin().getX(), wcs_cutout.getSkyBBox().getMax().getX()
-                # min_dec, max_dec = wcs_cutout.getSkyBBox().getMin().getY(), wcs_cutout.getSkyBBox().getMax().getY()
-                # min_ra, max_ra, min_dec, max_dec = wcs_bounds_radec(wcs_cutout, STAMP_W, STAMP_H)
             
             band_images[BANDS.index(band)] = cutout.getImage().getArray()
 
         target_ra = ra_deg 
         target_dec = dec_deg
-
-        
-        
 
         # print(f"band_images shape: {band_images.shape}")
 
@@ -326,21 +300,13 @@ def worker_patch(args):
         hdu_img.header['ra'] = float(target_ra)
         hdu_img.header['dec'] = float(target_dec)
         hdu_img.header['objectId'] = int(row['objectId'])
-        # hdu_img.header['redshift'] = -999
-        # hdu_img.header['min_ra'] = min_ra
-        # hdu_img.header['max_ra'] = max_ra
-        # hdu_img.header['min_dec'] = min_dec
-        # hdu_img.header['max_dec'] = max_dec
 
         for k, v in hdr.items():
             hdu_img.header[k] = v
-            # print(f"wcs header: {k}: {v}")
 
         if (dataset.contains(row['objectId'])):
-            # print(f"dataset contains {row['objectId']}")
             dataset.update(row['objectId'], hdu_img)
         else:
-            # print(f"dataset DOES NOT contain {row['objectId']}")
             dataset.append(hdu_img)
 
     return len(object_rows)
@@ -350,9 +316,6 @@ def build_groups(objects, dataset_dict):
     for row in objects:
         groups[(int(row["tract"]), int(row["patch"]))].append(row)
     return [(t, p, rows, dataset_dict) for (t, p), rows in groups.items()]
-
-
-
 
 def wcs_bounds_radec(skywcs, width: int, height: int):
     """
@@ -394,7 +357,6 @@ def wcs_bounds_radec(skywcs, width: int, height: int):
     dec_max = float(decs.max())
 
     return ra_min, ra_max, dec_min, dec_max
-
 
 def make_cutout_header3(cutout, ra, dec):
     wcs = cutout.getWcs()
