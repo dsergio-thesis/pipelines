@@ -702,8 +702,8 @@ class PipelineDAG(DAG):
         dot = Digraph()
 
         dot.attr(
-            # rankdir="TB",
-            rankdir="LR",
+            rankdir="TB",
+            # rankdir="LR",
             bgcolor="transparent",
             pad="0.15",
             nodesep="0.7",
@@ -1040,7 +1040,7 @@ class NodeExport(Node):
                 artifact.materialize(node_id=self.node_id)
                 self.outputs.append(artifact)
 
-        print(f"=== Exported {len(self.inputs)} inputs in NodeExport to {len(self.outputs)} outputs.")
+        # print(f"=== Exported {len(self.inputs)} inputs in NodeExport to {len(self.outputs)} outputs.")
 
 
 class NodeGeneric(Node):

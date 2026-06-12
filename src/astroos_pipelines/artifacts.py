@@ -221,7 +221,7 @@ class ArtifactCol:
             # if all the same hash, we can pick one arbitrarily
             if len(set(v.hash for v in maximal)) == 1:
                 print(
-                    f"Warning: Multiple maximal versions with identical hash for column '{self.name}' at node '{target_node_id}'. "
+                    f"Warning: Multiple column versions with identical hash for column '{self.name}' at node '{target_node_id}'. "
                     f"Nodes: {conflict_nodes}. "
                     f"Using version from node '{maximal[0].node_id}'."
                 )
@@ -382,7 +382,7 @@ class ArtifactItem:
             print(f"Increase max_records or set it to None to materialize all records for this node.")
             
 
-        print(f"Materializing artifact to {self.file_path} at node {node_id}, max_records={self.max_records}...")
+        # print(f"Materializing artifact to {self.file_path} at node {node_id}, max_records={self.max_records}...")
         df = self.to_df(node_id)
 
         ext = Path(self.file_path).suffix.lower()

@@ -216,6 +216,7 @@ env.sh
 log
 
 _pipelines/
+_pipelines2/
 data/
 **/*.parquet
 **/*.zip
@@ -230,4 +231,4 @@ uml/*.dot
 
 **/old/*
 
-recordings/
+terminal_recordings/

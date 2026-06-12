@@ -14,11 +14,14 @@ def main():
         PipelineDAG.usage()
         return
 
+    pipeline_name = dag.label
+
+    print("\n ------------------------- ")
     if start_node_id:
         print(f"Starting pipeline '{pipeline_name}' from node '{start_node_id}'...")
         dag.run(start_node_id=start_node_id, check_dependencies=False)
     else:
-        print(f"Starting pipeline '{pipeline_name}' from the head...")
+        print(f"Starting pipeline '{pipeline_name}' from head...")
         dag.run()
     dag.to_yaml()
     dag.to_graphviz()
