@@ -52,7 +52,10 @@ export                             Export final artifacts
 
 From the project root (pipelines/):
 
+    Create env.sh
     ./install.sh
+    source ~/.zshrc
+    
 
 This will:
 
@@ -70,5 +73,6 @@ This project requires:
     Python 3.11
     Access to the RSP environment for LSST-specific operations (use node-rsp and run-rsp)
 
-
+See pyproject.toml for dependencies
+- My also require `mamba install python-graphviz`
 

@@ -160,3 +160,6 @@ echo "Commands:"
 echo "  rad"
 echo "  rad <command> --help"
 echo ""
+
+mkdir -p "$REPO_ROOT/log"
+touch "$REPO_ROOT/log/debug.log"
